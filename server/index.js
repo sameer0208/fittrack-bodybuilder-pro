@@ -6,7 +6,27 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// In production: restrict CORS to the deployed frontend URL (set CLIENT_URL env var on Render)
+// In development: allow all origins
+const allowedOrigins = process.env.CLIENT_URL
+  ? [process.env.CLIENT_URL]
+  : ['http://localhost:5173', 'http://127.0.0.1:5173'];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, Render health checks)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS: origin ${origin} not allowed`));
+      }
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 const userRoutes = require('./routes/users');

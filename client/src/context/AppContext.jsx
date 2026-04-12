@@ -1,8 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
-// Use relative URL so Vite proxy handles it — avoids CORS and macOS port conflicts (e.g. AirPlay on 5000)
-const API = axios.create({ baseURL: '/api' });
+// In development: relative '/api' is proxied by Vite to localhost:5001
+// In production: VITE_API_URL is set to the deployed Render backend URL
+const API = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || '/api',
+});
 
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('ft_token');
