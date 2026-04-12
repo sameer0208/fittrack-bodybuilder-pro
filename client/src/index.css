@@ -1,0 +1,241 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── CSS Variables ─────────────────────────────────────────── */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Do NOT set overflow here — it transfers scroll control away from html
+       and breaks vertical scrolling on mobile browsers */
+  }
+
+  body {
+    @apply bg-slate-900 text-slate-100 font-sans antialiased;
+    background-image: radial-gradient(ellipse at top, #1e293b 0%, #0f172a 60%);
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
+    /* Do NOT set overflow-x: hidden on body either — combined with html it
+       kills the scroll container. Horizontal containment is handled by the
+       layout wrapper in App.jsx (overflow-x-hidden + min-w-0). */
+  }
+
+  /* Remove ugly autofill background on mobile */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0px 1000px #334155 inset !important;
+    -webkit-text-fill-color: #f1f5f9 !important;
+  }
+
+  /* Better number input on mobile — hide spinners */
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-slate-700 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-slate-500; }
+}
+
+/* ─── Component Layer ───────────────────────────────────────── */
+@layer components {
+  .card {
+    @apply bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-2xl;
+  }
+
+  .card-hover {
+    @apply card transition-all duration-200
+           hover:border-indigo-500/50 hover:bg-slate-800/80 hover:shadow-lg hover:shadow-indigo-500/10
+           active:scale-[0.98] active:border-indigo-500/60;
+  }
+
+  /* Touch-friendly primary button */
+  .btn-primary {
+    @apply bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700
+           text-white font-semibold py-3.5 px-6 rounded-xl
+           transition-all duration-150 active:scale-[0.97]
+           disabled:opacity-50 disabled:cursor-not-allowed
+           min-h-[52px] touch-manipulation select-none;
+  }
+
+  .btn-secondary {
+    @apply bg-slate-700 hover:bg-slate-600 active:bg-slate-800
+           text-slate-100 font-medium py-3.5 px-6 rounded-xl
+           transition-all duration-150 active:scale-[0.97]
+           min-h-[52px] touch-manipulation select-none;
+  }
+
+  .btn-success {
+    @apply bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700
+           text-white font-semibold py-3.5 px-6 rounded-xl
+           transition-all duration-150 active:scale-[0.97]
+           min-h-[52px] touch-manipulation select-none;
+  }
+
+  /* Touch-target helper */
+  .btn-icon {
+    @apply min-w-[44px] min-h-[44px] flex items-center justify-center
+           rounded-xl transition-all duration-150 active:scale-95 touch-manipulation;
+  }
+
+  /* Mobile-first input */
+  .input-field {
+    @apply w-full bg-slate-700/50 border border-slate-600 rounded-xl
+           px-4 py-3.5 text-slate-100 placeholder-slate-500
+           focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20
+           transition-all duration-200
+           text-base; /* 16px prevents iOS zoom */
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold;
+  }
+
+  .muscle-tag {
+    @apply badge bg-indigo-500/20 text-indigo-300 border border-indigo-500/30;
+  }
+
+  .section-title {
+    @apply text-2xl font-bold text-slate-100 mb-1;
+  }
+
+  .section-subtitle {
+    @apply text-sm text-slate-400 mb-5;
+  }
+
+  .progress-bar {
+    @apply h-2 bg-slate-700 rounded-full overflow-hidden;
+  }
+
+  .progress-fill {
+    @apply h-full rounded-full transition-all duration-700;
+  }
+
+  /* Mobile page wrapper */
+  .page-container {
+    @apply min-h-screen pb-24 lg:pb-10;
+  }
+
+  /* Safe-area padded bottom nav */
+  .bottom-nav {
+    padding-bottom: var(--sab);
+  }
+
+  /* Stat card for dashboard */
+  .stat-card {
+    @apply card p-4 flex flex-col items-center justify-center text-center gap-1
+           active:scale-95 transition-all duration-150;
+  }
+}
+
+/* ─── Utility Layer ─────────────────────────────────────────── */
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent;
+  }
+
+  .glow-indigo {
+    box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
+  }
+
+  .glow-emerald {
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+  }
+
+  .glass {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+
+  /* Safe-area utilities */
+  .pt-safe { padding-top: var(--sat); }
+  .pb-safe { padding-bottom: var(--sab); }
+  .pl-safe { padding-left: var(--sal); }
+  .pr-safe { padding-right: var(--sar); }
+  .mb-safe { margin-bottom: var(--sab); }
+
+  /* Animations */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  .animate-bounce-in {
+    animation: bounceIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  /* Hide scrollbar but keep scroll */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+
+  /* Touch manipulation */
+  .touch-manipulation { touch-action: manipulation; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bounceIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ─── Recharts ─────────────────────────────────────────────── */
+.recharts-cartesian-grid line {
+  stroke: rgba(51, 65, 85, 0.6) !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4) !important;
+}
+
+/* ─── iOS PWA / Standalone ──────────────────────────────────── */
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior: none;
+  }
+}
