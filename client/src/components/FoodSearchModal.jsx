@@ -116,10 +116,13 @@ export default function FoodSearchModal({ meal, onAdd, onClose }) {
             results.map((food) => {
               const isSelected = selected?.id === food.id;
               return (
-                <button
+                <div
                   key={food.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => { setSelected(isSelected ? null : food); setQty(1); }}
-                  className={`w-full text-left p-3 rounded-xl border transition-all duration-150 ${
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(isSelected ? null : food); setQty(1); }}}
+                  className={`w-full text-left p-3 rounded-xl border transition-all duration-150 cursor-pointer ${
                     isSelected
                       ? 'border-indigo-500 bg-indigo-600/15'
                       : 'border-slate-700/50 bg-slate-700/20 hover:border-slate-600 hover:bg-slate-700/40'
@@ -164,7 +167,7 @@ export default function FoodSearchModal({ meal, onAdd, onClose }) {
                       </div>
                     </div>
                   )}
-                </button>
+                </div>
               );
             })
           )}

@@ -18,7 +18,7 @@ const authMiddleware = (req, res, next) => {
 };
 
 function buildSystemPrompt(user) {
-  return `You are FitTrack AI — a professional fitness, nutrition, and health assistant built into the FitTrack Bodybuilder Pro app.
+  return `You are SamAI — a professional fitness, nutrition, and health assistant built into the FitTrack Bodybuilder Pro app (developed by Sameer Application Production).
 
 USER PROFILE:
 - Name: ${user.name || 'Athlete'}

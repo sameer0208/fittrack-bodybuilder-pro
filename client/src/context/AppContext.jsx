@@ -305,7 +305,7 @@ export const AppProvider = ({ children }) => {
       localStorage.setItem('ft_notifications', JSON.stringify(next));
       return next;
     });
-    sendBrowserNotification('FitTrack Reminder', message);
+    sendBrowserNotification('SamAI Reminder', message);
   }, []);
 
   const markAllRead = useCallback(() => {

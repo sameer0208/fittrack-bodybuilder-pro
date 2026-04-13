@@ -13,34 +13,7 @@ import Nutrition from './pages/Nutrition';
 import DietPlan from './pages/DietPlan';
 import useReminders from './hooks/useReminders';
 
-function AppRoutes() {
-  const { user, loading } = useApp();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
-          <p className="text-slate-400 text-sm">Loading FitTrack...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    // If a profile already exists locally, show login — otherwise show onboarding
-    const hasExistingProfile = !!localStorage.getItem('ft_local_user') || !!localStorage.getItem('ft_token');
-    const defaultUnauthRoute = hasExistingProfile ? '/login' : '/onboarding';
-
-    return (
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="*" element={<Navigate to={defaultUnauthRoute} replace />} />
-      </Routes>
-    );
-  }
-
+function AuthenticatedLayout() {
   useReminders();
 
   return (
@@ -61,6 +34,36 @@ function AppRoutes() {
       <SmartAgent />
     </div>
   );
+}
+
+function AppRoutes() {
+  const { user, loading } = useApp();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+          <p className="text-slate-400 text-sm">Loading FitTrack...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    const hasExistingProfile = !!localStorage.getItem('ft_local_user') || !!localStorage.getItem('ft_token');
+    const defaultUnauthRoute = hasExistingProfile ? '/login' : '/onboarding';
+
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="*" element={<Navigate to={defaultUnauthRoute} replace />} />
+      </Routes>
+    );
+  }
+
+  return <AuthenticatedLayout />;
 }
 
 export default function App() {
