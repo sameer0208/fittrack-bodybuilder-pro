@@ -19,7 +19,7 @@ export default function FoodSearchModal({ meal, onAdd, onClose }) {
     if (showSuggested) {
       setResults(getSuggestedFoods(meal));
     } else {
-      setResults(searchFoods(query, category).slice(0, 40));
+      setResults(searchFoods(query, category).slice(0, 100));
     }
     setSelected(null);
   }, [query, category, showSuggested]);

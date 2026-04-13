@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// FitTrack Food Database — 747 items (21 categories)
+// FitTrack Food Database — 840 items (20 categories)
 // Values per listed serving: calories (kcal), protein (g), carbs (g), fat (g), fiber (g)
 // Includes Indian regional foods, gym nutrition, common global foods
 // ─────────────────────────────────────────────────────────────────────────────
@@ -756,9 +756,52 @@ export const foods = [
   { id: 'smoothie_peanut_butter', name: 'Peanut Butter Banana Smoothie', category: 'Juices & Smoothies', serving: '1 glass (400ml)', calories: 380, protein: 16, carbs: 48, fat: 16, fiber: 5 },
   { id: 'juice_ginger_lemon', name: 'Ginger Lemon Juice', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 30, protein: 0.3, carbs: 7, fat: 0.1, fiber: 0.5 },
   { id: 'juice_tulsi_lemon', name: 'Tulsi Lemon Water', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 12, protein: 0.2, carbs: 3, fat: 0, fiber: 0 },
+  { id: 'juice_kiwi', name: 'Kiwi Juice', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 95, protein: 1.2, carbs: 23, fat: 0.4, fiber: 2 },
+  { id: 'juice_strawberry', name: 'Strawberry Juice', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 80, protein: 1, carbs: 19, fat: 0.4, fiber: 1.5 },
+  { id: 'juice_peach', name: 'Peach Juice', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 105, protein: 0.8, carbs: 26, fat: 0.2, fiber: 1 },
+  { id: 'juice_muskmelon', name: 'Muskmelon / Kharbooja Juice', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 85, protein: 1.2, carbs: 20, fat: 0.3, fiber: 1 },
+  { id: 'juice_chiku', name: 'Chiku / Sapota Juice', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 130, protein: 0.6, carbs: 32, fat: 1, fiber: 4 },
+  { id: 'juice_sitaphal', name: 'Sitaphal / Custard Apple Juice', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 140, protein: 2, carbs: 35, fat: 0.5, fiber: 3 },
+  { id: 'juice_jackfruit', name: 'Jackfruit Juice', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 140, protein: 2, carbs: 34, fat: 0.5, fiber: 2 },
+  { id: 'juice_falsa', name: 'Falsa / Phalsa Juice', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 70, protein: 1.5, carbs: 16, fat: 0.2, fiber: 3 },
+  { id: 'juice_banana', name: 'Banana Juice / Smoothie (no milk)', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 130, protein: 1.5, carbs: 33, fat: 0.5, fiber: 3 },
+  { id: 'juice_spinach', name: 'Spinach Juice (palak)', category: 'Juices & Smoothies', serving: '1 glass (200ml)', calories: 20, protein: 2, carbs: 3, fat: 0.2, fiber: 1.5 },
+  { id: 'juice_mint_lemon', name: 'Mint Lemon Juice (Pudina Nimbu)', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 40, protein: 0.3, carbs: 10, fat: 0.1, fiber: 0.5 },
+  { id: 'juice_ginger_carrot', name: 'Ginger Carrot Juice', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 95, protein: 2, carbs: 22, fat: 0.3, fiber: 2 },
+  { id: 'juice_celery', name: 'Celery Juice', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 35, protein: 1.5, carbs: 7, fat: 0.3, fiber: 1.5 },
+  { id: 'juice_tomato', name: 'Tomato Juice', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 42, protein: 1.8, carbs: 10, fat: 0.2, fiber: 1 },
+  { id: 'juice_mixed_veg', name: 'Mixed Vegetable Juice', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 55, protein: 2, carbs: 12, fat: 0.3, fiber: 2 },
+  { id: 'juice_plum', name: 'Plum Juice', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 115, protein: 0.5, carbs: 28, fat: 0.2, fiber: 1.5 },
+  { id: 'juice_cranberry', name: 'Cranberry Juice', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 116, protein: 0.5, carbs: 30, fat: 0.3, fiber: 0.5 },
+  { id: 'juice_cherry', name: 'Cherry Juice', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 120, protein: 1, carbs: 29, fat: 0.3, fiber: 0.5 },
+  { id: 'juice_passion_fruit', name: 'Passion Fruit Juice', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 110, protein: 1, carbs: 26, fat: 0.4, fiber: 2 },
+  { id: 'juice_dragon_fruit', name: 'Dragon Fruit Juice', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 85, protein: 1, carbs: 20, fat: 0.3, fiber: 2 },
+  { id: 'juice_tender_coconut', name: 'Tender Coconut Water (natural)', category: 'Juices & Smoothies', serving: '1 coconut (300ml)', calories: 55, protein: 2, carbs: 11, fat: 0.5, fiber: 3 },
+  { id: 'panakam', name: 'Panakam (jaggery lemon drink)', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 85, protein: 0.3, carbs: 22, fat: 0.1, fiber: 0.5 },
+  { id: 'juice_tamarind', name: 'Tamarind / Imli Sharbat', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 70, protein: 0.5, carbs: 18, fat: 0.1, fiber: 1 },
+  { id: 'juice_rose_sharbat', name: 'Rose Sharbat', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 90, protein: 0, carbs: 23, fat: 0, fiber: 0 },
+  { id: 'juice_khus', name: 'Khus / Vetiver Sharbat', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 80, protein: 0, carbs: 20, fat: 0, fiber: 0 },
+  { id: 'juice_sandalwood', name: 'Chandan / Sandalwood Sharbat', category: 'Juices & Smoothies', serving: '1 glass (250ml)', calories: 85, protein: 0, carbs: 22, fat: 0, fiber: 0 },
+  { id: 'smoothie_dates_milk', name: 'Dates Milk Smoothie', category: 'Juices & Smoothies', serving: '1 glass (350ml)', calories: 320, protein: 10, carbs: 54, fat: 7, fiber: 4 },
+  { id: 'smoothie_fig_almond', name: 'Fig Almond Smoothie', category: 'Juices & Smoothies', serving: '1 glass (350ml)', calories: 300, protein: 9, carbs: 44, fat: 11, fiber: 5 },
+  { id: 'smoothie_pomegranate', name: 'Pomegranate Smoothie', category: 'Juices & Smoothies', serving: '1 glass (350ml)', calories: 190, protein: 3, carbs: 42, fat: 1.5, fiber: 3 },
+  { id: 'smoothie_cucumber_mint', name: 'Cucumber Mint Smoothie', category: 'Juices & Smoothies', serving: '1 glass (350ml)', calories: 80, protein: 2, carbs: 18, fat: 0.5, fiber: 2 },
+  { id: 'smoothie_spinach_banana', name: 'Spinach Banana Smoothie', category: 'Juices & Smoothies', serving: '1 glass (350ml)', calories: 160, protein: 5, carbs: 35, fat: 1.5, fiber: 5 },
+  { id: 'smoothie_abc', name: 'ABC Smoothie (Apple Beet Carrot)', category: 'Juices & Smoothies', serving: '1 glass (350ml)', calories: 140, protein: 2, carbs: 34, fat: 0.5, fiber: 4 },
+  { id: 'juice_packaged_tropicana_oj', name: 'Tropicana Orange Juice', category: 'Juices & Smoothies', serving: '1 pack (200ml)', calories: 90, protein: 1, carbs: 22, fat: 0, fiber: 0 },
+  { id: 'juice_packaged_real_mango', name: 'Real Mango Juice (packaged)', category: 'Juices & Smoothies', serving: '1 pack (200ml)', calories: 100, protein: 0.3, carbs: 25, fat: 0, fiber: 0 },
+  { id: 'juice_packaged_real_mixed', name: 'Real Mixed Fruit Juice', category: 'Juices & Smoothies', serving: '1 pack (200ml)', calories: 90, protein: 0.3, carbs: 22, fat: 0, fiber: 0 },
+  { id: 'juice_packaged_real_guava', name: 'Real Guava Juice (packaged)', category: 'Juices & Smoothies', serving: '1 pack (200ml)', calories: 85, protein: 0.3, carbs: 21, fat: 0, fiber: 0 },
+  { id: 'juice_packaged_real_pomegranate', name: 'Real Pomegranate Juice', category: 'Juices & Smoothies', serving: '1 pack (200ml)', calories: 95, protein: 0.2, carbs: 24, fat: 0, fiber: 0 },
+  { id: 'juice_packaged_paper_boat', name: 'Paper Boat Aamras', category: 'Juices & Smoothies', serving: '1 pack (200ml)', calories: 110, protein: 0.3, carbs: 27, fat: 0, fiber: 0 },
+  { id: 'juice_packaged_paper_boat_jaljeera', name: 'Paper Boat Jal Jeera', category: 'Juices & Smoothies', serving: '1 pack (200ml)', calories: 40, protein: 0.2, carbs: 10, fat: 0, fiber: 0 },
+  { id: 'juice_packaged_appy_fizz', name: 'Appy Fizz', category: 'Juices & Smoothies', serving: '1 bottle (250ml)', calories: 110, protein: 0, carbs: 28, fat: 0, fiber: 0 },
+  { id: 'juice_packaged_slice', name: 'Slice Mango Drink', category: 'Juices & Smoothies', serving: '1 pack (250ml)', calories: 130, protein: 0, carbs: 32, fat: 0, fiber: 0 },
+  { id: 'juice_packaged_minute_maid', name: 'Minute Maid Pulpy Orange', category: 'Juices & Smoothies', serving: '1 pack (250ml)', calories: 110, protein: 0.5, carbs: 27, fat: 0, fiber: 0 },
+  { id: 'juice_packaged_b_natural', name: 'B Natural Mixed Fruit', category: 'Juices & Smoothies', serving: '1 pack (200ml)', calories: 88, protein: 0.3, carbs: 22, fat: 0, fiber: 0 },
 
   // ══════════════════════════════════════════════════════════
-  //  DRINKS & SHAKES  (NEW)
+  //  DRINKS & SHAKES
   // ══════════════════════════════════════════════════════════
   { id: 'shake_banana', name: 'Banana Milkshake', category: 'Drinks & Shakes', serving: '1 glass (350ml)', calories: 300, protein: 9, carbs: 53, fat: 7, fiber: 3 },
   { id: 'shake_mango', name: 'Mango Milkshake', category: 'Drinks & Shakes', serving: '1 glass (350ml)', calories: 290, protein: 7, carbs: 52, fat: 6, fiber: 2.5 },
@@ -819,6 +862,16 @@ export const foods = [
   { id: 'bev_matcha_latte', name: 'Matcha Latte', category: 'Beverages', serving: '1 cup (300ml)', calories: 140, protein: 6, carbs: 18, fat: 5, fiber: 1 },
   { id: 'bev_ginger_tea', name: 'Ginger Tea / Adrak Chai', category: 'Beverages', serving: '1 cup (200ml)', calories: 85, protein: 3, carbs: 10, fat: 3.5, fiber: 0 },
   { id: 'bev_elaichi_chai', name: 'Elaichi / Cardamom Tea', category: 'Beverages', serving: '1 cup (200ml)', calories: 90, protein: 3, carbs: 10, fat: 4, fiber: 0 },
+  { id: 'bev_tulsi_tea', name: 'Tulsi Tea', category: 'Beverages', serving: '1 cup (200ml)', calories: 3, protein: 0, carbs: 0.5, fat: 0, fiber: 0 },
+  { id: 'bev_lemon_tea', name: 'Lemon Tea', category: 'Beverages', serving: '1 cup (200ml)', calories: 25, protein: 0, carbs: 6, fat: 0, fiber: 0 },
+  { id: 'bev_honey_lemon_water', name: 'Honey Lemon Water (warm)', category: 'Beverages', serving: '1 glass (250ml)', calories: 45, protein: 0.1, carbs: 12, fat: 0, fiber: 0 },
+  { id: 'bev_jeera_water', name: 'Jeera Water (cumin water)', category: 'Beverages', serving: '1 glass (250ml)', calories: 8, protein: 0.3, carbs: 1.5, fat: 0.2, fiber: 0.3 },
+  { id: 'bev_ajwain_water', name: 'Ajwain / Carom Water', category: 'Beverages', serving: '1 glass (250ml)', calories: 10, protein: 0.3, carbs: 2, fat: 0.2, fiber: 0.5 },
+  { id: 'bev_detox_water', name: 'Detox Water (lemon + cucumber)', category: 'Beverages', serving: '1 glass (250ml)', calories: 10, protein: 0.2, carbs: 2.5, fat: 0, fiber: 0.3 },
+  { id: 'bev_coconut_milk', name: 'Coconut Milk', category: 'Beverages', serving: '1 glass (250ml)', calories: 230, protein: 2, carbs: 6, fat: 24, fiber: 0 },
+  { id: 'bev_tang', name: 'Tang / Rasna (orange)', category: 'Beverages', serving: '1 glass (250ml)', calories: 90, protein: 0, carbs: 22, fat: 0, fiber: 0 },
+  { id: 'bev_bournvita_milk', name: 'Bournvita / Horlicks with Milk', category: 'Beverages', serving: '1 glass (250ml)', calories: 200, protein: 8, carbs: 30, fat: 6, fiber: 1 },
+  { id: 'bev_complan_milk', name: 'Complan with Milk', category: 'Beverages', serving: '1 glass (250ml)', calories: 210, protein: 10, carbs: 28, fat: 7, fiber: 0 },
 
   // ══════════════════════════════════════════════════════════
   //  ADDITIONAL PRE-WORKOUT
@@ -924,6 +977,54 @@ export const foods = [
   { id: 'sweet_corn_soup', name: 'Sweet Corn Soup', category: 'Lunch & Dinner', serving: '1 bowl (300ml)', calories: 110, protein: 4, carbs: 20, fat: 2, fiber: 2 },
   { id: 'manchow_soup', name: 'Manchow Soup (veg)', category: 'Lunch & Dinner', serving: '1 bowl (300ml)', calories: 130, protein: 4, carbs: 18, fat: 5, fiber: 2 },
   { id: 'hot_sour_soup', name: 'Hot and Sour Soup', category: 'Lunch & Dinner', serving: '1 bowl (300ml)', calories: 100, protein: 5, carbs: 14, fat: 3, fiber: 1.5 },
+  { id: 'palak_soup', name: 'Palak / Spinach Soup', category: 'Lunch & Dinner', serving: '1 bowl (300ml)', calories: 80, protein: 4, carbs: 10, fat: 3, fiber: 3 },
+  { id: 'mushroom_soup', name: 'Cream of Mushroom Soup', category: 'Lunch & Dinner', serving: '1 bowl (300ml)', calories: 160, protein: 4, carbs: 14, fat: 10, fiber: 2 },
+  { id: 'mixed_dal', name: 'Panchmel / Mixed Dal', category: 'Lunch & Dinner', serving: '1 cup (240ml)', calories: 210, protein: 13, carbs: 34, fat: 3.5, fiber: 8 },
+
+  // ══════════════════════════════════════════════════════════
+  //  ADDITIONAL EVERYDAY ITEMS (Indian packaged / common)
+  // ══════════════════════════════════════════════════════════
+  { id: 'amul_butter_toast', name: 'Amul Butter on Toast (2 slices)', category: 'Breakfast', serving: '2 slices + butter (75g)', calories: 240, protein: 5, carbs: 26, fat: 13, fiber: 1.5 },
+  { id: 'curd_sugar', name: 'Curd with Sugar', category: 'Dairy & Eggs', serving: '1 cup (200g)', calories: 160, protein: 7, carbs: 22, fat: 5, fiber: 0 },
+  { id: 'curd_jaggery', name: 'Curd with Jaggery (Gur)', category: 'Dairy & Eggs', serving: '1 cup (200g)', calories: 170, protein: 7, carbs: 28, fat: 5, fiber: 0 },
+  { id: 'milk_jaggery', name: 'Milk with Jaggery (warm)', category: 'Dairy & Eggs', serving: '1 glass (250ml)', calories: 210, protein: 8, carbs: 32, fat: 6, fiber: 0 },
+  { id: 'milk_honey', name: 'Milk with Honey (warm)', category: 'Dairy & Eggs', serving: '1 glass (250ml)', calories: 220, protein: 8, carbs: 34, fat: 6, fiber: 0 },
+  { id: 'jaggery_piece', name: 'Jaggery / Gur (1 piece)', category: 'Snacks & Fast Food', serving: '1 piece (20g)', calories: 76, protein: 0.2, carbs: 19, fat: 0, fiber: 0 },
+  { id: 'honey_1tbsp', name: 'Honey (1 tablespoon)', category: 'Snacks & Fast Food', serving: '1 tbsp (21g)', calories: 64, protein: 0.1, carbs: 17, fat: 0, fiber: 0 },
+  { id: 'sugar_1tsp', name: 'Sugar (1 teaspoon)', category: 'Snacks & Fast Food', serving: '1 tsp (4g)', calories: 16, protein: 0, carbs: 4, fat: 0, fiber: 0 },
+  { id: 'sugar_1tbsp', name: 'Sugar (1 tablespoon)', category: 'Snacks & Fast Food', serving: '1 tbsp (12g)', calories: 48, protein: 0, carbs: 12, fat: 0, fiber: 0 },
+
+  // Common packaged / instant items
+  { id: 'instant_noodles_cup', name: 'Cup Noodles (any brand)', category: 'Snacks & Fast Food', serving: '1 cup (70g)', calories: 300, protein: 6, carbs: 40, fat: 13, fiber: 2 },
+  { id: 'top_ramen', name: 'Top Ramen / Yippee Noodles', category: 'Snacks & Fast Food', serving: '1 packet (70g)', calories: 305, protein: 7, carbs: 42, fat: 12, fiber: 2 },
+  { id: 'wai_wai', name: 'Wai Wai Noodles', category: 'Snacks & Fast Food', serving: '1 packet (75g)', calories: 345, protein: 6, carbs: 42, fat: 17, fiber: 2 },
+  { id: 'bread_butter_jam', name: 'Bread Butter Jam (2 slices)', category: 'Breakfast', serving: '2 slices + butter + jam (95g)', calories: 310, protein: 5, carbs: 48, fat: 12, fiber: 1.5 },
+  { id: 'bread_chocolate', name: 'Bread with Chocolate Spread', category: 'Breakfast', serving: '2 slices + spread (90g)', calories: 360, protein: 6, carbs: 54, fat: 14, fiber: 2 },
+  { id: 'masala_oats', name: 'Masala Oats (Saffola/Quaker)', category: 'Breakfast', serving: '1 packet (40g)', calories: 155, protein: 4, carbs: 26, fat: 4, fiber: 3 },
+  { id: 'corn_flakes_dry', name: 'Corn Flakes (dry, 30g)', category: 'Breakfast', serving: '30g', calories: 112, protein: 2, carbs: 25, fat: 0.3, fiber: 0.5 },
+  { id: 'chocos_milk', name: 'Chocos / Choco Flakes with Milk', category: 'Breakfast', serving: '1 bowl (250ml)', calories: 280, protein: 7, carbs: 52, fat: 5, fiber: 2 },
+
+  // More common Indian items people eat daily
+  { id: 'sarson_ka_saag', name: 'Sarson Ka Saag', category: 'Indian Mains', serving: '1 cup (200g)', calories: 180, protein: 5, carbs: 12, fat: 13, fiber: 5 },
+  { id: 'sarson_saag_makki', name: 'Sarson Saag + Makki Roti', category: 'Indian Mains', serving: '1 plate (280g)', calories: 390, protein: 10, carbs: 56, fat: 16, fiber: 8.5 },
+  { id: 'dal_chawal_ghee', name: 'Dal Chawal with Ghee', category: 'Indian Mains', serving: '1 bowl (400g)', calories: 480, protein: 16, carbs: 74, fat: 12, fiber: 8 },
+  { id: 'roti_sabzi', name: 'Roti (2) + Any Sabzi', category: 'Indian Mains', serving: '2 roti + sabzi (250g)', calories: 380, protein: 10, carbs: 56, fat: 13, fiber: 8 },
+  { id: 'roti_dal', name: 'Roti (2) + Dal', category: 'Indian Mains', serving: '2 roti + dal (280g)', calories: 420, protein: 18, carbs: 68, fat: 8, fiber: 12 },
+  { id: 'rice_sambar_veg', name: 'Rice + Sambar + Veg', category: 'Indian Mains', serving: '1 plate (400g)', calories: 420, protein: 12, carbs: 76, fat: 8, fiber: 7 },
+  { id: 'rice_rasam', name: 'Rice + Rasam', category: 'Indian Mains', serving: '1 bowl (350g)', calories: 300, protein: 7, carbs: 62, fat: 3, fiber: 3 },
+  { id: 'rice_dal_fry', name: 'Rice + Dal Fry', category: 'Indian Mains', serving: '1 plate (400g)', calories: 460, protein: 16, carbs: 86, fat: 5.5, fiber: 8.6 },
+  { id: 'rice_fish_curry', name: 'Rice + Fish Curry', category: 'Indian Mains', serving: '1 plate (400g)', calories: 520, protein: 32, carbs: 60, fat: 15.5, fiber: 1.6 },
+  { id: 'rice_egg_curry', name: 'Rice + Egg Curry (2 eggs)', category: 'Indian Mains', serving: '1 plate (400g)', calories: 530, protein: 20, carbs: 65, fat: 20.5, fiber: 2.6 },
+  { id: 'rice_chicken_curry', name: 'Rice + Chicken Curry', category: 'Indian Mains', serving: '1 plate (450g)', calories: 560, protein: 32, carbs: 62, fat: 18.5, fiber: 2 },
+  { id: 'rice_rajma', name: 'Rice + Rajma', category: 'Indian Mains', serving: '1 plate (400g)', calories: 500, protein: 19, carbs: 96, fat: 4.5, fiber: 11.7 },
+  { id: 'rice_chole', name: 'Rice + Chole', category: 'Indian Mains', serving: '1 plate (400g)', calories: 530, protein: 16, carbs: 98, fat: 7.5, fiber: 12.6 },
+  { id: 'paneer_paratha_curd', name: 'Paneer Paratha + Curd', category: 'Indian Mains', serving: '1 paratha + curd (280g)', calories: 480, protein: 22, carbs: 57, fat: 19, fiber: 3 },
+  { id: 'aloo_paratha_curd', name: 'Aloo Paratha + Curd', category: 'Indian Mains', serving: '1 paratha + curd (280g)', calories: 460, protein: 15, carbs: 64, fat: 16, fiber: 4 },
+  { id: 'dal_baati', name: 'Dal Baati Churma', category: 'Indian Mains', serving: '1 plate (350g)', calories: 650, protein: 18, carbs: 85, fat: 28, fiber: 8 },
+  { id: 'litti_chokha', name: 'Litti Chokha (2 litti)', category: 'Indian Mains', serving: '2 litti + chokha (300g)', calories: 520, protein: 14, carbs: 72, fat: 20, fiber: 6 },
+  { id: 'pav_bhaji_butter', name: 'Pav Bhaji (extra butter)', category: 'Indian Mains', serving: '1 plate (400g)', calories: 580, protein: 12, carbs: 78, fat: 26, fiber: 8 },
+  { id: 'egg_bhurji_roti', name: 'Egg Bhurji (3 eggs) + 2 Roti', category: 'Indian Mains', serving: '1 plate (280g)', calories: 550, protein: 27, carbs: 52, fat: 27, fiber: 6.5 },
+  { id: 'chicken_gravy_roti', name: 'Chicken Gravy + 2 Roti', category: 'Indian Mains', serving: '1 plate (320g)', calories: 560, protein: 35, carbs: 54, fat: 23, fiber: 6.5 },
 ];
 
 // Quick search helper
@@ -939,7 +1040,7 @@ export const searchFoods = (query, category = 'All') => {
 // Get foods for a specific meal's suggested categories (top picks)
 export const getSuggestedFoods = (mealKey) => {
   const cats = mealSuggestions[mealKey] || [];
-  return foods.filter((f) => cats.includes(f.category)).slice(0, 50);
+  return foods.filter((f) => cats.includes(f.category)).slice(0, 80);
 };
 
 export default foods;
