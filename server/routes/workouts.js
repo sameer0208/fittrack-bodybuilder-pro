@@ -51,15 +51,12 @@ router.post('/log', auth, async (req, res) => {
         }))
       : [];
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const { weekStart, weekEnd } = getCurrentWeekRange();
 
     let log = await WorkoutLog.findOne({
       userId: req.user.id,
       workoutDay,
-      date: { $gte: today, $lt: tomorrow },
+      date: { $gte: weekStart, $lt: weekEnd },
     });
 
     if (log) {
@@ -90,12 +87,14 @@ router.post('/log', auth, async (req, res) => {
       const user = await User.findById(req.user.id);
       if (user) {
         user.totalWorkouts = (user.totalWorkouts || 0) + 1;
-        const yesterday = new Date(today);
+        const now = new Date();
+        const yesterday = new Date(now);
         yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(0, 0, 0, 0);
         user.streak = user.lastWorkoutDate >= yesterday
           ? (user.streak || 0) + 1
           : 1;
-        user.lastWorkoutDate = new Date();
+        user.lastWorkoutDate = now;
         await user.save();
       }
     }
@@ -122,20 +121,42 @@ router.get('/logs', auth, async (req, res) => {
   }
 });
 
-// Get today's workout log
+// Get this week's workout log for a given session
 router.get('/today/:workoutDay', auth, async (req, res) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const { weekStart, weekEnd } = getCurrentWeekRange();
 
     const log = await WorkoutLog.findOne({
       userId: req.user.id,
       workoutDay: req.params.workoutDay,
-      date: { $gte: today, $lt: tomorrow },
+      date: { $gte: weekStart, $lt: weekEnd },
     });
     res.json(log || null);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Batch: get completion status for ALL sessions this week
+router.get('/week-status', auth, async (req, res) => {
+  try {
+    const { weekStart, weekEnd } = getCurrentWeekRange();
+
+    const logs = await WorkoutLog.find({
+      userId: req.user.id,
+      date: { $gte: weekStart, $lt: weekEnd },
+    }).lean();
+
+    const status = {};
+    for (const log of logs) {
+      status[log.workoutDay] = {
+        completed: log.completed,
+        duration: log.duration,
+        totalVolume: log.totalVolume,
+        date: log.date,
+      };
+    }
+    res.json(status);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -173,6 +194,19 @@ router.get('/stats', auth, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
+// Returns { weekStart (Monday 00:00), weekEnd (next Monday 00:00) } for the current week
+function getCurrentWeekRange() {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun .. 6=Sat
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+  const nextMonday = new Date(monday);
+  nextMonday.setDate(monday.getDate() + 7);
+  return { weekStart: monday, weekEnd: nextMonday };
+}
 
 function getWeekNumber(date) {
   const d = new Date(date);

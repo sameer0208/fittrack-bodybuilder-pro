@@ -26,6 +26,7 @@ const userSchema = new mongoose.Schema(
     totalWorkouts: { type: Number, default: 0 },
     lastWorkoutDate: { type: Date },
     leaderboardOptIn: { type: Boolean, default: false },
+    xp: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

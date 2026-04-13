@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext';
 import { weekSchedule, workoutPlan } from '../data/workoutPlan';
 import BMICard from '../components/BMICard';
 import ShareCard from '../components/ShareCard';
+import DailyChallenges from '../components/DailyChallenges';
 import dayjs from 'dayjs';
 import axios from 'axios';
 import {
@@ -21,6 +22,9 @@ API.interceptors.request.use((cfg) => {
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
+// All session keys across the entire week
+const ALL_WEEK_SESSIONS = weekSchedule.flatMap((d) => d.sessions);
+
 export default function Dashboard() {
   const { user, getWorkoutLog, getNutritionLog, fetchWorkoutLog, fetchNutritionLog } = useApp();
   const today = dayjs();
@@ -28,22 +32,36 @@ export default function Dashboard() {
 
   const todaySessions = weekSchedule.find((d) => d.key === todayDayName)?.sessions || [];
 
-  // Server-synced state for today's sessions and nutrition
+  // Server-synced state for ALL week sessions (not just today's)
   // Starts with localStorage snapshot, then updates from server
   const [serverWorkoutLogs, setServerWorkoutLogs] = useState(() => {
     const init = {};
-    todaySessions.forEach((s) => { init[s] = getWorkoutLog(s); });
+    ALL_WEEK_SESSIONS.forEach((s) => { init[s] = getWorkoutLog(s); });
     return init;
   });
   const [serverNutrition, setServerNutrition] = useState(
     () => getNutritionLog(today.format('YYYY-MM-DD'))
   );
 
-  // On mount: fetch today's logs from the server so cross-device data is accurate
+  // On mount: fetch week status from server so cross-device data is accurate
   useEffect(() => {
     let cancelled = false;
 
-    // Fetch workout logs for each of today's sessions
+    // Batch fetch completion status for all sessions this week
+    API.get('/workouts/week-status')
+      .then(({ data }) => {
+        if (cancelled) return;
+        setServerWorkoutLogs((prev) => {
+          const updated = { ...prev };
+          for (const [sessionKey, status] of Object.entries(data)) {
+            updated[sessionKey] = { ...updated[sessionKey], ...status };
+          }
+          return updated;
+        });
+      })
+      .catch(() => {});
+
+    // Also fetch full logs for today's sessions (for detailed data like exerciseLogs)
     todaySessions.forEach((sessionKey) => {
       fetchWorkoutLog(sessionKey).then((log) => {
         if (cancelled) return;
@@ -257,6 +275,11 @@ export default function Dashboard() {
             </div>
           </div>
         </Link>
+
+        {/* ── Daily Challenges ──────────────────────── */}
+        <div className="mb-5">
+          <DailyChallenges />
+        </div>
 
         {/* ── Bulk Progress ──────────────────────────── */}
         <div className="card p-4 mb-5">

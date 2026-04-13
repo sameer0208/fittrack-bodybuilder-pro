@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Play, ChevronDown, ChevronUp, Info, CheckCircle2, Circle } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Play, ChevronDown, ChevronUp, Info, CheckCircle2, Circle, Timer, X } from 'lucide-react';
 import VideoModal from './VideoModal';
 
 const difficultyColors = {
@@ -61,12 +61,155 @@ function Stepper({ value, onChange, step = 1, min = 0, highlight = false }) {
   );
 }
 
+// ── Rest Timer ──────────────────────────────────────────────────────────────
+const REST_OPTIONS = [30, 60, 90, 120, 180];
+
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = ctx.currentTime;
+    const notes = [
+      { freq: 880,  start: 0,    end: 0.15 },
+      { freq: 1100, start: 0.25, end: 0.40 },
+      { freq: 880,  start: 0.55, end: 0.70 },
+      { freq: 1100, start: 0.85, end: 1.00 },
+      { freq: 1320, start: 1.15, end: 1.35 },
+      { freq: 880,  start: 1.55, end: 1.70 },
+      { freq: 1100, start: 1.85, end: 2.00 },
+      { freq: 1320, start: 2.15, end: 2.35 },
+      { freq: 1760, start: 2.50, end: 3.00 },
+    ];
+    for (const n of notes) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = n.freq;
+      gain.gain.setValueAtTime(0.25, now + n.start);
+      gain.gain.linearRampToValueAtTime(0, now + n.end);
+      osc.start(now + n.start);
+      osc.stop(now + n.end + 0.05);
+    }
+  } catch {}
+}
+
+function RestTimer({ defaultSeconds, onDismiss }) {
+  const [duration, setDuration] = useState(defaultSeconds || 90);
+  const [remaining, setRemaining] = useState(defaultSeconds || 90);
+  const [running, setRunning] = useState(true);
+  const [finished, setFinished] = useState(false);
+  const intervalRef = useRef(null);
+
+  useEffect(() => {
+    if (!running || finished) return;
+    intervalRef.current = setInterval(() => {
+      setRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(intervalRef.current);
+          setFinished(true);
+          setRunning(false);
+          playBeep();
+          try { navigator.vibrate?.([200, 100, 200, 100, 300]); } catch {}
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(intervalRef.current);
+  }, [running, finished]);
+
+  const pct = duration > 0 ? ((duration - remaining) / duration) * 100 : 100;
+  const mins = Math.floor(remaining / 60);
+  const secs = remaining % 60;
+
+  const changeDuration = useCallback((newDur) => {
+    setDuration(newDur);
+    setRemaining(newDur);
+    setRunning(true);
+    setFinished(false);
+  }, []);
+
+  const reset = () => { setRemaining(duration); setRunning(true); setFinished(false); };
+
+  return (
+    <div className={`rounded-xl border p-3 transition-all ${
+      finished
+        ? 'bg-emerald-950/40 border-emerald-500/50 animate-pulse'
+        : 'bg-indigo-950/30 border-indigo-500/30'
+    }`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Timer size={14} className={finished ? 'text-emerald-400' : 'text-indigo-400'} />
+          <span className={`text-xs font-bold uppercase tracking-wider ${finished ? 'text-emerald-400' : 'text-indigo-400'}`}>
+            {finished ? 'Rest Complete — Go!' : 'Rest Timer'}
+          </span>
+        </div>
+        <button onClick={onDismiss} className="text-slate-500 hover:text-white p-1 touch-manipulation">
+          <X size={14} />
+        </button>
+      </div>
+
+      <div className="flex items-center gap-3 mb-2">
+        <div className={`text-3xl font-black font-mono ${finished ? 'text-emerald-400' : 'text-white'}`}>
+          {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+        </div>
+        <div className="flex-1">
+          <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-1000 ${finished ? 'bg-emerald-500' : 'bg-indigo-500'}`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+        <button
+          onClick={() => { if (finished) reset(); else setRunning((r) => !r); }}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold touch-manipulation border ${
+            finished
+              ? 'bg-emerald-600 border-emerald-500 text-white active:bg-emerald-700'
+              : running
+              ? 'bg-amber-500/20 border-amber-500/30 text-amber-400'
+              : 'bg-indigo-600/20 border-indigo-500/30 text-indigo-400'
+          }`}
+        >
+          {finished ? 'Restart' : running ? 'Pause' : 'Resume'}
+        </button>
+      </div>
+
+      <div className="flex gap-1.5">
+        {REST_OPTIONS.map((sec) => (
+          <button
+            key={sec}
+            onClick={() => changeDuration(sec)}
+            className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all touch-manipulation ${
+              duration === sec
+                ? 'bg-indigo-600 text-white'
+                : 'bg-slate-700/60 text-slate-400 active:bg-slate-600'
+            }`}
+          >
+            {sec >= 60 ? `${sec / 60}m` : `${sec}s`}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── ExerciseCard ─────────────────────────────────────────────────────────────
 export default function ExerciseCard({ exercise, index, setLogs }) {
   const [showVideo,      setShowVideo]      = useState(false);
   const [expanded,       setExpanded]       = useState(false);
   const [activeSection,  setActiveSection]  = useState('log');
-  const [warnIdx,        setWarnIdx]        = useState(null); // set index that failed validation
+  const [warnIdx,        setWarnIdx]        = useState(null);
+  const [showRest,       setShowRest]       = useState(false);
+
+  const defaultRestSec = (() => {
+    const raw = exercise.rest || '';
+    const nums = raw.match(/\d+/g)?.map(Number) || [];
+    if (nums.length === 0) return 90;
+    const isMin = /min/i.test(raw);
+    const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
+    return Math.round(isMin ? avg * 60 : avg);
+  })();
 
   const [localSets, setLocalSets] = useState(
     Array.from({ length: exercise.sets }, (_, i) => ({
@@ -89,19 +232,25 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
   const toggleSetComplete = (idx) => {
     const set = localSets[idx];
 
-    // Block completion if reps is 0 or empty
     if (!set.completed && (parseInt(set.reps, 10) || 0) === 0) {
       setWarnIdx(idx);
       setTimeout(() => setWarnIdx(null), 2000);
       return;
     }
 
+    const nowCompleting = !set.completed;
     const updated = localSets.map((s, i) =>
       i === idx ? { ...s, completed: !s.completed } : s
     );
     setLocalSets(updated);
     setLogs?.(exercise.id, updated);
     if (warnIdx === idx) setWarnIdx(null);
+
+    // Auto-start rest timer when completing a set (not uncompleting), and not the last set
+    if (nowCompleting) {
+      const remaining = updated.filter((s) => !s.completed).length;
+      if (remaining > 0) setShowRest(true);
+    }
   };
 
   return (
@@ -346,6 +495,24 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
                     </div>
                   );
                 })}
+
+                {/* Rest Timer */}
+                {showRest && (
+                  <RestTimer
+                    defaultSeconds={defaultRestSec}
+                    onDismiss={() => setShowRest(false)}
+                  />
+                )}
+
+                {/* Manual rest timer trigger */}
+                {!showRest && completedCount > 0 && !allCompleted && (
+                  <button
+                    onClick={() => setShowRest(true)}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold active:bg-indigo-600/20 touch-manipulation"
+                  >
+                    <Timer size={13} /> Start Rest Timer
+                  </button>
+                )}
 
                 {/* Volume summary */}
                 {completedCount > 0 && (

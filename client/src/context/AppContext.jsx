@@ -140,10 +140,15 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Workout log management
+  // Workout log management — keyed by week start (Monday) so logs persist all week
   const getWorkoutKey = (sessionKey) => {
-    const today = new Date().toISOString().split('T')[0];
-    return `ft_workout_${today}_${sessionKey}`;
+    const now = new Date();
+    const day = now.getDay(); // 0=Sun .. 6=Sat
+    const diff = day === 0 ? -6 : 1 - day;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diff);
+    const weekStart = monday.toISOString().split('T')[0];
+    return `ft_workout_${weekStart}_${sessionKey}`;
   };
 
   const saveWorkoutLog = useCallback(async (sessionKey, logData) => {
