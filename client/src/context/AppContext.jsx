@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
+import { sendBrowserNotification } from '../utils/notifications';
 
 // In development: relative '/api' is proxied by Vite to localhost:5001
 // In production: VITE_API_URL is set to the deployed Render backend URL
@@ -278,6 +279,53 @@ export const AppProvider = ({ children }) => {
     return data;
   }, [token]);
 
+  // ─── Notifications ─────────────────────────────────────────────────────────
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('ft_notifications') || '[]');
+    } catch { return []; }
+  });
+
+  const persistNotifications = useCallback((list) => {
+    const trimmed = list.slice(0, 100);
+    localStorage.setItem('ft_notifications', JSON.stringify(trimmed));
+    setNotifications(trimmed);
+  }, []);
+
+  const addNotification = useCallback((type, message) => {
+    const entry = {
+      id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      type,
+      message,
+      timestamp: new Date().toISOString(),
+      read: false,
+    };
+    setNotifications((prev) => {
+      const next = [entry, ...prev].slice(0, 100);
+      localStorage.setItem('ft_notifications', JSON.stringify(next));
+      return next;
+    });
+    sendBrowserNotification('FitTrack Reminder', message);
+  }, []);
+
+  const markAllRead = useCallback(() => {
+    setNotifications((prev) => {
+      const next = prev.map((n) => ({ ...n, read: true }));
+      localStorage.setItem('ft_notifications', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const clearNotifications = useCallback(() => {
+    localStorage.setItem('ft_notifications', '[]');
+    setNotifications([]);
+  }, []);
+
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications],
+  );
+
   const value = {
     user, token, loading, backendOnline,
     register, login, logout, loginLocal,
@@ -286,6 +334,7 @@ export const AppProvider = ({ children }) => {
     saveWorkoutLog, getWorkoutLog, fetchWorkoutLog,
     getNutritionLog, fetchNutritionLog, saveNutritionLog,
     stats, fetchStats,
+    notifications, addNotification, markAllRead, clearNotifications, unreadCount,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

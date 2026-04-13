@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AppProvider, useApp } from './context/AppContext';
 import Navbar from './components/Navbar';
+import SmartAgent from './components/SmartAgent';
 import Onboarding from './pages/Onboarding';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -10,6 +11,7 @@ import Progress from './pages/Progress';
 import Profile from './pages/Profile';
 import Nutrition from './pages/Nutrition';
 import DietPlan from './pages/DietPlan';
+import useReminders from './hooks/useReminders';
 
 function AppRoutes() {
   const { user, loading } = useApp();
@@ -39,6 +41,8 @@ function AppRoutes() {
     );
   }
 
+  useReminders();
+
   return (
     <div className="flex min-h-screen w-full overflow-x-hidden">
       <Navbar />
@@ -54,6 +58,7 @@ function AppRoutes() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>
+      <SmartAgent />
     </div>
   );
 }

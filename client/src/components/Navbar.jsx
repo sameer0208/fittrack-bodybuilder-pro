@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, TrendingUp, User, LogOut, Zap, UtensilsCrossed, Salad } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import NotificationCenter from './NotificationCenter';
 
 const navItems = [
   { to: '/dashboard',  icon: LayoutDashboard,  label: 'Home' },
@@ -77,6 +78,11 @@ export default function Navbar() {
           </div>
         )}
 
+        {/* Notifications */}
+        <div className="mb-2">
+          <NotificationCenter variant="desktop" />
+        </div>
+
         {/* Logout */}
         <button
           onClick={handleLogout}
@@ -100,27 +106,18 @@ export default function Navbar() {
                   to={to}
                   className="relative flex flex-col items-center justify-center gap-1 flex-1 py-2 touch-manipulation"
                 >
-                  {/* Active top indicator pill */}
                   {active && (
                     <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-indigo-400 rounded-full" />
                   )}
-
-                  {/* Icon container */}
                   <div className={`relative flex items-center justify-center w-10 h-7 rounded-xl transition-all duration-200 ${
-                    active
-                      ? 'bg-indigo-600/25'
-                      : ''
+                    active ? 'bg-indigo-600/25' : ''
                   }`}>
                     <Icon
                       size={20}
                       strokeWidth={active ? 2.5 : 1.8}
-                      className={`transition-all duration-200 ${
-                        active ? 'text-indigo-400' : 'text-slate-500'
-                      }`}
+                      className={`transition-all duration-200 ${active ? 'text-indigo-400' : 'text-slate-500'}`}
                     />
                   </div>
-
-                  {/* Label */}
                   <span className={`text-[10px] font-semibold leading-none transition-all duration-200 ${
                     active ? 'text-indigo-400' : 'text-slate-500'
                   }`}>
@@ -129,6 +126,12 @@ export default function Navbar() {
                 </Link>
               );
             })}
+
+            {/* Notification Bell in mobile nav */}
+            <div className="relative flex flex-col items-center justify-center gap-1 flex-1 py-2">
+              <NotificationCenter variant="mobile" />
+              <span className="text-[10px] font-semibold leading-none text-slate-500">Alerts</span>
+            </div>
           </div>
         </div>
       </nav>

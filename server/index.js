@@ -32,10 +32,12 @@ app.use(express.json());
 const userRoutes = require('./routes/users');
 const workoutRoutes = require('./routes/workouts');
 const nutritionRoutes = require('./routes/nutrition');
+const agentRoutes = require('./routes/agent');
 
 app.use('/api/users', userRoutes);
 app.use('/api/workouts', workoutRoutes);
 app.use('/api/nutrition', nutritionRoutes);
+app.use('/api/agent', agentRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'FitTrack API is running' });
