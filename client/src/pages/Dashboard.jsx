@@ -198,9 +198,12 @@ export default function Dashboard() {
                             <span className="text-xs text-slate-500">{plan.exercises.length} exercises</span>
                           </div>
                         </div>
-                        <div className={`shrink-0 transition-colors ${done ? 'text-emerald-400' : 'text-slate-600 group-active:text-white'}`}>
+                        <div className="shrink-0">
                           {done ? (
-                            <CheckCircle2 size={26} />
+                            <div className="flex flex-col items-center gap-1 px-2 py-1.5 bg-emerald-500/15 border border-emerald-500/30 rounded-xl">
+                              <CheckCircle2 size={22} className="text-emerald-400" />
+                              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wide">Done</span>
+                            </div>
                           ) : (
                             <div className="w-9 h-9 bg-indigo-600/20 rounded-xl flex items-center justify-center border border-indigo-500/30">
                               <ChevronRight size={18} className="text-indigo-400" />
