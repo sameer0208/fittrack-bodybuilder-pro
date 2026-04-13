@@ -87,9 +87,13 @@ export default function Profile() {
       setPushEnabled(false);
       toast.success('Push notifications disabled');
     } else {
-      const ok = await subscribeToPush();
-      if (ok) { setPushEnabled(true); toast.success('Push notifications enabled!'); }
-      else toast.error('Could not enable push notifications');
+      try {
+        await subscribeToPush();
+        setPushEnabled(true);
+        toast.success('Push notifications enabled!');
+      } catch (err) {
+        toast.error(err.message || 'Could not enable push notifications', { duration: 5000 });
+      }
     }
   };
 

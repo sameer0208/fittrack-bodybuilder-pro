@@ -15,26 +15,25 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 export async function subscribeToPush() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+  if (!('serviceWorker' in navigator)) throw new Error('Service Workers not supported by this browser');
+  if (!('PushManager' in window)) throw new Error('Push notifications not supported by this browser');
 
-  try {
-    const reg = await navigator.serviceWorker.register('/sw.js');
-    await navigator.serviceWorker.ready;
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') throw new Error('Notification permission denied');
 
-    const { data } = await API.get('/push/vapid-key');
-    if (!data.key) return false;
+  const reg = await navigator.serviceWorker.register('/sw.js');
+  await navigator.serviceWorker.ready;
 
-    const subscription = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(data.key),
-    });
+  const { data } = await API.get('/push/vapid-key');
+  if (!data.key) throw new Error('VAPID key not configured on the server. Add VAPID_PUBLIC_KEY env var on Render.');
 
-    await API.post('/push/subscribe', subscription.toJSON());
-    return true;
-  } catch (err) {
-    console.warn('[Push] Subscribe failed:', err.message);
-    return false;
-  }
+  const subscription = await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(data.key),
+  });
+
+  await API.post('/push/subscribe', subscription.toJSON());
+  return true;
 }
 
 export async function unsubscribeFromPush() {
