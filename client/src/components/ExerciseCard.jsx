@@ -4,46 +4,56 @@ import VideoModal from './VideoModal';
 
 const difficultyColors = {
   beginner:     'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-  intermediate: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-  advanced:     'bg-red-500/20 text-red-400 border-red-500/30',
+  intermediate: 'bg-amber-500/20  text-amber-400  border-amber-500/30',
+  advanced:     'bg-red-500/20    text-red-400    border-red-500/30',
 };
 
 const categoryColors = {
   compound:  'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  isolation: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  mobility:  'bg-teal-500/20 text-teal-400 border-teal-500/30',
+  isolation: 'bg-blue-500/20   text-blue-400   border-blue-500/30',
+  mobility:  'bg-teal-500/20   text-teal-400   border-teal-500/30',
   cardio:    'bg-orange-500/20 text-orange-400 border-orange-500/30',
 };
 
-// Stepper component for weight/reps on mobile
-function Stepper({ value, onChange, step = 1, min = 0, suffix = '', placeholder = '0' }) {
+// ── Stepper ─────────────────────────────────────────────────────────────────
+// Clean +/− stepper without an inline suffix label — the parent adds the label
+// above the stepper instead so there's maximum room for the value display.
+function Stepper({ value, onChange, step = 1, min = 0, highlight = false }) {
   const numVal = parseFloat(value) || 0;
   return (
     <div className="flex items-center gap-1.5">
+      {/* Minus */}
       <button
-        onPointerDown={(e) => { e.preventDefault(); onChange(String(Math.max(min, numVal - step))); }}
-        className="w-8 h-9 bg-slate-700/80 rounded-lg text-slate-300 active:bg-slate-600 active:text-white flex items-center justify-center text-lg font-bold touch-manipulation shrink-0 select-none"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          onChange(String(Math.max(min, numVal - step)));
+        }}
+        className="w-10 h-11 bg-slate-700 border border-slate-600/60 rounded-xl text-slate-200 active:bg-indigo-600 active:border-indigo-500 active:text-white flex items-center justify-center text-xl font-bold touch-manipulation shrink-0 select-none transition-colors"
       >
         −
       </button>
-      <div className="relative flex-1">
-        <input
-          type="number"
-          inputMode="decimal"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="w-full bg-slate-800 border border-slate-600/60 rounded-lg h-9 text-white text-center text-sm font-bold focus:outline-none focus:border-indigo-500 transition-colors pr-5"
-        />
-        {suffix && (
-          <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 pointer-events-none font-medium">
-            {suffix}
-          </span>
-        )}
-      </div>
+
+      {/* Value input */}
+      <input
+        type="number"
+        inputMode="decimal"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="0"
+        className={`flex-1 min-w-0 h-11 rounded-xl text-center text-base font-bold text-white focus:outline-none transition-colors bg-slate-800 border ${
+          highlight
+            ? 'border-amber-400/60 focus:border-amber-400'
+            : 'border-slate-600/60 focus:border-indigo-500'
+        }`}
+      />
+
+      {/* Plus */}
       <button
-        onPointerDown={(e) => { e.preventDefault(); onChange(String(numVal + step)); }}
-        className="w-8 h-9 bg-slate-700/80 rounded-lg text-slate-300 active:bg-slate-600 active:text-white flex items-center justify-center text-lg font-bold touch-manipulation shrink-0 select-none"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          onChange(String(numVal + step));
+        }}
+        className="w-10 h-11 bg-slate-700 border border-slate-600/60 rounded-xl text-slate-200 active:bg-indigo-600 active:border-indigo-500 active:text-white flex items-center justify-center text-xl font-bold touch-manipulation shrink-0 select-none transition-colors"
       >
         +
       </button>
@@ -51,10 +61,13 @@ function Stepper({ value, onChange, step = 1, min = 0, suffix = '', placeholder 
   );
 }
 
+// ── ExerciseCard ─────────────────────────────────────────────────────────────
 export default function ExerciseCard({ exercise, index, setLogs }) {
-  const [showVideo, setShowVideo] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const [activeSection, setActiveSection] = useState('log'); // 'log' | 'instructions'
+  const [showVideo,      setShowVideo]      = useState(false);
+  const [expanded,       setExpanded]       = useState(false);
+  const [activeSection,  setActiveSection]  = useState('log');
+  const [warnIdx,        setWarnIdx]        = useState(null); // set index that failed validation
+
   const [localSets, setLocalSets] = useState(
     Array.from({ length: exercise.sets }, (_, i) => ({
       setNumber: i + 1,
@@ -64,44 +77,60 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
     }))
   );
 
-  const allCompleted = localSets.every((s) => s.completed);
+  const allCompleted   = localSets.every((s) => s.completed);
   const completedCount = localSets.filter((s) => s.completed).length;
 
   const updateSet = (idx, field, value) => {
-    const updated = localSets.map((s, i) =>
-      i === idx ? { ...s, [field]: value } : s
-    );
+    const updated = localSets.map((s, i) => (i === idx ? { ...s, [field]: value } : s));
     setLocalSets(updated);
-    if (setLogs) setLogs(exercise.id, updated);
+    setLogs?.(exercise.id, updated);
   };
 
   const toggleSetComplete = (idx) => {
+    const set = localSets[idx];
+
+    // Block completion if reps is 0 or empty
+    if (!set.completed && (parseInt(set.reps, 10) || 0) === 0) {
+      setWarnIdx(idx);
+      setTimeout(() => setWarnIdx(null), 2000);
+      return;
+    }
+
     const updated = localSets.map((s, i) =>
       i === idx ? { ...s, completed: !s.completed } : s
     );
     setLocalSets(updated);
-    if (setLogs) setLogs(exercise.id, updated);
+    setLogs?.(exercise.id, updated);
+    if (warnIdx === idx) setWarnIdx(null);
   };
 
   return (
     <>
-      <div className={`card overflow-hidden transition-all duration-300 ${
-        allCompleted ? 'border-emerald-500/50 bg-emerald-950/20' : ''
-      }`}>
-        {/* ── Card Header ───────────────────────────── */}
+      <div
+        className={`card overflow-hidden transition-all duration-300 ${
+          allCompleted ? 'border-emerald-500/50 bg-emerald-950/20' : ''
+        }`}
+      >
+        {/* ── Card Header ───────────────────────────────────── */}
         <div className="flex gap-3 p-4">
-          {/* Exercise Number */}
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 mt-0.5 ${
-            allCompleted ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-300'
-          }`}>
+          {/* Exercise number badge */}
+          <div
+            className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 mt-0.5 ${
+              allCompleted ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-300'
+            }`}
+          >
             {allCompleted ? <CheckCircle2 size={16} /> : index + 1}
           </div>
 
-          {/* Exercise Info */}
+          {/* Name + badges + image */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <h3 className={`font-bold text-base leading-tight ${allCompleted ? 'text-emerald-400' : 'text-white'}`}>
+                <h3
+                  className={`font-bold text-base leading-tight ${
+                    allCompleted ? 'text-emerald-400' : 'text-white'
+                  }`}
+                >
                   {exercise.name}
                 </h3>
                 <div className="flex flex-wrap gap-1 mt-1.5">
@@ -117,7 +146,7 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
                 </div>
               </div>
 
-              {/* Thumb Image */}
+              {/* Thumbnail */}
               <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-slate-700 border border-slate-600/50">
                 <img
                   src={exercise.image}
@@ -141,12 +170,10 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
               <span className="text-slate-400 text-xs">Rest {exercise.rest}</span>
             </div>
 
-            {/* Progress */}
+            {/* Progress bar */}
             <div className="mt-2">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] text-slate-500">{completedCount}/{exercise.sets} sets</span>
-              </div>
-              <div className="progress-bar h-1.5">
+              <span className="text-[10px] text-slate-500">{completedCount}/{exercise.sets} sets done</span>
+              <div className="progress-bar h-1.5 mt-1">
                 <div
                   className="progress-fill bg-gradient-to-r from-indigo-500 to-emerald-500"
                   style={{ width: `${(completedCount / exercise.sets) * 100}%` }}
@@ -156,7 +183,7 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
           </div>
         </div>
 
-        {/* ── Action Buttons ───────────────────────── */}
+        {/* ── Action Buttons ─────────────────────────────────── */}
         <div className="px-4 pb-3 flex items-center gap-2">
           <button
             onClick={() => setShowVideo(true)}
@@ -173,18 +200,26 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
             Form
           </button>
           <button
-            onClick={() => { setExpanded(!expanded || activeSection !== 'log'); setActiveSection('log'); }}
+            onClick={() => {
+              setExpanded(!expanded || activeSection !== 'log');
+              setActiveSection('log');
+            }}
             className="flex items-center gap-1.5 px-3 py-2.5 bg-indigo-600/20 active:bg-indigo-600/40 text-indigo-400 rounded-xl text-xs font-semibold transition-colors border border-indigo-500/30 ml-auto min-h-[40px] touch-manipulation"
           >
             Log Sets
-            {expanded && activeSection === 'log' ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            {expanded && activeSection === 'log' ? (
+              <ChevronUp size={12} />
+            ) : (
+              <ChevronDown size={12} />
+            )}
           </button>
         </div>
 
-        {/* ── Expanded Section ─────────────────────── */}
+        {/* ── Expanded Section ───────────────────────────────── */}
         {expanded && (
           <div className="border-t border-slate-700/50 animate-fade-in">
-            {/* Instructions */}
+
+            {/* Instructions tab */}
             {activeSection === 'instructions' && (
               <div className="p-4 bg-slate-900/40">
                 <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -215,84 +250,116 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
               </div>
             )}
 
-            {/* Set Logging — mobile-optimised stepper UI */}
+            {/* Set logging tab */}
             {activeSection === 'log' && (
-              <div className="p-4">
-                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+              <div className="p-4 space-y-3">
+                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                   Log Your Sets
                 </h4>
 
-                {/* Column headers */}
-                <div className="flex items-center gap-2 mb-2 px-0.5">
-                  <div className="w-14 shrink-0" />
-                  <div className="flex-1 text-center text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Weight</div>
-                  <div className="w-5 shrink-0" />
-                  <div className="flex-1 text-center text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Reps</div>
-                  <div className="w-11 shrink-0" />
-                </div>
+                {localSets.map((set, idx) => {
+                  const hasReps     = (parseInt(set.reps, 10) || 0) > 0;
+                  const isWarn      = warnIdx === idx;
+                  const canComplete = set.completed || hasReps;
 
-                <div className="space-y-2.5">
-                  {localSets.map((set, idx) => (
+                  return (
                     <div
                       key={idx}
-                      className={`flex items-center gap-2 p-2.5 rounded-xl border transition-all duration-200 ${
+                      className={`rounded-2xl border overflow-hidden transition-all duration-200 ${
                         set.completed
-                          ? 'bg-emerald-950/40 border-emerald-500/40'
-                          : 'bg-slate-700/25 border-slate-600/30'
+                          ? 'border-emerald-500/50 bg-emerald-950/30'
+                          : isWarn
+                          ? 'border-amber-400/50 bg-amber-950/20'
+                          : 'border-slate-600/40 bg-slate-700/20'
                       }`}
                     >
-                      {/* Set label */}
-                      <span className={`text-xs font-bold w-12 shrink-0 ${set.completed ? 'text-emerald-400' : 'text-slate-500'}`}>
-                        Set {idx + 1}
-                      </span>
-
-                      {/* Weight stepper */}
-                      <div className="flex-1">
-                        <Stepper
-                          value={set.weight}
-                          onChange={(v) => updateSet(idx, 'weight', v)}
-                          step={2.5}
-                          min={0}
-                          suffix="kg"
-                        />
-                      </div>
-
-                      <span className="text-slate-600 text-sm font-bold shrink-0">×</span>
-
-                      {/* Reps stepper */}
-                      <div className="flex-1">
-                        <Stepper
-                          value={set.reps}
-                          onChange={(v) => updateSet(idx, 'reps', v)}
-                          step={1}
-                          min={0}
-                          suffix="rp"
-                        />
-                      </div>
-
-                      {/* Complete button */}
-                      <button
-                        onPointerDown={(e) => { e.preventDefault(); toggleSetComplete(idx); }}
-                        className={`w-11 h-9 rounded-xl flex items-center justify-center transition-all duration-200 touch-manipulation shrink-0 border ${
-                          set.completed
-                            ? 'bg-emerald-600 border-emerald-500 text-white'
-                            : 'bg-slate-700 border-slate-600 text-slate-400 active:bg-slate-600'
+                      {/* ── Set header row ── */}
+                      <div
+                        className={`flex items-center justify-between px-4 py-2.5 ${
+                          set.completed ? 'bg-emerald-900/30' : 'bg-slate-700/30'
                         }`}
                       >
-                        {set.completed ? <CheckCircle2 size={16} /> : <Circle size={16} />}
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                        <span
+                          className={`text-sm font-bold ${
+                            set.completed ? 'text-emerald-300' : 'text-slate-300'
+                          }`}
+                        >
+                          Set {idx + 1}
+                          {set.completed && set.weight && set.reps && (
+                            <span className="ml-2 text-[11px] font-normal text-emerald-500">
+                              {set.weight} kg × {set.reps} reps
+                            </span>
+                          )}
+                        </span>
 
+                        {/* Mark Done / Done button */}
+                        <button
+                          onPointerDown={(e) => { e.preventDefault(); toggleSetComplete(idx); }}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all touch-manipulation border ${
+                            set.completed
+                              ? 'bg-emerald-600 border-emerald-500 text-white active:bg-emerald-700'
+                              : canComplete
+                              ? 'bg-slate-700 border-slate-500 text-slate-200 active:bg-emerald-700 active:border-emerald-500 active:text-white'
+                              : 'bg-slate-800/60 border-slate-700 text-slate-600 cursor-not-allowed'
+                          }`}
+                        >
+                          {set.completed ? (
+                            <><CheckCircle2 size={12} /> Done</>
+                          ) : (
+                            <><Circle size={12} /> Mark Done</>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* ── Weight + Reps inputs ── */}
+                      <div className="grid grid-cols-2 gap-3 px-4 py-3">
+                        {/* Weight */}
+                        <div>
+                          <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-1.5">
+                            Weight (kg)
+                          </div>
+                          <Stepper
+                            value={set.weight}
+                            onChange={(v) => updateSet(idx, 'weight', v)}
+                            step={2.5}
+                            min={0}
+                          />
+                        </div>
+
+                        {/* Reps */}
+                        <div>
+                          <div className={`text-[10px] font-semibold uppercase tracking-wider mb-1.5 ${isWarn ? 'text-amber-400' : 'text-slate-500'}`}>
+                            Reps {isWarn && '⚠ required'}
+                          </div>
+                          <Stepper
+                            value={set.reps}
+                            onChange={(v) => {
+                              updateSet(idx, 'reps', v);
+                              if (warnIdx === idx) setWarnIdx(null);
+                            }}
+                            step={1}
+                            min={0}
+                            highlight={isWarn}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Volume summary */}
                 {completedCount > 0 && (
-                  <div className="mt-3 p-2.5 bg-slate-700/20 rounded-xl flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Total volume this exercise</span>
+                  <div className="p-3 bg-slate-700/20 rounded-xl flex items-center justify-between text-xs border border-slate-600/30">
+                    <span className="text-slate-400">Volume this exercise</span>
                     <span className="font-bold text-indigo-400">
-                      {localSets.reduce((sum, s) => {
-                        if (s.completed && s.weight && s.reps) return sum + parseFloat(s.weight) * parseInt(s.reps);
-                        return sum;
-                      }, 0).toFixed(0)} kg
+                      {localSets
+                        .reduce((sum, s) => {
+                          if (s.completed && s.weight && s.reps)
+                            return sum + parseFloat(s.weight) * parseInt(s.reps, 10);
+                          return sum;
+                        }, 0)
+                        .toFixed(0)}{' '}
+                      kg
                     </span>
                   </div>
                 )}
