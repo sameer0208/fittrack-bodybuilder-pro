@@ -41,6 +41,8 @@ INSTRUCTIONS:
 - Be motivational and supportive. This user is on a bulking program.`;
 }
 
+const GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-flash'];
+
 async function callGemini(systemPrompt, recentMessages, userMessage) {
   const { GoogleGenerativeAI } = require('@google/generative-ai');
 
@@ -50,20 +52,33 @@ async function callGemini(systemPrompt, recentMessages, userMessage) {
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
   const history = recentMessages.map((m) => ({
     role: m.role === 'agent' ? 'model' : 'user',
     parts: [{ text: m.content }],
   }));
 
-  const chat = model.startChat({
-    history,
-    systemInstruction: { parts: [{ text: systemPrompt }] },
-  });
-
-  const result = await chat.sendMessage(userMessage);
-  return result.response.text();
+  let lastError;
+  for (const modelName of GEMINI_MODELS) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const chat = model.startChat({
+        history,
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+      });
+      const result = await chat.sendMessage(userMessage);
+      return result.response.text();
+    } catch (err) {
+      lastError = err;
+      const is429 = err.message?.includes('429') || err.message?.includes('quota');
+      if (is429) {
+        console.warn(`Model ${modelName} quota exceeded, trying next...`);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastError;
 }
 
 // POST /api/agent/chat — send a message, get AI reply

@@ -61,7 +61,7 @@ router.post('/save', auth, async (req, res) => {
     const log = await NutritionLog.findOneAndUpdate(
       { userId: req.user.id, date },
       { $set: update },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
     res.json({ ...log.toObject(), totals: log.totals });
   } catch (err) {
