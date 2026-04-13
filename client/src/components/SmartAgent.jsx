@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Send, Trash2, Loader2, Bot, UserCircle } from 'lucide-react';
 import axios from 'axios';
 import dayjs from 'dayjs';
@@ -123,13 +124,13 @@ export default function SmartAgent() {
     });
   }
 
-  return (
+  return createPortal(
     <>
       {/* ── Floating Action Button ──────────────────────── */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-[88px] right-3 lg:bottom-6 lg:right-6 z-50 flex items-center gap-2.5 pl-3.5 pr-4 py-2.5 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 text-white shadow-xl shadow-purple-500/40 hover:shadow-purple-500/60 hover:scale-105 active:scale-95 transition-all duration-200 touch-manipulation"
+          className="fixed bottom-[88px] right-3 lg:bottom-6 lg:right-6 z-[9999] flex items-center gap-2.5 pl-3.5 pr-4 py-2.5 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 text-white shadow-xl shadow-purple-500/40 hover:shadow-purple-500/60 hover:scale-105 active:scale-95 transition-all duration-200 touch-manipulation"
           aria-label="Open SamAI Assistant"
         >
           <div className="w-9 h-9 bg-white/20 backdrop-blur rounded-full flex items-center justify-center border border-white/30">
@@ -145,7 +146,7 @@ export default function SmartAgent() {
 
       {/* ── Chat Panel ──────────────────────────────────── */}
       {open && (
-        <div className="fixed inset-0 z-[90] flex items-end justify-end lg:items-end lg:justify-end">
+        <div className="fixed inset-0 z-[9999] flex items-end justify-end lg:items-end lg:justify-end">
           {/* Backdrop on mobile */}
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm lg:hidden" onClick={() => setOpen(false)} />
 
@@ -295,6 +296,7 @@ export default function SmartAgent() {
           </div>
         </div>
       )}
-    </>
+    </>,
+    document.body
   );
 }

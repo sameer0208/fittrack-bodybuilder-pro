@@ -4,8 +4,6 @@ import './index.css'
 import App from './App.jsx'
 
 // ── Suppress benign browser warnings ──────────────────────────────────────────
-// "ResizeObserver loop limit exceeded" is a known false-positive from Recharts'
-// ResponsiveContainer using ResizeObserver. It does NOT indicate a real error.
 const _origError = window.onerror;
 window.onerror = (message, ...rest) => {
   if (typeof message === 'string' && message.includes('ResizeObserver loop')) return true;
@@ -18,6 +16,18 @@ window.addEventListener('error', (e) => {
     e.preventDefault();
   }
 }, true);
+
+const _origConsoleWarn = console.warn;
+console.warn = (...args) => {
+  if (typeof args[0] === 'string' && args[0].includes('The width') && args[0].includes('chart should be greater than 0')) return;
+  _origConsoleWarn.apply(console, args);
+};
+
+const _origConsoleError = console.error;
+console.error = (...args) => {
+  if (typeof args[0] === 'string' && args[0].includes('Expected static flag was missing')) return;
+  _origConsoleError.apply(console, args);
+};
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

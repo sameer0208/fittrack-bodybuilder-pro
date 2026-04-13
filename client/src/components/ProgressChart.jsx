@@ -36,7 +36,6 @@ export function WeightChart({ weightHistory, targetWeight }) {
   const maxWeight = Math.max(...data.map((d) => d.weight), targetWeight || 0) + 2;
 
   return (
-    <div style={{ width: '100%', minWidth: 0, minHeight: 220 }}>
     <ResponsiveContainer width="100%" height={220}>
       <AreaChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
         <defs>
@@ -80,7 +79,6 @@ export function WeightChart({ weightHistory, targetWeight }) {
         />
       </AreaChart>
     </ResponsiveContainer>
-    </div>
   );
 }
 
@@ -94,7 +92,6 @@ export function VolumeChart({ weeklyData }) {
   }
 
   return (
-    <div style={{ width: '100%', minWidth: 0, minHeight: 200 }}>
     <ResponsiveContainer width="100%" height={200}>
       <AreaChart data={weeklyData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
         <defs>
@@ -119,6 +116,5 @@ export function VolumeChart({ weeklyData }) {
         />
       </AreaChart>
     </ResponsiveContainer>
-    </div>
   );
 }
