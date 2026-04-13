@@ -20,7 +20,36 @@ const auth = (req, res, next) => {
 // Save / update workout log
 router.post('/log', auth, async (req, res) => {
   try {
-    const { workoutDay, workoutName, exercises, duration, notes, completed, bodyWeight, mood } = req.body;
+    // Destructure only the fields the schema accepts — ignore extra client fields
+    // (e.g. exerciseLogs, savedAt, sessionKey) that can confuse Mongoose casting
+    const {
+      workoutDay,
+      workoutName,
+      exercises,
+      duration,
+      notes,
+      completed,
+      bodyWeight,
+      mood,
+    } = req.body;
+
+    // Sanitise each set so types always match the schema (strings → numbers)
+    const sanitisedExercises = Array.isArray(exercises)
+      ? exercises.map((ex, ei) => ({
+          exerciseId: String(ex.exerciseId || `exercise_${ei}`),
+          exerciseName: String(ex.exerciseName || ex.exerciseId || 'Unknown'),
+          completed: Boolean(ex.completed),
+          notes: ex.notes || '',
+          sets: Array.isArray(ex.sets)
+            ? ex.sets.map((s, si) => ({
+                setNumber: parseInt(s.setNumber, 10) || si + 1,
+                weight: parseFloat(s.weight) || 0,
+                reps: parseInt(s.reps, 10) || 0,
+                completed: Boolean(s.completed),
+              }))
+            : [],
+        }))
+      : [];
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -34,40 +63,48 @@ router.post('/log', auth, async (req, res) => {
     });
 
     if (log) {
-      log.exercises = exercises;
-      log.duration = duration;
-      log.notes = notes;
-      log.completed = completed;
-      log.bodyWeight = bodyWeight;
-      log.mood = mood;
+      log.exercises  = sanitisedExercises;
+      log.duration   = duration   != null ? Number(duration)   : log.duration;
+      log.notes      = notes      != null ? String(notes)      : log.notes;
+      log.completed  = completed  != null ? Boolean(completed) : log.completed;
+      log.bodyWeight = bodyWeight != null ? Number(bodyWeight) : log.bodyWeight;
+      log.mood       = mood       || log.mood;
     } else {
       log = new WorkoutLog({
-        userId: req.user.id,
-        workoutDay, workoutName, exercises,
-        duration, notes, completed, bodyWeight, mood,
+        userId:    req.user.id,
+        workoutDay,
+        workoutName: workoutName || '',
+        exercises:   sanitisedExercises,
+        duration:    duration   != null ? Number(duration)   : undefined,
+        notes:       notes      != null ? String(notes)      : '',
+        completed:   Boolean(completed),
+        bodyWeight:  bodyWeight != null ? Number(bodyWeight) : undefined,
+        mood:        mood       || 'good',
       });
     }
 
     await log.save();
 
+    // Update streak & total workouts when workout is marked complete
     if (completed) {
       const user = await User.findById(req.user.id);
-      user.totalWorkouts += 1;
-
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      if (user.lastWorkoutDate >= yesterday) {
-        user.streak += 1;
-      } else {
-        user.streak = 1;
+      if (user) {
+        user.totalWorkouts = (user.totalWorkouts || 0) + 1;
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        user.streak = user.lastWorkoutDate >= yesterday
+          ? (user.streak || 0) + 1
+          : 1;
+        user.lastWorkoutDate = new Date();
+        await user.save();
       }
-      user.lastWorkoutDate = new Date();
-      await user.save();
     }
 
     res.json(log);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    // Log full error on the server so it appears in Render logs
+    console.error('[POST /workouts/log] Error:', err);
+    res.status(500).json({ message: err.message, stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined });
   }
 });
 

@@ -147,15 +147,18 @@ export const AppProvider = ({ children }) => {
 
   const saveWorkoutLog = useCallback(async (sessionKey, logData) => {
     const key = getWorkoutKey(sessionKey);
+    // `exerciseLogs` is a UI-only map used to restore set inputs on reload.
+    // It must NOT be sent to the server — strip it before the API call.
+    const { exerciseLogs: uiLogs, ...serverData } = logData;
     const data = { ...logData, sessionKey, savedAt: new Date().toISOString() };
 
     if (token) {
       // Cloud-first: save to MongoDB and throw on failure so the caller can handle it
       const res = await API.post('/workouts/log', {
         workoutDay: sessionKey,
-        ...logData,
+        ...serverData,  // clean payload — no exerciseLogs
       });
-      // Cache the server response in localStorage for instant offline reads
+      // Cache full data (including exerciseLogs for UI restore) in localStorage
       localStorage.setItem(key, JSON.stringify({ ...data, _id: res.data._id }));
       setWorkoutLogs((prev) => ({ ...prev, [sessionKey]: data }));
       return res.data;

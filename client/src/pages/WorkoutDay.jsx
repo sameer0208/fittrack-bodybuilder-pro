@@ -111,7 +111,6 @@ export default function WorkoutDay() {
       await saveWorkoutLog(sessionKey, {
         workoutName: plan?.name,
         exercises: buildExercises(),
-        exerciseLogs,
         duration: Math.floor(elapsed / 60),
         totalVolume,
         completed: true,
@@ -140,7 +139,6 @@ export default function WorkoutDay() {
       await saveWorkoutLog(sessionKey, {
         workoutName: plan?.name,
         exercises: buildExercises(),
-        exerciseLogs,
         duration: Math.floor(elapsed / 60),
         totalVolume,
         completed: false,

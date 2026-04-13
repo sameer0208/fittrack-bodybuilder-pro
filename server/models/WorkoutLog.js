@@ -37,17 +37,22 @@ const workoutLogSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-workoutLogSchema.pre('save', function (next) {
+// Use async pre-save (no `next` callback) — Mongoose 9 compatible.
+// Mongoose 9 / Kareem changed how it detects callback vs async hooks;
+// calling next() when it isn't passed causes "next is not a function".
+workoutLogSchema.pre('save', async function () {
   let volume = 0;
-  this.exercises.forEach((ex) => {
-    ex.sets.forEach((set) => {
-      if (set.completed) {
-        volume += (set.weight || 0) * set.reps;
-      }
+  if (Array.isArray(this.exercises)) {
+    this.exercises.forEach((ex) => {
+      if (!Array.isArray(ex.sets)) return;
+      ex.sets.forEach((set) => {
+        if (set.completed) {
+          volume += (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0);
+        }
+      });
     });
-  });
+  }
   this.totalVolume = volume;
-  next();
 });
 
 module.exports = mongoose.model('WorkoutLog', workoutLogSchema);
