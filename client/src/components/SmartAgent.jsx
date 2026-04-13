@@ -29,6 +29,7 @@ export default function SmartAgent() {
   const [loading, setLoading] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [error, setError] = useState(null);
+  const [retryMsg, setRetryMsg] = useState(null);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   const token = localStorage.getItem('ft_token');
@@ -84,9 +85,24 @@ export default function SmartAgent() {
         content: data.reply,
         timestamp: data.timestamp,
       }]);
+      if (data.cached) console.log('[SamAI] Served from cache');
     } catch (err) {
-      const errMsg = err.response?.data?.message || 'Could not reach the AI agent. Please try again.';
-      setError(errMsg);
+      const status = err.response?.status;
+      const errData = err.response?.data;
+
+      if (status === 429) {
+        setError(errData?.message || 'Daily AI quota reached. Try again tomorrow.');
+      } else if (status === 503 && errData?.retryAfterSec) {
+        setRetryMsg(msg);
+        setError(`AI is busy — auto-retrying in ${errData.retryAfterSec}s...`);
+        setTimeout(() => {
+          setError(null);
+          setRetryMsg(null);
+          sendMessage(msg);
+        }, errData.retryAfterSec * 1000);
+      } else {
+        setError(errData?.message || 'Could not reach SamAI. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -238,8 +254,22 @@ export default function SmartAgent() {
               )}
 
               {error && (
-                <div className="mx-auto max-w-[80%] text-center text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
-                  {error}
+                <div className="mx-auto max-w-[85%] text-center text-xs bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 space-y-2">
+                  <p className="text-red-400">{error}</p>
+                  {!retryMsg && (
+                    <button
+                      onClick={() => { setError(null); if (messages.length) sendMessage(messages[messages.length - 1]?.role === 'user' ? messages[messages.length - 1].content : ''); }}
+                      className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg text-xs font-medium transition-colors"
+                    >
+                      Retry
+                    </button>
+                  )}
+                  {retryMsg && (
+                    <div className="flex items-center justify-center gap-1.5 text-amber-400">
+                      <Loader2 size={12} className="animate-spin" />
+                      <span>Auto-retrying...</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

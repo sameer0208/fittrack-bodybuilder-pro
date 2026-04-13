@@ -6,6 +6,7 @@ const ChatMessage = require('../models/ChatMessage');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fittrack_secret_2024';
 
+// ── Auth middleware ─────────────────────────────────────────────────────────
 const authMiddleware = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ message: 'No token provided' });
@@ -17,31 +18,61 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-function buildSystemPrompt(user) {
-  return `You are SamAI — a professional fitness, nutrition, and health assistant built into the FitTrack Bodybuilder Pro app (developed by Sameer Application Production).
+// ── In-memory response cache (TTL: 1 hour, max 200 entries) ────────────────
+const responseCache = new Map();
+const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_MAX = 200;
 
-USER PROFILE:
-- Name: ${user.name || 'Athlete'}
-- Current Weight: ${user.currentWeight || '—'}kg, Height: ${user.height || '—'}cm
-- Target Weight: ${user.targetWeight || '—'}kg
-- BMI: ${user.bmi || '—'}
-- Daily Calorie Goal: ${user.dailyCalories || 2500} kcal (bulk surplus)
-- Protein Target: ${user.proteinTarget || 150}g/day (2.2g per kg bodyweight)
-- Fitness Level: ${user.fitnessLevel || 'intermediate'}
-- Program: 7-day PPL bodybuilding split (Push/Pull/Legs, twice per week, with weekend full-body and mobility sessions)
-
-INSTRUCTIONS:
-- Answer concisely with practical, actionable advice.
-- Use bullet points for lists and keep paragraphs short.
-- When asked about exercises, include sets, reps, and rest periods.
-- When asked about nutrition, reference the user's calorie and protein targets.
-- For supplement questions, recommend only evidence-based options.
-- If the user asks about injuries or medical conditions, advise them to consult a doctor while providing general guidance.
-- If the question is completely outside health/fitness/nutrition, politely redirect: "I'm your fitness assistant — I can help with workouts, nutrition, supplements, and health questions!"
-- Be motivational and supportive. This user is on a bulking program.`;
+function getCacheKey(userId, message) {
+  return `${userId}:${message.toLowerCase().trim().replace(/\s+/g, ' ')}`;
 }
 
-const GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-flash'];
+function getCached(key) {
+  const entry = responseCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > CACHE_TTL) {
+    responseCache.delete(key);
+    return null;
+  }
+  return entry.reply;
+}
+
+function setCache(key, reply) {
+  if (responseCache.size >= CACHE_MAX) {
+    const oldest = responseCache.keys().next().value;
+    responseCache.delete(oldest);
+  }
+  responseCache.set(key, { reply, ts: Date.now() });
+}
+
+// ── System prompt (compact to save tokens) ─────────────────────────────────
+function buildSystemPrompt(user) {
+  return `You are SamAI — fitness, nutrition & health AI assistant in FitTrack Bodybuilder Pro (by Sameer Application Production). Be concise, motivational, actionable.
+
+USER: ${user.name || 'Athlete'} | ${user.currentWeight || '?'}kg → ${user.targetWeight || '?'}kg | BMI ${user.bmi || '?'} | ${user.dailyCalories || 2500}kcal/day | ${user.proteinTarget || 150}g protein | 7-day PPL bodybuilding split
+
+RULES: Bullet points for lists. Include sets/reps/rest for exercises. Reference user's calorie & protein targets for nutrition. Evidence-based supplements only. For injuries → suggest doctor. Off-topic → redirect to fitness. Keep answers under 250 words.`;
+}
+
+// ── Gemini API call with model fallback + retry ────────────────────────────
+const GEMINI_MODELS = [
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+];
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function parseRetryDelay(errMsg) {
+  const match = errMsg?.match(/retry\s*(?:in|after)\s*(\d+(?:\.\d+)?)\s*s/i);
+  return match ? Math.ceil(parseFloat(match[1]) * 1000) : null;
+}
+
+function isDailyQuotaExhausted(errMsg) {
+  return errMsg?.includes('limit: 0') || errMsg?.includes('PerDay');
+}
 
 async function callGemini(systemPrompt, recentMessages, userMessage) {
   const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -53,35 +84,63 @@ async function callGemini(systemPrompt, recentMessages, userMessage) {
 
   const genAI = new GoogleGenerativeAI(apiKey);
 
-  const history = recentMessages.map((m) => ({
+  const history = recentMessages.slice(-10).map((m) => ({
     role: m.role === 'agent' ? 'model' : 'user',
     parts: [{ text: m.content }],
   }));
 
   let lastError;
+  let allDailyExhausted = true;
+
   for (const modelName of GEMINI_MODELS) {
-    try {
-      const model = genAI.getGenerativeModel({ model: modelName });
-      const chat = model.startChat({
-        history,
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-      });
-      const result = await chat.sendMessage(userMessage);
-      return result.response.text();
-    } catch (err) {
-      lastError = err;
-      const is429 = err.message?.includes('429') || err.message?.includes('quota');
-      if (is429) {
-        console.warn(`Model ${modelName} quota exceeded, trying next...`);
-        continue;
+    const MAX_RETRIES = 2;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName });
+        const chat = model.startChat({
+          history,
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+        });
+        const result = await chat.sendMessage(userMessage);
+        return { text: result.response.text(), model: modelName };
+      } catch (err) {
+        lastError = err;
+        const msg = err.message || '';
+        const is429 = msg.includes('429') || msg.includes('quota') || msg.includes('rate');
+
+        if (!is429) throw err;
+
+        if (isDailyQuotaExhausted(msg)) {
+          console.warn(`[SamAI] ${modelName}: daily quota exhausted, trying next model...`);
+          break;
+        }
+
+        allDailyExhausted = false;
+
+        if (attempt < MAX_RETRIES) {
+          const retryMs = parseRetryDelay(msg) || (attempt + 1) * 5000;
+          console.warn(`[SamAI] ${modelName}: rate limited, retrying in ${retryMs}ms (attempt ${attempt + 1})...`);
+          await sleep(retryMs);
+          continue;
+        }
+
+        console.warn(`[SamAI] ${modelName}: exhausted retries, trying next model...`);
+        break;
       }
-      throw err;
     }
   }
+
+  if (allDailyExhausted) {
+    const err = new Error('DAILY_QUOTA_EXHAUSTED');
+    err.isDailyLimit = true;
+    throw err;
+  }
+
   throw lastError;
 }
 
-// POST /api/agent/chat — send a message, get AI reply
+// ── POST /api/agent/chat ───────────────────────────────────────────────────
 router.post('/chat', authMiddleware, async (req, res) => {
   try {
     const { message } = req.body;
@@ -92,9 +151,20 @@ router.post('/chat', authMiddleware, async (req, res) => {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
+    const trimmed = message.trim();
+
+    const cacheKey = getCacheKey(user._id, trimmed);
+    const cached = getCached(cacheKey);
+    if (cached) {
+      const userMsg = new ChatMessage({ userId: user._id, role: 'user', content: trimmed });
+      const agentMsg = new ChatMessage({ userId: user._id, role: 'agent', content: cached });
+      await Promise.all([userMsg.save(), agentMsg.save()]);
+      return res.json({ reply: cached, timestamp: agentMsg.createdAt, cached: true });
+    }
+
     const recentMessages = await ChatMessage.find({ userId: user._id })
       .sort({ createdAt: -1 })
-      .limit(20)
+      .limit(10)
       .lean();
     recentMessages.reverse();
 
@@ -102,30 +172,37 @@ router.post('/chat', authMiddleware, async (req, res) => {
 
     let reply;
     try {
-      reply = await callGemini(systemPrompt, recentMessages, message.trim());
+      const result = await callGemini(systemPrompt, recentMessages, trimmed);
+      reply = result.text;
     } catch (err) {
-      console.error('Gemini API error:', err.message);
+      console.error('[SamAI] Gemini error:', err.message);
+
+      if (err.isDailyLimit) {
+        return res.status(429).json({
+          message: 'Daily AI quota reached. Your free Gemini plan allows limited requests per day — the quota resets at midnight (Pacific Time). Try again tomorrow, or upgrade to a paid Google AI plan for unlimited usage.',
+        });
+      }
+
       return res.status(503).json({
-        message: 'AI service temporarily unavailable. Please try again later.',
-        error: process.env.NODE_ENV !== 'production' ? err.message : undefined,
+        message: 'AI is temporarily busy. Please wait 30 seconds and try again.',
+        retryAfterSec: 30,
       });
     }
 
-    const userMsg = new ChatMessage({ userId: user._id, role: 'user', content: message.trim() });
+    setCache(cacheKey, reply);
+
+    const userMsg = new ChatMessage({ userId: user._id, role: 'user', content: trimmed });
     const agentMsg = new ChatMessage({ userId: user._id, role: 'agent', content: reply });
     await Promise.all([userMsg.save(), agentMsg.save()]);
 
-    res.json({
-      reply,
-      timestamp: agentMsg.createdAt,
-    });
+    res.json({ reply, timestamp: agentMsg.createdAt });
   } catch (err) {
-    console.error('Agent chat error:', err);
+    console.error('[SamAI] Chat error:', err);
     res.status(500).json({ message: err.message });
   }
 });
 
-// GET /api/agent/history — last 50 messages
+// ── GET /api/agent/history ─────────────────────────────────────────────────
 router.get('/history', authMiddleware, async (req, res) => {
   try {
     const messages = await ChatMessage.find({ userId: req.user.id })
@@ -135,18 +212,18 @@ router.get('/history', authMiddleware, async (req, res) => {
     messages.reverse();
     res.json(messages);
   } catch (err) {
-    console.error('Agent history error:', err);
+    console.error('[SamAI] History error:', err);
     res.status(500).json({ message: err.message });
   }
 });
 
-// DELETE /api/agent/history — clear chat history
+// ── DELETE /api/agent/history ──────────────────────────────────────────────
 router.delete('/history', authMiddleware, async (req, res) => {
   try {
     await ChatMessage.deleteMany({ userId: req.user.id });
     res.json({ message: 'Chat history cleared' });
   } catch (err) {
-    console.error('Agent clear error:', err);
+    console.error('[SamAI] Clear error:', err);
     res.status(500).json({ message: err.message });
   }
 });
