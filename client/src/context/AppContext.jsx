@@ -139,7 +139,7 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Workout log management (local storage based)
+  // Workout log management
   const getWorkoutKey = (sessionKey) => {
     const today = new Date().toISOString().split('T')[0];
     return `ft_workout_${today}_${sessionKey}`;
@@ -151,20 +151,41 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem(key, JSON.stringify(data));
     setWorkoutLogs((prev) => ({ ...prev, [sessionKey]: data }));
 
-    // Also try to save to backend
-    if (token && backendOnline) {
+    // Sync to backend (always attempt when token exists — backend handles auth)
+    if (token) {
       API.post('/workouts/log', {
         workoutDay: sessionKey,
         ...logData,
       }).catch(() => {});
     }
-  }, [token, backendOnline]);
+  }, [token]);
 
+  // Synchronous read — for places that need instant access (falls back gracefully)
   const getWorkoutLog = useCallback((sessionKey) => {
     const key = getWorkoutKey(sessionKey);
     const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : null;
   }, []);
+
+  // Async read — always fetches from server first when logged in, caches locally
+  const fetchWorkoutLog = useCallback(async (sessionKey) => {
+    const key = getWorkoutKey(sessionKey);
+    if (token) {
+      try {
+        const res = await API.get(`/workouts/today/${sessionKey}`);
+        if (res.data) {
+          const cached = { ...res.data, sessionKey };
+          localStorage.setItem(key, JSON.stringify(cached));
+          setWorkoutLogs((prev) => ({ ...prev, [sessionKey]: cached }));
+          return cached;
+        }
+      } catch {
+        // fall through to localStorage
+      }
+    }
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : null;
+  }, [token]);
 
   const fetchStats = useCallback(async () => {
     if (token && backendOnline) {
@@ -204,29 +225,49 @@ export const AppProvider = ({ children }) => {
     return res.data;
   };
 
-  // ─── Nutrition / Water log (localStorage + optional backend sync) ────────
+  // ─── Nutrition / Water log ────────────────────────────────────────────────
+  // Synchronous read — for instant access (cached localStorage)
   const getNutritionLog = useCallback((date) => {
     const key = `ft_nutrition_${date}`;
     const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : null;
   }, []);
 
+  // Async read — fetches from server first when logged in, caches locally
+  const fetchNutritionLog = useCallback(async (date) => {
+    const key = `ft_nutrition_${date}`;
+    if (token) {
+      try {
+        const res = await API.get(`/nutrition/date/${date}`);
+        if (res.data) {
+          localStorage.setItem(key, JSON.stringify(res.data));
+          return res.data;
+        }
+      } catch {
+        // fall through to localStorage
+      }
+    }
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : null;
+  }, [token]);
+
   const saveNutritionLog = useCallback((date, logData) => {
     const key = `ft_nutrition_${date}`;
     localStorage.setItem(key, JSON.stringify({ ...logData, date, savedAt: new Date().toISOString() }));
 
-    if (token && backendOnline) {
+    // Sync to backend (always attempt when token exists)
+    if (token) {
       API.post('/nutrition/save', { ...logData, date }).catch(() => {});
     }
-  }, [token, backendOnline]);
+  }, [token]);
 
   const value = {
     user, token, loading, backendOnline,
     register, login, logout, loginLocal,
     saveLocalProfile, updateUser, syncToCloud,
     checkHealth,
-    saveWorkoutLog, getWorkoutLog,
-    getNutritionLog, saveNutritionLog,
+    saveWorkoutLog, getWorkoutLog, fetchWorkoutLog,
+    getNutritionLog, fetchNutritionLog, saveNutritionLog,
     stats, fetchStats,
   };
 

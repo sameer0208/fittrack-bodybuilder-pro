@@ -43,7 +43,7 @@ const emptyLog = () => ({
 });
 
 export default function Nutrition() {
-  const { user, getNutritionLog, saveNutritionLog } = useApp();
+  const { user, getNutritionLog, fetchNutritionLog, saveNutritionLog } = useApp();
   const [date, setDate] = useState(dayjs().format('YYYY-MM-DD'));
   const [log, setLog] = useState(emptyLog());
   const [addingTo, setAddingTo] = useState(null); // meal key
@@ -51,20 +51,34 @@ export default function Nutrition() {
 
   const isToday = date === dayjs().format('YYYY-MM-DD');
 
-  // Load log for selected date
+  // Load log for selected date — fetch from server first so all devices stay in sync
   useEffect(() => {
-    const saved = getNutritionLog(date);
-    if (saved) {
-      // Ensure all meal types exist
+    let cancelled = false;
+
+    // Show cached data instantly while async fetch runs
+    const cached = getNutritionLog(date);
+    if (cached) {
+      const mergedMeals = MEALS.map((m) => {
+        const existing = cached.meals?.find((sm) => sm.type === m.key);
+        return existing || { type: m.key, foods: [] };
+      });
+      setLog({ ...emptyLog(), ...cached, meals: mergedMeals });
+    } else {
+      const waterGoal = user?.currentWeight ? Math.round(user.currentWeight * 33) : 3000;
+      setLog({ ...emptyLog(), waterGoalMl: waterGoal });
+    }
+
+    // Then fetch fresh data from server (handles cross-device sync)
+    fetchNutritionLog(date).then((saved) => {
+      if (cancelled || !saved) return;
       const mergedMeals = MEALS.map((m) => {
         const existing = saved.meals?.find((sm) => sm.type === m.key);
         return existing || { type: m.key, foods: [] };
       });
       setLog({ ...emptyLog(), ...saved, meals: mergedMeals });
-    } else {
-      const waterGoal = user?.currentWeight ? Math.round(user.currentWeight * 33) : 3000;
-      setLog({ ...emptyLog(), waterGoalMl: waterGoal });
-    }
+    });
+
+    return () => { cancelled = true; };
   }, [date]);
 
   // Auto-save on every change

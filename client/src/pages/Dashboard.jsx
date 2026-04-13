@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { weekSchedule, workoutPlan } from '../data/workoutPlan';
@@ -11,15 +12,48 @@ import {
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 export default function Dashboard() {
-  const { user, getWorkoutLog, getNutritionLog } = useApp();
+  const { user, getWorkoutLog, getNutritionLog, fetchWorkoutLog, fetchNutritionLog } = useApp();
   const today = dayjs();
   const todayDayName = DAY_NAMES[today.day()];
 
   const todaySessions = weekSchedule.find((d) => d.key === todayDayName)?.sessions || [];
-  const completedToday = todaySessions.filter((s) => getWorkoutLog(s)?.completed).length;
+
+  // Server-synced state for today's sessions and nutrition
+  // Starts with localStorage snapshot, then updates from server
+  const [serverWorkoutLogs, setServerWorkoutLogs] = useState(() => {
+    const init = {};
+    todaySessions.forEach((s) => { init[s] = getWorkoutLog(s); });
+    return init;
+  });
+  const [serverNutrition, setServerNutrition] = useState(
+    () => getNutritionLog(today.format('YYYY-MM-DD'))
+  );
+
+  // On mount: fetch today's logs from the server so cross-device data is accurate
+  useEffect(() => {
+    let cancelled = false;
+
+    // Fetch workout logs for each of today's sessions
+    todaySessions.forEach((sessionKey) => {
+      fetchWorkoutLog(sessionKey).then((log) => {
+        if (cancelled) return;
+        setServerWorkoutLogs((prev) => ({ ...prev, [sessionKey]: log }));
+      });
+    });
+
+    // Fetch today's nutrition log
+    fetchNutritionLog(today.format('YYYY-MM-DD')).then((log) => {
+      if (cancelled || !log) return;
+      setServerNutrition(log);
+    });
+
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const completedToday = todaySessions.filter((s) => serverWorkoutLogs[s]?.completed).length;
 
   const getSessionStatus = (sessionKey) =>
-    getWorkoutLog(sessionKey)?.completed ? 'completed' : null;
+    serverWorkoutLogs[sessionKey]?.completed ? 'completed' : null;
 
   const programDays = user?.programStartDate
     ? dayjs().diff(dayjs(user.programStartDate), 'day') + 1
@@ -30,8 +64,8 @@ export default function Dashboard() {
   const toGain = (user?.targetWeight || 0) - (startWeight || 0);
   const progressPct = toGain > 0 ? Math.min((gained / toGain) * 100, 100) : 0;
 
-  // Nutrition quick-view
-  const todayNutrition = getNutritionLog(today.format('YYYY-MM-DD'));
+  // Nutrition quick-view (uses server-synced data)
+  const todayNutrition = serverNutrition;
   const totalCals = todayNutrition?.meals?.reduce(
     (a, m) => a + m.foods.reduce((s, f) => s + (f.calories || 0), 0), 0
   ) || 0;

@@ -13,7 +13,7 @@ import {
 export default function WorkoutDay() {
   const { sessionKey } = useParams();
   const navigate = useNavigate();
-  const { saveWorkoutLog, getWorkoutLog, user } = useApp();
+  const { saveWorkoutLog, getWorkoutLog, fetchWorkoutLog, user } = useApp();
 
   const plan = workoutPlan[sessionKey];
   const [exerciseLogs, setExerciseLogs] = useState({});
@@ -25,8 +25,11 @@ export default function WorkoutDay() {
   const timerRef = useRef(null);
 
   useEffect(() => {
-    const existingLog = getWorkoutLog(sessionKey);
-    if (existingLog) {
+    let cancelled = false;
+    // fetchWorkoutLog fetches from server first (so data syncs across devices),
+    // then falls back to localStorage if offline or not logged in
+    fetchWorkoutLog(sessionKey).then((existingLog) => {
+      if (cancelled || !existingLog) return;
       setCompleted(existingLog.completed || false);
       setElapsed(existingLog.duration ? existingLog.duration * 60 : 0);
       setMood(existingLog.mood || 'good');
@@ -34,8 +37,9 @@ export default function WorkoutDay() {
       if (existingLog.exerciseLogs) {
         setExerciseLogs(existingLog.exerciseLogs);
       }
-    }
-  }, [sessionKey, getWorkoutLog]);
+    });
+    return () => { cancelled = true; };
+  }, [sessionKey, fetchWorkoutLog]);
 
   // Timer
   useEffect(() => {
