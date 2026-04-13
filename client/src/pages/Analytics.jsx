@@ -309,7 +309,7 @@ export default function Analytics() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 pt-4 lg:pt-8 pb-24">
+      <div className="max-w-4xl mx-auto px-4 pt-4 lg:pt-8 pb-36">
         <div className="hidden lg:block mb-6">
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <BarChart3 className="text-indigo-400" size={28} />

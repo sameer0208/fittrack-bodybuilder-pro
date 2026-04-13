@@ -140,9 +140,9 @@
     @apply h-full rounded-full transition-all duration-700;
   }
 
-  /* Mobile page wrapper */
+  /* Mobile page wrapper — extra bottom space for navbar (64px) + chatbot FAB */
   .page-container {
-    @apply min-h-screen pb-24 lg:pb-10;
+    @apply min-h-screen pb-36 lg:pb-10;
   }
 
   /* Safe-area padded bottom nav */

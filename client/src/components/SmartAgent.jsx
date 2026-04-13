@@ -235,17 +235,17 @@ export default function SmartAgent() {
       {!open && !moreNavOpen && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-[88px] right-3 lg:bottom-6 lg:right-6 z-[9997] flex items-center gap-2.5 pl-3.5 pr-4 py-2.5 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 text-white shadow-xl shadow-purple-500/40 hover:shadow-purple-500/60 hover:scale-105 active:scale-95 transition-all duration-200 touch-manipulation"
+          className="fixed bottom-20 right-3 lg:bottom-6 lg:right-6 z-[9997] w-12 h-12 lg:w-auto lg:h-auto lg:pl-3.5 lg:pr-4 lg:py-2.5 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 text-white shadow-xl shadow-purple-500/40 hover:shadow-purple-500/60 hover:scale-105 active:scale-95 transition-all duration-200 touch-manipulation flex items-center justify-center lg:gap-2.5"
           aria-label="Open SamAI Assistant"
         >
-          <div className="w-9 h-9 bg-white/20 backdrop-blur rounded-full flex items-center justify-center border border-white/30">
-            <Bot size={20} />
+          <div className="w-7 h-7 lg:w-9 lg:h-9 bg-white/20 backdrop-blur rounded-full flex items-center justify-center border border-white/30">
+            <Bot size={18} className="lg:w-5 lg:h-5" />
           </div>
-          <div className="flex flex-col items-start leading-none">
+          <div className="hidden lg:flex flex-col items-start leading-none">
             <span className="font-extrabold text-sm tracking-tight">SamAI</span>
             <span className="text-[9px] text-white/70 font-medium">Ask me anything</span>
           </div>
-          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-slate-900 animate-pulse" />
+          <span className="absolute -top-0.5 -right-0.5 lg:-top-1 lg:-right-1 w-3 h-3 lg:w-3.5 lg:h-3.5 bg-emerald-400 rounded-full border-2 border-slate-900 animate-pulse" />
         </button>
       )}
 

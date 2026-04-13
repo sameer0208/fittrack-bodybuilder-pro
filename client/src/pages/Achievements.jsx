@@ -158,7 +158,7 @@ export default function Achievements() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 pt-4 lg:pt-8 pb-24 lg:pb-10">
+      <div className="max-w-4xl mx-auto px-4 pt-4 lg:pt-8 pb-36 lg:pb-10">
         {/* Desktop header */}
         <div className="hidden lg:flex items-start justify-between mb-6 gap-4">
           <div className="flex items-start gap-4">

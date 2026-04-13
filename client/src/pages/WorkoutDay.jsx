@@ -170,7 +170,7 @@ export default function WorkoutDay() {
   const exerciseList = plan.exercises.map((id) => exerciseDb[id]).filter(Boolean);
 
   return (
-    <div className="min-h-screen pb-32 lg:pb-8">
+    <div className="min-h-screen pb-40 lg:pb-8">
       {/* ── Hero Header ────────────────────────────── */}
       <div className={`relative bg-gradient-to-br ${plan.colorClass} overflow-hidden`}>
         <div className="absolute inset-0 bg-black/50" />

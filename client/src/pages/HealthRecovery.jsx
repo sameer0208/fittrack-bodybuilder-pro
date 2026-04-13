@@ -516,7 +516,7 @@ export default function HealthRecovery() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-900 pb-24 lg:pb-8">
+    <div className="min-h-screen bg-slate-900 pb-36 lg:pb-8">
       <div className="max-w-4xl mx-auto px-4 pt-4 lg:pt-8">
         <header className="sticky top-0 z-20 -mx-4 px-4 py-3 mb-4 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/80 lg:static lg:border-0 lg:bg-transparent lg:p-0 lg:mb-6 lg:backdrop-blur-none">
           <h1 className="text-2xl font-bold text-white tracking-tight">Health &amp; Recovery</h1>

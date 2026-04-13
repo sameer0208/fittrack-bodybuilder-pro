@@ -132,7 +132,7 @@ export default function Leaderboard() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 pt-4 lg:pt-8 pb-24 lg:pb-10">
+      <div className="max-w-4xl mx-auto px-4 pt-4 lg:pt-8 pb-36 lg:pb-10">
         {/* Desktop header */}
         <div className="hidden lg:flex items-start gap-4 mb-6">
           <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/25">
