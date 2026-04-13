@@ -145,19 +145,26 @@ export const AppProvider = ({ children }) => {
     return `ft_workout_${today}_${sessionKey}`;
   };
 
-  const saveWorkoutLog = useCallback((sessionKey, logData) => {
+  const saveWorkoutLog = useCallback(async (sessionKey, logData) => {
     const key = getWorkoutKey(sessionKey);
     const data = { ...logData, sessionKey, savedAt: new Date().toISOString() };
-    localStorage.setItem(key, JSON.stringify(data));
-    setWorkoutLogs((prev) => ({ ...prev, [sessionKey]: data }));
 
-    // Sync to backend (always attempt when token exists — backend handles auth)
     if (token) {
-      API.post('/workouts/log', {
+      // Cloud-first: save to MongoDB and throw on failure so the caller can handle it
+      const res = await API.post('/workouts/log', {
         workoutDay: sessionKey,
         ...logData,
-      }).catch(() => {});
+      });
+      // Cache the server response in localStorage for instant offline reads
+      localStorage.setItem(key, JSON.stringify({ ...data, _id: res.data._id }));
+      setWorkoutLogs((prev) => ({ ...prev, [sessionKey]: data }));
+      return res.data;
     }
+
+    // Local-only mode (no account): keep using localStorage
+    localStorage.setItem(key, JSON.stringify(data));
+    setWorkoutLogs((prev) => ({ ...prev, [sessionKey]: data }));
+    return data;
   }, [token]);
 
   // Synchronous read — for places that need instant access (falls back gracefully)
@@ -251,14 +258,21 @@ export const AppProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : null;
   }, [token]);
 
-  const saveNutritionLog = useCallback((date, logData) => {
+  const saveNutritionLog = useCallback(async (date, logData) => {
     const key = `ft_nutrition_${date}`;
-    localStorage.setItem(key, JSON.stringify({ ...logData, date, savedAt: new Date().toISOString() }));
+    const data = { ...logData, date, savedAt: new Date().toISOString() };
 
-    // Sync to backend (always attempt when token exists)
     if (token) {
-      API.post('/nutrition/save', { ...logData, date }).catch(() => {});
+      // Cloud-first: save to MongoDB and throw on failure
+      const res = await API.post('/nutrition/save', { ...logData, date });
+      // Cache locally for instant offline reads
+      localStorage.setItem(key, JSON.stringify(data));
+      return res.data;
     }
+
+    // Local-only mode
+    localStorage.setItem(key, JSON.stringify(data));
+    return data;
   }, [token]);
 
   const value = {

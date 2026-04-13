@@ -83,42 +83,79 @@ export default function WorkoutDay() {
     }, 0) : 0);
   }, 0);
 
-  const handleFinishWorkout = () => {
-    setTimerRunning(false);
-    const exercises = plan?.exercises?.map((exId) => ({
+  // Sanitize a raw set object so it passes Mongoose's Number type validation.
+  // The stepper stores weight/reps as strings (e.g. '' or '80'); we coerce them here.
+  const sanitiseSets = (rawSets) =>
+    (rawSets || []).map((s, i) => ({
+      setNumber: s.setNumber ?? i + 1,
+      weight: parseFloat(s.weight) || 0,
+      reps: parseInt(s.reps, 10) || 0,
+      completed: s.completed ?? false,
+    }));
+
+  const buildExercises = () =>
+    (plan?.exercises || []).map((exId) => ({
       exerciseId: exId,
       exerciseName: exerciseDb[exId]?.name || exId,
-      sets: exerciseLogs[exId] || [],
+      sets: sanitiseSets(exerciseLogs[exId]),
       completed: (exerciseLogs[exId] || []).every((s) => s.completed),
-    })) || [];
+    }));
 
-    saveWorkoutLog(sessionKey, {
-      workoutName: plan?.name,
-      exercises,
-      exerciseLogs,
-      duration: Math.floor(elapsed / 60),
-      totalVolume,
-      completed: true,
-      mood,
-      notes,
-      bodyWeight: user?.currentWeight,
-    });
+  const [saving, setSaving] = useState(false);
 
-    setCompleted(true);
-    toast.success('Workout Complete! 🏆 Great work!');
+  const handleFinishWorkout = async () => {
+    if (saving) return;
+    setTimerRunning(false);
+    setSaving(true);
+    try {
+      await saveWorkoutLog(sessionKey, {
+        workoutName: plan?.name,
+        exercises: buildExercises(),
+        exerciseLogs,
+        duration: Math.floor(elapsed / 60),
+        totalVolume,
+        completed: true,
+        mood,
+        notes,
+        bodyWeight: user?.currentWeight,
+      });
+      setCompleted(true);
+      toast.success('Workout Complete! 🏆 Saved to cloud!');
+    } catch (err) {
+      // Local cache was still written; inform the user cloud save failed
+      setCompleted(true);
+      toast.error(
+        `Saved locally — cloud sync failed. Check your connection and try again.\n(${err?.response?.data?.message || err.message || 'Network error'})`,
+        { duration: 6000 }
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSaveDraft = () => {
-    saveWorkoutLog(sessionKey, {
-      workoutName: plan?.name,
-      exerciseLogs,
-      duration: Math.floor(elapsed / 60),
-      totalVolume,
-      completed: false,
-      mood,
-      notes,
-    });
-    toast.success('Progress saved!');
+  const handleSaveDraft = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await saveWorkoutLog(sessionKey, {
+        workoutName: plan?.name,
+        exercises: buildExercises(),
+        exerciseLogs,
+        duration: Math.floor(elapsed / 60),
+        totalVolume,
+        completed: false,
+        mood,
+        notes,
+      });
+      toast.success('Progress saved to cloud! ☁️');
+    } catch (err) {
+      toast.error(
+        `Saved locally — cloud sync failed.\n(${err?.response?.data?.message || err.message || 'Network error'})`,
+        { duration: 6000 }
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!plan) {
@@ -295,16 +332,27 @@ export default function WorkoutDay() {
             <>
               <button
                 onClick={handleFinishWorkout}
-                className="w-full btn-success flex items-center justify-center gap-3 text-base py-4"
+                disabled={saving}
+                className="w-full btn-success flex items-center justify-center gap-3 text-base py-4 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <Trophy size={20} />
-                Complete Workout!
+                {saving ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Saving to Cloud…
+                  </>
+                ) : (
+                  <>
+                    <Trophy size={20} />
+                    Complete Workout!
+                  </>
+                )}
               </button>
               <button
                 onClick={handleSaveDraft}
-                className="w-full btn-secondary text-sm"
+                disabled={saving}
+                className="w-full btn-secondary text-sm disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Save & Continue Later
+                {saving ? 'Saving…' : 'Save & Continue Later'}
               </button>
             </>
           ) : (

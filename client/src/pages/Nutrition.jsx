@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import FoodSearchModal from '../components/FoodSearchModal';
 import WaterTracker from '../components/WaterTracker';
@@ -48,6 +48,8 @@ export default function Nutrition() {
   const [log, setLog] = useState(emptyLog());
   const [addingTo, setAddingTo] = useState(null); // meal key
   const [activeTab, setActiveTab] = useState('today');
+  const [syncStatus, setSyncStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+  const saveTimer = useRef(null); // debounce timer for auto-save
 
   const isToday = date === dayjs().format('YYYY-MM-DD');
 
@@ -81,9 +83,19 @@ export default function Nutrition() {
     return () => { cancelled = true; };
   }, [date]);
 
-  // Auto-save on every change
+  // Debounced auto-save: waits 800ms after last change, then saves to MongoDB
   const persistLog = useCallback((updatedLog) => {
-    saveNutritionLog(date, updatedLog);
+    clearTimeout(saveTimer.current);
+    setSyncStatus('saving');
+    saveTimer.current = setTimeout(async () => {
+      try {
+        await saveNutritionLog(date, updatedLog);
+        setSyncStatus('saved');
+        setTimeout(() => setSyncStatus('idle'), 2000);
+      } catch {
+        setSyncStatus('error');
+      }
+    }, 800);
   }, [date, saveNutritionLog]);
 
   const addFood = (mealKey, foodEntry) => {
@@ -177,12 +189,27 @@ export default function Nutrition() {
               <div className="text-sm font-bold text-white leading-tight">Nutrition Tracker</div>
             </div>
           </div>
-          {activeTab === 'today' && (
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-amber-400 font-black">{Math.round(totals.calories)}</span>
-              <span className="text-slate-500">/ {calorieGoal} kcal</span>
-            </div>
-          )}
+          <div className="flex items-center gap-3 text-xs">
+            {/* Cloud sync status indicator */}
+            {syncStatus === 'saving' && (
+              <div className="flex items-center gap-1 text-slate-400">
+                <div className="w-3 h-3 border border-slate-500 border-t-indigo-400 rounded-full animate-spin" />
+                <span>Saving…</span>
+              </div>
+            )}
+            {syncStatus === 'saved' && (
+              <span className="text-emerald-400 font-semibold">☁️ Saved</span>
+            )}
+            {syncStatus === 'error' && (
+              <span className="text-red-400 font-semibold">⚠️ Sync failed</span>
+            )}
+            {activeTab === 'today' && (
+              <div className="flex items-center gap-1">
+                <span className="text-amber-400 font-black">{Math.round(totals.calories)}</span>
+                <span className="text-slate-500">/ {calorieGoal} kcal</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

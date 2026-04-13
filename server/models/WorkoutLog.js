@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
 
 const setLogSchema = new mongoose.Schema({
-  setNumber: { type: Number, required: true },
-  weight: { type: Number, default: 0 }, // in kg, 0 = bodyweight
-  reps: { type: Number, required: true },
+  setNumber: { type: Number, default: 1 },
+  weight: { type: Number, default: 0 },
+  reps: { type: Number, default: 0 },
   completed: { type: Boolean, default: false },
-  rpe: { type: Number, min: 1, max: 10 }, // Rate of Perceived Exertion
+  rpe: { type: Number, min: 1, max: 10 },
 });
 
 const exerciseLogSchema = new mongoose.Schema({
@@ -24,7 +24,7 @@ const workoutLogSchema = new mongoose.Schema(
       enum: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday_am', 'saturday_pm', 'sunday_am', 'sunday_pm'],
       required: true,
     },
-    workoutName: { type: String, required: true },
+    workoutName: { type: String, default: '' },
     date: { type: Date, default: Date.now },
     exercises: [exerciseLogSchema],
     duration: { type: Number }, // in minutes
