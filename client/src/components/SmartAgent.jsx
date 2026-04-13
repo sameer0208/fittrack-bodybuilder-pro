@@ -37,6 +37,15 @@ export default function SmartAgent() {
   const [retryMsg, setRetryMsg] = useState(null);
   const [listening, setListening] = useState(false);
   const [pendingFood, setPendingFood] = useState(null);
+  const [moreNavOpen, setMoreNavOpen] = useState(false);
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setMoreNavOpen(document.body.dataset.moreNav === '1');
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['data-more-nav'] });
+    return () => observer.disconnect();
+  }, []);
   const recognitionRef = useRef(null);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
@@ -223,10 +232,10 @@ export default function SmartAgent() {
   return createPortal(
     <>
       {/* ── Floating Action Button ──────────────────────── */}
-      {!open && (
+      {!open && !moreNavOpen && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-[88px] right-3 lg:bottom-6 lg:right-6 z-[9999] flex items-center gap-2.5 pl-3.5 pr-4 py-2.5 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 text-white shadow-xl shadow-purple-500/40 hover:shadow-purple-500/60 hover:scale-105 active:scale-95 transition-all duration-200 touch-manipulation"
+          className="fixed bottom-[88px] right-3 lg:bottom-6 lg:right-6 z-[9997] flex items-center gap-2.5 pl-3.5 pr-4 py-2.5 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 text-white shadow-xl shadow-purple-500/40 hover:shadow-purple-500/60 hover:scale-105 active:scale-95 transition-all duration-200 touch-manipulation"
           aria-label="Open SamAI Assistant"
         >
           <div className="w-9 h-9 bg-white/20 backdrop-blur rounded-full flex items-center justify-center border border-white/30">

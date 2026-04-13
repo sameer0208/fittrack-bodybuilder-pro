@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, TrendingUp, User, LogOut, Zap, UtensilsCrossed, Salad, BarChart3, Ruler, Heart, Trophy, Users, MoreHorizontal, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -27,6 +27,10 @@ export default function Navbar() {
   const { user, logout } = useApp();
   const navigate = useNavigate();
   const [moreOpen, setMoreOpen] = useState(false);
+
+  useEffect(() => {
+    document.body.dataset.moreNav = moreOpen ? '1' : '';
+  }, [moreOpen]);
 
   const handleLogout = () => {
     logout();
@@ -100,13 +104,21 @@ export default function Navbar() {
         </button>
       </aside>
 
+      {/* ── Mobile "More" backdrop ─────────────────────────── */}
+      {moreOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-[9998] bg-black/50 backdrop-blur-sm"
+          onClick={() => setMoreOpen(false)}
+        />
+      )}
+
       {/* ── Mobile Bottom Navigation ───────────────────────── */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bottom-nav">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[9999] bottom-nav">
         {moreOpen && (
-          <div className="absolute bottom-full left-0 right-0 bg-slate-900/98 backdrop-blur-xl border-t border-slate-700/60 p-4 animate-slide-up">
+          <div className="absolute bottom-full left-0 right-0 bg-slate-900 border-t border-slate-700/60 p-4 pb-2 rounded-t-2xl shadow-[0_-16px_40px_rgba(0,0,0,0.6)] animate-slide-up">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">More</span>
-              <button onClick={() => setMoreOpen(false)} className="text-slate-400 p-1"><X size={18} /></button>
+              <button onClick={() => setMoreOpen(false)} className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400"><X size={16} /></button>
             </div>
             <div className="grid grid-cols-3 gap-2">
               {secondaryNav.map(({ to, icon: Icon, label }) => (
