@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Send, Trash2, Loader2, Bot, UserCircle } from 'lucide-react';
+import { X, Send, Trash2, Loader2, Bot, UserCircle, Mic, MicOff, UtensilsCrossed, Check } from 'lucide-react';
 import axios from 'axios';
 import dayjs from 'dayjs';
+import toast from 'react-hot-toast';
+import { useApp } from '../context/AppContext';
 
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -22,7 +24,10 @@ const QUICK_CHIPS = [
   'Tips for muscle recovery',
 ];
 
+const FOOD_TRIGGERS = /^(i ate|i had|i just ate|i just had|log food|add meal|i drank|i just drank|for breakfast|for lunch|for dinner|for snack)/i;
+
 export default function SmartAgent() {
+  const { saveNutritionLog, getNutritionLog } = useApp();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -30,9 +35,48 @@ export default function SmartAgent() {
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [error, setError] = useState(null);
   const [retryMsg, setRetryMsg] = useState(null);
+  const [listening, setListening] = useState(false);
+  const [pendingFood, setPendingFood] = useState(null);
+  const recognitionRef = useRef(null);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   const token = localStorage.getItem('ft_token');
+
+  // ── Voice Recognition ──
+  const startListening = useCallback(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) { toast.error('Speech recognition not supported in this browser'); return; }
+    if (recognitionRef.current) { recognitionRef.current.abort(); }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => setListening(true);
+    recognition.onresult = (e) => {
+      const transcript = Array.from(e.results).map((r) => r[0].transcript).join('');
+      setInput(transcript);
+    };
+    recognition.onend = () => {
+      setListening(false);
+      recognitionRef.current = null;
+    };
+    recognition.onerror = () => {
+      setListening(false);
+      recognitionRef.current = null;
+    };
+    recognitionRef.current = recognition;
+    recognition.start();
+  }, []);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    setListening(false);
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -67,6 +111,7 @@ export default function SmartAgent() {
     if (!msg || loading) return;
     setInput('');
     setError(null);
+    if (listening) stopListening();
 
     const userMsg = {
       id: `u_${Date.now()}`,
@@ -77,14 +122,29 @@ export default function SmartAgent() {
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
 
+    const isFoodLog = FOOD_TRIGGERS.test(msg);
+
     try {
-      const { data } = await API.post('/agent/chat', { message: msg });
-      setMessages((prev) => [...prev, {
-        id: `a_${Date.now()}`,
-        role: 'agent',
-        content: data.reply,
-        timestamp: data.timestamp,
-      }]);
+      const endpoint = isFoodLog ? '/agent/food-log' : '/agent/chat';
+      const { data } = await API.post(endpoint, { message: msg });
+
+      if (isFoodLog && data.parsedFoods) {
+        setPendingFood({ foods: data.parsedFoods, meal: data.meal || 'snacks', raw: msg });
+        setMessages((prev) => [...prev, {
+          id: `a_${Date.now()}`,
+          role: 'agent',
+          content: data.reply,
+          timestamp: data.timestamp,
+          foodCard: { foods: data.parsedFoods, meal: data.meal },
+        }]);
+      } else {
+        setMessages((prev) => [...prev, {
+          id: `a_${Date.now()}`,
+          role: 'agent',
+          content: data.reply,
+          timestamp: data.timestamp,
+        }]);
+      }
       if (data.cached) console.log('[SamAI] Served from cache');
     } catch (err) {
       const status = err.response?.status;
@@ -105,6 +165,26 @@ export default function SmartAgent() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const logFoodFromAI = async () => {
+    if (!pendingFood) return;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const existing = getNutritionLog(today) || { date: today, meals: {}, waterMl: 0 };
+      const mealKey = pendingFood.meal || 'snacks';
+      const currentFoods = existing.meals?.[mealKey] || [];
+      const newFoods = [...currentFoods, ...pendingFood.foods];
+      const updated = {
+        ...existing,
+        meals: { ...existing.meals, [mealKey]: newFoods },
+      };
+      await saveNutritionLog(today, updated);
+      toast.success(`Logged ${pendingFood.foods.length} item(s) to ${mealKey}!`);
+      setPendingFood(null);
+    } catch {
+      toast.error('Failed to log food');
     }
   };
 
@@ -228,6 +308,27 @@ export default function SmartAgent() {
                       : 'bg-slate-700/70 text-slate-200 rounded-bl-md border border-slate-600/30'
                   }`}>
                     <div className="space-y-1">{formatContent(msg.content)}</div>
+                    {msg.foodCard && (
+                      <div className="mt-2 p-2.5 bg-slate-800/60 rounded-xl border border-emerald-500/20">
+                        <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-semibold mb-2">
+                          <UtensilsCrossed size={12} /> Parsed Food Items
+                        </div>
+                        {msg.foodCard.foods.map((f, i) => (
+                          <div key={i} className="flex justify-between text-[11px] py-0.5 text-slate-300">
+                            <span>{f.name} {f.quantity ? `(${f.quantity})` : ''}</span>
+                            <span className="text-emerald-400 font-medium">{f.calories} kcal</span>
+                          </div>
+                        ))}
+                        {pendingFood && (
+                          <button
+                            onClick={logFoodFromAI}
+                            className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition-colors"
+                          >
+                            <Check size={14} /> Log This
+                          </button>
+                        )}
+                      </div>
+                    )}
                     <div className={`text-[10px] mt-1.5 ${msg.role === 'user' ? 'text-indigo-200/60' : 'text-slate-500'}`}>
                       {dayjs(msg.timestamp).format('h:mm A')}
                     </div>
@@ -297,13 +398,24 @@ export default function SmartAgent() {
                 <p className="text-xs text-slate-500 text-center py-2">Sign in with an account to chat with SamAI.</p>
               ) : (
                 <div className="flex items-end gap-2">
+                  <button
+                    onClick={listening ? stopListening : startListening}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all touch-manipulation ${
+                      listening
+                        ? 'bg-red-500 text-white animate-pulse'
+                        : 'bg-slate-700 text-slate-400 hover:text-white hover:bg-slate-600'
+                    }`}
+                    title={listening ? 'Stop listening' : 'Voice input'}
+                  >
+                    {listening ? <MicOff size={18} /> : <Mic size={18} />}
+                  </button>
                   <div className="flex-1 relative">
                     <textarea
                       ref={inputRef}
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      placeholder="Ask SamAI about workouts, nutrition..."
+                      placeholder={listening ? 'Listening...' : 'Ask SamAI or say "I ate..."'}
                       rows={1}
                       className="w-full resize-none bg-slate-700/60 border border-slate-600/50 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
                       style={{ maxHeight: '120px' }}

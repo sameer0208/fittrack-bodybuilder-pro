@@ -27,17 +27,32 @@ app.use(
   })
 );
 
-app.use(express.json());
+const path = require('path');
+
+app.use(express.json({ limit: '10mb' }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const userRoutes = require('./routes/users');
 const workoutRoutes = require('./routes/workouts');
 const nutritionRoutes = require('./routes/nutrition');
 const agentRoutes = require('./routes/agent');
+const bodyRoutes = require('./routes/body');
+const healthLogRoutes = require('./routes/healthLog');
+const achievementRoutes = require('./routes/achievements');
+const socialRoutes = require('./routes/social');
+const analyticsRoutes = require('./routes/analytics');
+const pushRoutes = require('./routes/push');
 
 app.use('/api/users', userRoutes);
 app.use('/api/workouts', workoutRoutes);
 app.use('/api/nutrition', nutritionRoutes);
 app.use('/api/agent', agentRoutes);
+app.use('/api/body', bodyRoutes);
+app.use('/api/health-log', healthLogRoutes);
+app.use('/api/achievements', achievementRoutes);
+app.use('/api/social', socialRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/push', pushRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'FitTrack API is running' });

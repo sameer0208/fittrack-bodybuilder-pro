@@ -9,6 +9,11 @@ import Dashboard from './pages/Dashboard';
 import WorkoutDay from './pages/WorkoutDay';
 import Progress from './pages/Progress';
 import Profile from './pages/Profile';
+import Achievements from './pages/Achievements';
+import Leaderboard from './pages/Leaderboard';
+import Analytics from './pages/Analytics';
+import BodyTracker from './pages/BodyTracker';
+import HealthRecovery from './pages/HealthRecovery';
 import Nutrition from './pages/Nutrition';
 import DietPlan from './pages/DietPlan';
 import useReminders from './hooks/useReminders';
@@ -27,7 +32,12 @@ function AuthenticatedLayout() {
           <Route path="/nutrition" element={<Nutrition />} />
           <Route path="/diet-plan" element={<DietPlan />} />
           <Route path="/progress" element={<Progress />} />
+          <Route path="/body-tracker" element={<BodyTracker />} />
+          <Route path="/health-recovery" element={<HealthRecovery />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/achievements" element={<Achievements />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>

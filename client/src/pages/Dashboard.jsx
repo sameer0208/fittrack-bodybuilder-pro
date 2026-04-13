@@ -3,11 +3,21 @@ import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { weekSchedule, workoutPlan } from '../data/workoutPlan';
 import BMICard from '../components/BMICard';
+import ShareCard from '../components/ShareCard';
 import dayjs from 'dayjs';
+import axios from 'axios';
 import {
   CheckCircle2, ChevronRight, Clock, Flame, Zap,
   TrendingUp, UtensilsCrossed, Droplets, Dumbbell,
+  Trophy, Users, Share2, Ruler, Heart, BarChart3,
 } from 'lucide-react';
+
+const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
+API.interceptors.request.use((cfg) => {
+  const t = localStorage.getItem('ft_token');
+  if (t) cfg.headers.Authorization = `Bearer ${t}`;
+  return cfg;
+});
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
@@ -49,6 +59,16 @@ export default function Dashboard() {
 
     return () => { cancelled = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [buddy, setBuddy] = useState(null);
+  const [badgeCount, setBadgeCount] = useState(0);
+  const [showShare, setShowShare] = useState(false);
+
+  useEffect(() => {
+    API.get('/social/buddy').then(({ data }) => { if (data.paired) setBuddy(data.buddy); }).catch(() => {});
+    API.get('/achievements').then(({ data }) => setBadgeCount(data?.length || 0)).catch(() => {});
+    API.post('/achievements/check').catch(() => {});
+  }, []);
 
   const completedToday = todaySessions.filter((s) => serverWorkoutLogs[s]?.completed).length;
 
@@ -351,6 +371,62 @@ export default function Dashboard() {
             })}
           </div>
         </div>
+
+        {/* ── Quick Access Cards ──────────────────────── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
+          {[
+            { to: '/body-tracker',    icon: Ruler,     label: 'Body Tracker',  color: 'from-cyan-500/20 to-teal-500/20 border-cyan-500/30', iconColor: 'text-cyan-400' },
+            { to: '/health-recovery', icon: Heart,     label: 'Health',        color: 'from-rose-500/20 to-pink-500/20 border-rose-500/30', iconColor: 'text-rose-400' },
+            { to: '/analytics',       icon: BarChart3, label: 'Analytics',     color: 'from-violet-500/20 to-purple-500/20 border-violet-500/30', iconColor: 'text-violet-400' },
+            { to: '/achievements',    icon: Trophy,    label: `Badges (${badgeCount})`, color: 'from-amber-500/20 to-yellow-500/20 border-amber-500/30', iconColor: 'text-amber-400' },
+            { to: '/leaderboard',     icon: Users,     label: 'Leaderboard',   color: 'from-indigo-500/20 to-blue-500/20 border-indigo-500/30', iconColor: 'text-indigo-400' },
+          ].map(({ to, icon: Icon, label, color, iconColor }) => (
+            <Link key={to} to={to} className={`card-hover p-3 flex items-center gap-3 bg-gradient-to-br ${color} border`}>
+              <Icon size={18} className={iconColor} />
+              <span className="text-sm font-semibold text-white truncate">{label}</span>
+            </Link>
+          ))}
+          <button
+            onClick={() => setShowShare(true)}
+            className="card-hover p-3 flex items-center gap-3 bg-gradient-to-br from-fuchsia-500/20 to-pink-500/20 border border-fuchsia-500/30"
+          >
+            <Share2 size={18} className="text-fuchsia-400" />
+            <span className="text-sm font-semibold text-white">Share</span>
+          </button>
+        </div>
+
+        {/* ── Buddy Widget ────────────────────────────── */}
+        {buddy && (
+          <div className="card p-4 mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                {buddy.name?.[0]?.toUpperCase() || 'B'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-slate-400 flex items-center gap-1"><Users size={10} /> Workout Buddy</div>
+                <div className="font-bold text-white text-sm">{buddy.name}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm font-black text-orange-400 flex items-center gap-1"><Flame size={12} /> {buddy.streak || 0}</div>
+                <div className="text-[10px] text-slate-500">{buddy.totalWorkouts || 0} workouts</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showShare && (
+          <ShareCard
+            stats={{
+              name: user?.name,
+              streak: user?.streak || 0,
+              totalWorkouts: user?.totalWorkouts || 0,
+              todayWorkout: todaySessions[0]?.replace(/_/g, ' ') || 'Rest Day',
+              currentWeight: user?.currentWeight,
+              targetWeight: user?.targetWeight,
+            }}
+            onClose={() => setShowShare(false)}
+          />
+        )}
       </div>
     </div>
   );

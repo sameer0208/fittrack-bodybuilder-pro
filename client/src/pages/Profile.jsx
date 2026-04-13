@@ -1,14 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useApp } from '../context/AppContext';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 import {
   User, Scale, Ruler, Target, Save, LogOut,
   Server, Wifi, WifiOff, ChevronDown, ChevronUp,
-  Award, Flame, Calendar, CloudUpload, RefreshCw, Mail, Lock
+  Award, Flame, Calendar, CloudUpload, RefreshCw, Mail, Lock,
+  Users, Copy, Bell, BellOff, Trophy
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import { muscleFrequency } from '../data/workoutPlan';
+import { subscribeToPush, unsubscribeFromPush } from '../utils/pushSubscription';
+
+const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
+API.interceptors.request.use((cfg) => {
+  const t = localStorage.getItem('ft_token');
+  if (t) cfg.headers.Authorization = `Bearer ${t}`;
+  return cfg;
+});
 
 export default function Profile() {
   const { user, token, updateUser, logout, backendOnline, syncToCloud, checkHealth } = useApp();
@@ -19,6 +29,69 @@ export default function Profile() {
   const [syncPassword, setSyncPassword] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [retrying, setRetrying] = useState(false);
+
+  const [leaderboardOptIn, setLeaderboardOptIn] = useState(false);
+  const [buddyCode, setBuddyCode] = useState('');
+  const [buddyInput, setBuddyInput] = useState('');
+  const [buddyStatus, setBuddyStatus] = useState(null);
+  const [pushEnabled, setPushEnabled] = useState(false);
+
+  useEffect(() => {
+    API.get('/social/buddy').then(({ data }) => {
+      if (data.paired) setBuddyStatus('active');
+    }).catch(() => {});
+    if ('Notification' in window && Notification.permission === 'granted') {
+      navigator.serviceWorker?.getRegistration().then((reg) => {
+        reg?.pushManager?.getSubscription().then((sub) => { if (sub) setPushEnabled(true); });
+      });
+    }
+  }, []);
+
+  const toggleLeaderboard = async () => {
+    try {
+      await updateUser({ leaderboardOptIn: !leaderboardOptIn });
+      setLeaderboardOptIn(!leaderboardOptIn);
+      toast.success(leaderboardOptIn ? 'Removed from leaderboard' : 'Added to leaderboard!');
+    } catch { toast.error('Failed to update'); }
+  };
+
+  const generateBuddyCode = async () => {
+    try {
+      const { data } = await API.post('/social/buddy/invite');
+      setBuddyCode(data.inviteCode);
+      toast.success('Invite code generated!');
+    } catch { toast.error('Failed to generate code'); }
+  };
+
+  const acceptBuddy = async () => {
+    if (!buddyInput.trim()) return;
+    try {
+      await API.post('/social/buddy/accept', { code: buddyInput.trim() });
+      setBuddyStatus('active');
+      toast.success('Buddy paired!');
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to pair'); }
+  };
+
+  const removeBuddy = async () => {
+    try {
+      await API.delete('/social/buddy');
+      setBuddyStatus(null);
+      setBuddyCode('');
+      toast.success('Buddy removed');
+    } catch { toast.error('Failed to remove buddy'); }
+  };
+
+  const togglePush = async () => {
+    if (pushEnabled) {
+      await unsubscribeFromPush();
+      setPushEnabled(false);
+      toast.success('Push notifications disabled');
+    } else {
+      const ok = await subscribeToPush();
+      if (ok) { setPushEnabled(true); toast.success('Push notifications enabled!'); }
+      else toast.error('Could not enable push notifications');
+    }
+  };
 
   const handleRetryConnection = () => {
     setRetrying(true);
@@ -328,6 +401,82 @@ export default function Profile() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Social & Notifications */}
+        <div className="card p-5 mb-6">
+          <h3 className="font-bold text-white mb-4 flex items-center gap-2"><Users size={16} className="text-indigo-400" /> Social & Notifications</h3>
+
+          {/* Leaderboard Opt-In */}
+          <div className="flex items-center justify-between py-3 border-b border-slate-700/50">
+            <div className="flex items-center gap-3">
+              <Trophy size={16} className="text-amber-400" />
+              <div>
+                <div className="text-sm font-semibold text-white">Leaderboard</div>
+                <div className="text-xs text-slate-400">Show on anonymous leaderboard</div>
+              </div>
+            </div>
+            <button
+              onClick={toggleLeaderboard}
+              className={`w-12 h-6 rounded-full transition-all ${leaderboardOptIn ? 'bg-indigo-600' : 'bg-slate-600'}`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full transition-transform ${leaderboardOptIn ? 'translate-x-6' : 'translate-x-0.5'}`} />
+            </button>
+          </div>
+
+          {/* Push Notifications */}
+          <div className="flex items-center justify-between py-3 border-b border-slate-700/50">
+            <div className="flex items-center gap-3">
+              {pushEnabled ? <Bell size={16} className="text-emerald-400" /> : <BellOff size={16} className="text-slate-400" />}
+              <div>
+                <div className="text-sm font-semibold text-white">Push Notifications</div>
+                <div className="text-xs text-slate-400">Reminders even when app is closed</div>
+              </div>
+            </div>
+            <button
+              onClick={togglePush}
+              className={`w-12 h-6 rounded-full transition-all ${pushEnabled ? 'bg-emerald-600' : 'bg-slate-600'}`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full transition-transform ${pushEnabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
+            </button>
+          </div>
+
+          {/* Buddy System */}
+          <div className="pt-3">
+            <div className="flex items-center gap-2 mb-3">
+              <Users size={14} className="text-purple-400" />
+              <span className="text-sm font-semibold text-white">Workout Buddy</span>
+            </div>
+            {buddyStatus === 'active' ? (
+              <div className="flex items-center justify-between p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl">
+                <span className="text-sm text-purple-300 font-medium">Buddy paired!</span>
+                <button onClick={removeBuddy} className="text-xs text-red-400 hover:text-red-300">Remove</button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <button onClick={generateBuddyCode} className="flex-1 btn-secondary text-xs py-2">Generate Invite Code</button>
+                  {buddyCode && (
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(buddyCode); toast.success('Copied!'); }}
+                      className="flex items-center gap-1 px-3 py-2 bg-indigo-600/20 border border-indigo-500/30 rounded-xl text-indigo-400 text-xs font-bold"
+                    >
+                      <Copy size={12} /> {buddyCode}
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    value={buddyInput}
+                    onChange={(e) => setBuddyInput(e.target.value)}
+                    placeholder="Enter buddy's code"
+                    className="input-field flex-1 text-xs py-2"
+                  />
+                  <button onClick={acceptBuddy} disabled={!buddyInput.trim()} className="btn-primary text-xs px-4 py-2">Pair</button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Backend Status */}

@@ -113,6 +113,17 @@ export default function useReminders() {
           }
         }
       }
+
+      // --- Daily Briefing (8-10 AM) ---
+      if (hour >= 8 && hour < 10) {
+        const jsDay = now.getDay();
+        const dayKey = dayKeys[jsDay];
+        const schedule = weekSchedule.find((d) => d.key === dayKey);
+        const sessionName = schedule?.sessions?.[0]?.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Rest Day';
+        const streak = user.streak || 0;
+        fire('daily_briefing', 'info',
+          `Good morning! Today is ${sessionName}. Calorie target: ${calorieGoal} kcal. Protein goal: ${proteinGoal}g. ${streak > 0 ? `You're on a ${streak}-day streak — keep it up!` : 'Start your streak today!'}`);
+      }
     }
 
     runChecks();

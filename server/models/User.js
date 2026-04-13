@@ -25,6 +25,7 @@ const userSchema = new mongoose.Schema(
     streak: { type: Number, default: 0 },
     totalWorkouts: { type: Number, default: 0 },
     lastWorkoutDate: { type: Date },
+    leaderboardOptIn: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

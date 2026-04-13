@@ -202,6 +202,117 @@ router.post('/chat', authMiddleware, async (req, res) => {
   }
 });
 
+// ── GET /api/agent/coaching (workout coaching suggestions) ─────────────────
+router.get('/coaching', authMiddleware, async (req, res) => {
+  try {
+    const WorkoutLog = require('../models/WorkoutLog');
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const recentLogs = await WorkoutLog.find({ userId: req.user.id, completed: true })
+      .sort({ date: -1 })
+      .limit(14)
+      .lean();
+
+    if (recentLogs.length < 2) {
+      return res.json({ suggestions: ['Complete at least 2 workouts to get personalized coaching tips!'] });
+    }
+
+    const exerciseMap = {};
+    for (const log of recentLogs) {
+      for (const ex of (log.exercises || [])) {
+        if (!ex.sets?.length) continue;
+        const key = ex.exerciseId || ex.exerciseName;
+        if (!exerciseMap[key]) exerciseMap[key] = [];
+        const maxWeight = Math.max(...ex.sets.filter((s) => s.completed).map((s) => s.weight || 0), 0);
+        const maxReps = Math.max(...ex.sets.filter((s) => s.completed).map((s) => s.reps || 0), 0);
+        exerciseMap[key].push({ date: log.date, maxWeight, maxReps });
+      }
+    }
+
+    const suggestions = [];
+    for (const [name, entries] of Object.entries(exerciseMap)) {
+      if (entries.length < 2) continue;
+      const latest = entries[0];
+      const prev = entries[1];
+      const displayName = name.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      if (latest.maxWeight === prev.maxWeight && latest.maxReps === prev.maxReps) {
+        suggestions.push(`${displayName}: Same weight (${latest.maxWeight}kg) and reps (${latest.maxReps}). Try adding 2.5kg or aiming for +2 reps.`);
+      } else if (latest.maxReps >= 12 && latest.maxWeight > 0) {
+        suggestions.push(`${displayName}: You hit ${latest.maxReps} reps at ${latest.maxWeight}kg — time to increase weight to ${latest.maxWeight + 2.5}kg!`);
+      }
+      if (suggestions.length >= 5) break;
+    }
+
+    if (!suggestions.length) suggestions.push('Great progress! Keep pushing — try to add weight or reps each session.');
+
+    res.json({ suggestions });
+  } catch (err) {
+    console.error('[SamAI] Coaching error:', err.message);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── POST /api/agent/food-log (AI-powered food parsing) ────────────────────
+router.post('/food-log', authMiddleware, async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message) return res.status(400).json({ message: 'Message required' });
+
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const foodParsePrompt = `You are a food nutrition parser. The user says: "${message.trim()}"
+
+Parse this into a JSON array of food items. For each item extract:
+- name (string)
+- quantity (string, e.g. "2 pieces", "1 bowl", "200ml")
+- calories (number, estimated kcal)
+- protein (number, grams)
+- carbs (number, grams)
+- fat (number, grams)
+
+Also determine the meal category: one of "breakfast", "lunch", "dinner", "snacks", "preWorkout", "postWorkout".
+
+Return ONLY valid JSON in this exact format (no markdown, no explanation):
+{"meal":"lunch","foods":[{"name":"Dal","quantity":"1 bowl","calories":150,"protein":9,"carbs":20,"fat":3}]}`;
+
+    let parsed;
+    try {
+      const result = await callGemini(foodParsePrompt, [], message.trim());
+      const jsonStr = result.text.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+      parsed = JSON.parse(jsonStr);
+    } catch (parseErr) {
+      console.error('[SamAI] Food parse error:', parseErr.message);
+      return res.json({
+        reply: "I couldn't parse the food items. Could you try rephrasing? Example: \"I ate 2 rotis with dal and rice for lunch\"",
+        parsedFoods: null,
+      });
+    }
+
+    const foods = parsed.foods || [];
+    const totalCal = foods.reduce((s, f) => s + (f.calories || 0), 0);
+    const reply = `Got it! I found ${foods.length} item(s) totalling ~${totalCal} kcal:\n${foods.map((f) => `• ${f.name} (${f.quantity}) — ${f.calories} kcal`).join('\n')}\n\nTap "Log This" to add to your ${parsed.meal || 'snacks'} log.`;
+
+    const userMsg = new ChatMessage({ userId: user._id, role: 'user', content: message.trim() });
+    const agentMsg = new ChatMessage({ userId: user._id, role: 'agent', content: reply });
+    await Promise.all([userMsg.save(), agentMsg.save()]);
+
+    res.json({
+      reply,
+      parsedFoods: foods,
+      meal: parsed.meal || 'snacks',
+      timestamp: agentMsg.createdAt,
+    });
+  } catch (err) {
+    console.error('[SamAI] Food-log error:', err);
+    if (err.isDailyLimit) {
+      return res.status(429).json({ message: 'Daily AI quota reached.' });
+    }
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // ── GET /api/agent/history ─────────────────────────────────────────────────
 router.get('/history', authMiddleware, async (req, res) => {
   try {
