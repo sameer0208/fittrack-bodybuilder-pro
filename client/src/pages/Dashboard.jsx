@@ -5,6 +5,7 @@ import { weekSchedule, workoutPlan } from '../data/workoutPlan';
 import BMICard from '../components/BMICard';
 import ShareCard from '../components/ShareCard';
 import DailyChallenges from '../components/DailyChallenges';
+import WorkoutCalendar from '../components/WorkoutCalendar';
 import dayjs from 'dayjs';
 import axios from 'axios';
 import {
@@ -367,7 +368,7 @@ export default function Dashboard() {
         </div>
 
         {/* ── Full Weekly Program Grid ────────────────── */}
-        <div className="mb-6">
+        <div className="mb-5">
           <h2 className="font-bold text-white text-sm mb-3 flex items-center gap-2">
             <Zap size={13} className="text-indigo-400" />
             Full Program
@@ -396,6 +397,11 @@ export default function Dashboard() {
               );
             })}
           </div>
+        </div>
+
+        {/* ── Workout Calendar ────────────────────────── */}
+        <div className="mb-5">
+          <WorkoutCalendar />
         </div>
 
         {/* ── Quick Access Cards ──────────────────────── */}

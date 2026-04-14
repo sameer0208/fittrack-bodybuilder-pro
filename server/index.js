@@ -43,6 +43,7 @@ const socialRoutes = require('./routes/social');
 const analyticsRoutes = require('./routes/analytics');
 const pushRoutes = require('./routes/push');
 const challengeRoutes = require('./routes/challenges');
+const customWorkoutRoutes = require('./routes/customWorkout');
 
 app.use('/api/users', userRoutes);
 app.use('/api/workouts', workoutRoutes);
@@ -55,6 +56,7 @@ app.use('/api/social', socialRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/challenges', challengeRoutes);
+app.use('/api/custom-workout', customWorkoutRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'FitTrack API is running' });

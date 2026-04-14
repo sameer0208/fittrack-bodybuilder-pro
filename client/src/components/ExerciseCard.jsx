@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, ChevronDown, ChevronUp, Info, CheckCircle2, Circle, Timer, X } from 'lucide-react';
+import { Play, ChevronDown, ChevronUp, Info, CheckCircle2, Circle, Timer, X, Plus, Minus, Dumbbell } from 'lucide-react';
 import VideoModal from './VideoModal';
 
 const difficultyColors = {
@@ -15,14 +15,10 @@ const categoryColors = {
   cardio:    'bg-orange-500/20 text-orange-400 border-orange-500/30',
 };
 
-// ── Stepper ─────────────────────────────────────────────────────────────────
-// Clean +/− stepper without an inline suffix label — the parent adds the label
-// above the stepper instead so there's maximum room for the value display.
 function Stepper({ value, onChange, step = 1, min = 0, highlight = false }) {
   const numVal = parseFloat(value) || 0;
   return (
     <div className="flex items-center gap-1.5">
-      {/* Minus */}
       <button
         onPointerDown={(e) => {
           e.preventDefault();
@@ -32,8 +28,6 @@ function Stepper({ value, onChange, step = 1, min = 0, highlight = false }) {
       >
         −
       </button>
-
-      {/* Value input */}
       <input
         type="number"
         inputMode="decimal"
@@ -46,8 +40,6 @@ function Stepper({ value, onChange, step = 1, min = 0, highlight = false }) {
             : 'border-slate-600/60 focus:border-indigo-500'
         }`}
       />
-
-      {/* Plus */}
       <button
         onPointerDown={(e) => {
           e.preventDefault();
@@ -201,6 +193,7 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
   const [activeSection,  setActiveSection]  = useState('log');
   const [warnIdx,        setWarnIdx]        = useState(null);
   const [showRest,       setShowRest]       = useState(false);
+  const [imgError,       setImgError]       = useState(false);
 
   const defaultRestSec = (() => {
     const raw = exercise.rest || '';
@@ -222,6 +215,7 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
 
   const allCompleted   = localSets.every((s) => s.completed);
   const completedCount = localSets.filter((s) => s.completed).length;
+  const totalSetCount  = localSets.length;
 
   const updateSet = (idx, field, value) => {
     const updated = localSets.map((s, i) => (i === idx ? { ...s, [field]: value } : s));
@@ -246,12 +240,35 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
     setLogs?.(exercise.id, updated);
     if (warnIdx === idx) setWarnIdx(null);
 
-    // Auto-start rest timer when completing a set (not uncompleting), and not the last set
     if (nowCompleting) {
       const remaining = updated.filter((s) => !s.completed).length;
       if (remaining > 0) setShowRest(true);
     }
   };
+
+  // ── Add / Remove extra sets ──────────────────────────────────────────────
+  const addSet = () => {
+    const newSet = {
+      setNumber: localSets.length + 1,
+      weight: localSets.length > 0 ? localSets[localSets.length - 1].weight : '',
+      reps: '',
+      completed: false,
+    };
+    const updated = [...localSets, newSet];
+    setLocalSets(updated);
+    setLogs?.(exercise.id, updated);
+  };
+
+  const removeLastSet = () => {
+    if (localSets.length <= 1) return;
+    const last = localSets[localSets.length - 1];
+    if (last.completed) return;
+    const updated = localSets.slice(0, -1);
+    setLocalSets(updated);
+    setLogs?.(exercise.id, updated);
+  };
+
+  const canRemoveSet = localSets.length > 1 && !localSets[localSets.length - 1].completed;
 
   return (
     <>
@@ -262,7 +279,6 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
       >
         {/* ── Card Header ───────────────────────────────────── */}
         <div className="flex gap-3 p-4">
-          {/* Exercise number badge */}
           <div
             className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 mt-0.5 ${
               allCompleted ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-300'
@@ -271,7 +287,6 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
             {allCompleted ? <CheckCircle2 size={16} /> : index + 1}
           </div>
 
-          {/* Name + badges + image */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
@@ -295,37 +310,44 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
                 </div>
               </div>
 
-              {/* Thumbnail */}
               <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-slate-700 border border-slate-600/50">
-                <img
-                  src={exercise.image}
-                  alt={exercise.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.src = `https://placehold.co/56x56/1e293b/6366f1?text=${exercise.id.slice(0, 2).toUpperCase()}`;
-                  }}
-                />
+                {!imgError ? (
+                  <img
+                    src={exercise.image}
+                    alt={exercise.name}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    onError={() => setImgError(true)}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-900/40 to-slate-800">
+                    <Dumbbell size={20} className="text-indigo-400/60" />
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Sets / Reps / Rest */}
             <div className="flex items-center gap-3 mt-2.5 text-sm">
-              <span className="text-white font-bold">{exercise.sets}</span>
+              <span className="text-white font-bold">{totalSetCount}</span>
               <span className="text-slate-400 text-xs">sets</span>
               <span className="text-slate-600">·</span>
               <span className="text-white font-bold">{exercise.reps}</span>
               <span className="text-slate-400 text-xs">reps</span>
               <span className="text-slate-600">·</span>
               <span className="text-slate-400 text-xs">Rest {exercise.rest}</span>
+              {totalSetCount !== exercise.sets && (
+                <span className="text-amber-400/70 text-[10px] font-semibold ml-auto">
+                  ({exercise.sets} default)
+                </span>
+              )}
             </div>
 
-            {/* Progress bar */}
             <div className="mt-2">
-              <span className="text-[10px] text-slate-500">{completedCount}/{exercise.sets} sets done</span>
+              <span className="text-[10px] text-slate-500">{completedCount}/{totalSetCount} sets done</span>
               <div className="progress-bar h-1.5 mt-1">
                 <div
                   className="progress-fill bg-gradient-to-r from-indigo-500 to-emerald-500"
-                  style={{ width: `${(completedCount / exercise.sets) * 100}%` }}
+                  style={{ width: `${totalSetCount > 0 ? (completedCount / totalSetCount) * 100 : 0}%` }}
                 />
               </div>
             </div>
@@ -368,7 +390,6 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
         {expanded && (
           <div className="border-t border-slate-700/50 animate-fade-in">
 
-            {/* Instructions tab */}
             {activeSection === 'instructions' && (
               <div className="p-4 bg-slate-900/40">
                 <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -386,7 +407,7 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
                 </ol>
                 {exercise.tips && (
                   <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-                    <span className="text-xs font-bold text-amber-400">💡 Pro Tip: </span>
+                    <span className="text-xs font-bold text-amber-400">Pro Tip: </span>
                     <span className="text-xs text-amber-200/80">{exercise.tips}</span>
                   </div>
                 )}
@@ -394,22 +415,42 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
                   onClick={() => setActiveSection('log')}
                   className="mt-4 w-full py-2.5 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 text-xs font-semibold touch-manipulation"
                 >
-                  → Log Sets
+                  Log Sets
                 </button>
               </div>
             )}
 
-            {/* Set logging tab */}
             {activeSection === 'log' && (
               <div className="p-4 space-y-3">
-                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Log Your Sets
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Log Your Sets
+                  </h4>
+                  <div className="flex items-center gap-1.5">
+                    {canRemoveSet && (
+                      <button
+                        type="button"
+                        onClick={removeLastSet}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-slate-700/60 text-slate-400 hover:text-red-400 border border-slate-600/40 hover:border-red-500/30 transition-all touch-manipulation active:scale-95"
+                      >
+                        <Minus size={10} /> Remove
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={addSet}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-indigo-600/15 text-indigo-400 border border-indigo-500/25 hover:bg-indigo-600/25 transition-all touch-manipulation active:scale-95"
+                    >
+                      <Plus size={10} /> Add Set
+                    </button>
+                  </div>
+                </div>
 
                 {localSets.map((set, idx) => {
                   const hasReps     = (parseInt(set.reps, 10) || 0) > 0;
                   const isWarn      = warnIdx === idx;
                   const canComplete = set.completed || hasReps;
+                  const isExtra     = idx >= exercise.sets;
 
                   return (
                     <div
@@ -419,13 +460,14 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
                           ? 'border-emerald-500/50 bg-emerald-950/30'
                           : isWarn
                           ? 'border-amber-400/50 bg-amber-950/20'
+                          : isExtra
+                          ? 'border-indigo-500/30 bg-indigo-950/10'
                           : 'border-slate-600/40 bg-slate-700/20'
                       }`}
                     >
-                      {/* ── Set header row ── */}
                       <div
                         className={`flex items-center justify-between px-4 py-2.5 ${
-                          set.completed ? 'bg-emerald-900/30' : 'bg-slate-700/30'
+                          set.completed ? 'bg-emerald-900/30' : isExtra ? 'bg-indigo-900/20' : 'bg-slate-700/30'
                         }`}
                       >
                         <span
@@ -434,6 +476,9 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
                           }`}
                         >
                           Set {idx + 1}
+                          {isExtra && !set.completed && (
+                            <span className="ml-1.5 text-[9px] font-semibold text-indigo-400/80 uppercase">extra</span>
+                          )}
                           {set.completed && set.weight && set.reps && (
                             <span className="ml-2 text-[11px] font-normal text-emerald-500">
                               {set.weight} kg × {set.reps} reps
@@ -441,7 +486,6 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
                           )}
                         </span>
 
-                        {/* Mark Done / Done button */}
                         <button
                           onPointerDown={(e) => { e.preventDefault(); toggleSetComplete(idx); }}
                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all touch-manipulation border ${
@@ -460,9 +504,7 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
                         </button>
                       </div>
 
-                      {/* ── Weight + Reps inputs ── */}
                       <div className="grid grid-cols-2 gap-3 px-4 py-3">
-                        {/* Weight */}
                         <div>
                           <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-1.5">
                             Weight (kg)
@@ -474,11 +516,9 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
                             min={0}
                           />
                         </div>
-
-                        {/* Reps */}
                         <div>
                           <div className={`text-[10px] font-semibold uppercase tracking-wider mb-1.5 ${isWarn ? 'text-amber-400' : 'text-slate-500'}`}>
-                            Reps {isWarn && '⚠ required'}
+                            Reps {isWarn && ' required'}
                           </div>
                           <Stepper
                             value={set.reps}
@@ -496,7 +536,6 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
                   );
                 })}
 
-                {/* Rest Timer */}
                 {showRest && (
                   <RestTimer
                     defaultSeconds={defaultRestSec}
@@ -504,7 +543,6 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
                   />
                 )}
 
-                {/* Manual rest timer trigger */}
                 {!showRest && completedCount > 0 && !allCompleted && (
                   <button
                     onClick={() => setShowRest(true)}
@@ -514,7 +552,6 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
                   </button>
                 )}
 
-                {/* Volume summary */}
                 {completedCount > 0 && (
                   <div className="p-3 bg-slate-700/20 rounded-xl flex items-center justify-between text-xs border border-slate-600/30">
                     <span className="text-slate-400">Volume this exercise</span>

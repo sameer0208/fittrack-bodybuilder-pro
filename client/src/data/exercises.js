@@ -11,7 +11,7 @@ export const exercises = {
     sets: 4,
     reps: '8–10',
     rest: '90–120 sec',
-    image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&q=80',
+    image: 'https://img.youtube.com/vi/SCVCLChPQFY/mqdefault.jpg',
     videoSearch: 'barbell bench press proper form tutorial',
     videoId: 'SCVCLChPQFY',
     instructions: [
@@ -36,7 +36,7 @@ export const exercises = {
     sets: 4,
     reps: '10–12',
     rest: '75–90 sec',
-    image: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=600&q=80',
+    image: 'https://img.youtube.com/vi/8iPEnn-ltC8/mqdefault.jpg',
     videoSearch: 'incline dumbbell press upper chest tutorial',
     videoId: '8iPEnn-ltC8',
     instructions: [
@@ -60,7 +60,7 @@ export const exercises = {
     sets: 3,
     reps: '12–15',
     rest: '60 sec',
-    image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&q=80',
+    image: 'https://img.youtube.com/vi/Iwe6AmxVf7o/mqdefault.jpg',
     videoSearch: 'cable crossover chest flyes tutorial form',
     videoId: 'Iwe6AmxVf7o',
     instructions: [
@@ -84,7 +84,7 @@ export const exercises = {
     sets: 4,
     reps: '8–10',
     rest: '90 sec',
-    image: 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=600&q=80',
+    image: 'https://img.youtube.com/vi/2yjwXTZQDDI/mqdefault.jpg',
     videoSearch: 'barbell overhead press proper form technique',
     videoId: '2yjwXTZQDDI',
     instructions: [
@@ -108,7 +108,7 @@ export const exercises = {
     sets: 4,
     reps: '12–15',
     rest: '60 sec',
-    image: 'https://images.unsplash.com/photo-1616803689943-5601631c7fec?w=600&q=80',
+    image: 'https://img.youtube.com/vi/XPPfnSEATJA/mqdefault.jpg',
     videoSearch: 'dumbbell lateral raises side delts proper form',
     videoId: 'XPPfnSEATJA',
     instructions: [
@@ -132,7 +132,7 @@ export const exercises = {
     sets: 4,
     reps: '12–15',
     rest: '60 sec',
-    image: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=600&q=80',
+    image: 'https://img.youtube.com/vi/2-LAMcpzODU/mqdefault.jpg',
     videoSearch: 'cable tricep pushdown rope attachment tutorial',
     videoId: '2-LAMcpzODU',
     instructions: [
@@ -156,7 +156,7 @@ export const exercises = {
     sets: 3,
     reps: '10–12',
     rest: '75 sec',
-    image: 'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=600&q=80',
+    image: 'https://img.youtube.com/vi/d_KZxkY_0cM/mqdefault.jpg',
     videoSearch: 'skull crushers EZ bar triceps form tutorial',
     videoId: 'd_KZxkY_0cM',
     instructions: [
@@ -182,7 +182,7 @@ export const exercises = {
     sets: 4,
     reps: '5–6',
     rest: '3–4 min',
-    image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&q=80',
+    image: 'https://img.youtube.com/vi/op9kVnSso6Q/mqdefault.jpg',
     videoSearch: 'conventional deadlift perfect form tutorial beginner',
     videoId: 'op9kVnSso6Q',
     instructions: [
@@ -207,7 +207,7 @@ export const exercises = {
     sets: 4,
     reps: '10–12',
     rest: '75 sec',
-    image: 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=600&q=80',
+    image: 'https://img.youtube.com/vi/CAwf7n6Luuc/mqdefault.jpg',
     videoSearch: 'wide grip lat pulldown lats back tutorial',
     videoId: 'CAwf7n6Luuc',
     instructions: [
@@ -231,7 +231,7 @@ export const exercises = {
     sets: 4,
     reps: '8–10',
     rest: '90 sec',
-    image: 'https://images.unsplash.com/photo-1597452485677-d661670d9640?w=600&q=80',
+    image: 'https://img.youtube.com/vi/6FZHJGzMFEc/mqdefault.jpg',
     videoSearch: 'barbell bent over row overhand grip form tutorial',
     videoId: '6FZHJGzMFEc',
     instructions: [
@@ -255,7 +255,7 @@ export const exercises = {
     sets: 4,
     reps: '10–12',
     rest: '75 sec',
-    image: 'https://images.unsplash.com/photo-1591291621164-2c6367723315?w=600&q=80',
+    image: 'https://img.youtube.com/vi/GZbfZ033f74/mqdefault.jpg',
     videoSearch: 'seated cable row close grip back form tutorial',
     videoId: 'GZbfZ033f74',
     instructions: [
@@ -279,7 +279,7 @@ export const exercises = {
     sets: 4,
     reps: '10–12',
     rest: '60 sec',
-    image: 'https://images.unsplash.com/photo-1581009137042-c552e485697a?w=600&q=80',
+    image: 'https://img.youtube.com/vi/ykJmrZ5v0Oo/mqdefault.jpg',
     videoSearch: 'barbell bicep curl proper form tutorial',
     videoId: 'ykJmrZ5v0Oo',
     instructions: [
@@ -303,7 +303,7 @@ export const exercises = {
     sets: 3,
     reps: '12–15',
     rest: '60 sec',
-    image: 'https://images.unsplash.com/photo-1532029837206-abbe2b7620e3?w=600&q=80',
+    image: 'https://img.youtube.com/vi/zC3nLlEvin4/mqdefault.jpg',
     videoSearch: 'hammer curls brachialis form tutorial',
     videoId: 'zC3nLlEvin4',
     instructions: [
@@ -326,7 +326,7 @@ export const exercises = {
     sets: 3,
     reps: '15–20',
     rest: '60 sec',
-    image: 'https://images.unsplash.com/photo-1566241440091-ec10de8db2e1?w=600&q=80',
+    image: 'https://img.youtube.com/vi/HSoHeSjvIdQ/mqdefault.jpg',
     videoSearch: 'cable face pulls rear delts rotator cuff tutorial',
     videoId: 'HSoHeSjvIdQ',
     instructions: [
@@ -351,7 +351,7 @@ export const exercises = {
     sets: 4,
     reps: '6–8',
     rest: '3–4 min',
-    image: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=600&q=80',
+    image: 'https://img.youtube.com/vi/ultKZa_8Pio/mqdefault.jpg',
     videoSearch: 'barbell back squat perfect form technique tutorial',
     videoId: 'ultKZa_8Pio',
     instructions: [
@@ -376,7 +376,7 @@ export const exercises = {
     sets: 4,
     reps: '10–12',
     rest: '90 sec',
-    image: 'https://images.unsplash.com/photo-1584466977773-e625c37cdd50?w=600&q=80',
+    image: 'https://img.youtube.com/vi/IZxyjW7MPJQ/mqdefault.jpg',
     videoSearch: 'leg press machine form technique quad glute',
     videoId: 'IZxyjW7MPJQ',
     instructions: [
@@ -400,7 +400,7 @@ export const exercises = {
     sets: 4,
     reps: '10–12',
     rest: '90 sec',
-    image: 'https://images.unsplash.com/photo-1594381898411-846e7d193883?w=600&q=80',
+    image: 'https://img.youtube.com/vi/JCXUYuzwNrM/mqdefault.jpg',
     videoSearch: 'romanian deadlift RDL hamstrings form tutorial',
     videoId: 'JCXUYuzwNrM',
     instructions: [
@@ -424,7 +424,7 @@ export const exercises = {
     sets: 4,
     reps: '12–15',
     rest: '60 sec',
-    image: 'https://images.unsplash.com/photo-1547775987-4babb9879b27?w=600&q=80',
+    image: 'https://img.youtube.com/vi/YyvSfVjQeL0/mqdefault.jpg',
     videoSearch: 'leg extension machine quad isolation form tutorial',
     videoId: 'YyvSfVjQeL0',
     instructions: [
@@ -447,7 +447,7 @@ export const exercises = {
     sets: 4,
     reps: '12–15',
     rest: '60 sec',
-    image: 'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?w=600&q=80',
+    image: 'https://img.youtube.com/vi/1Tq3QdYUuHs/mqdefault.jpg',
     videoSearch: 'seated leg curl hamstrings machine form tutorial',
     videoId: '1Tq3QdYUuHs',
     instructions: [
@@ -470,7 +470,7 @@ export const exercises = {
     sets: 5,
     reps: '15–20',
     rest: '45 sec',
-    image: 'https://images.unsplash.com/photo-1601422407692-ec4eeec1d9b3?w=600&q=80',
+    image: 'https://img.youtube.com/vi/gwLzBJYoWlA/mqdefault.jpg',
     videoSearch: 'standing calf raise machine form gastrocnemius',
     videoId: 'gwLzBJYoWlA',
     instructions: [
@@ -494,7 +494,7 @@ export const exercises = {
     sets: 3,
     reps: '15–20',
     rest: '45 sec',
-    image: 'https://images.unsplash.com/photo-1621976360623-004223992275?w=600&q=80',
+    image: 'https://img.youtube.com/vi/JbyjNymZOt0/mqdefault.jpg',
     videoSearch: 'seated calf raise soleus machine form',
     videoId: 'JbyjNymZOt0',
     instructions: [
@@ -519,7 +519,7 @@ export const exercises = {
     sets: 4,
     reps: '8–10',
     rest: '90 sec',
-    image: 'https://images.unsplash.com/photo-1534368420009-621bfab424a8?w=600&q=80',
+    image: 'https://img.youtube.com/vi/DbFgADa2PL8/mqdefault.jpg',
     videoSearch: 'incline barbell bench press upper chest form',
     videoId: 'DbFgADa2PL8',
     instructions: [
@@ -542,7 +542,7 @@ export const exercises = {
     sets: 4,
     reps: '10–12',
     rest: '75 sec',
-    image: 'https://images.unsplash.com/photo-1638536532686-d610adfc8e5c?w=600&q=80',
+    image: 'https://img.youtube.com/vi/qEwKCR5JCog/mqdefault.jpg',
     videoSearch: 'dumbbell shoulder press seated form tutorial',
     videoId: 'qEwKCR5JCog',
     instructions: [
@@ -565,7 +565,7 @@ export const exercises = {
     sets: 3,
     reps: '12–15',
     rest: '60 sec',
-    image: 'https://images.unsplash.com/photo-1576678927484-cc907957088c?w=600&q=80',
+    image: 'https://img.youtube.com/vi/eozdVDA78K0/mqdefault.jpg',
     videoSearch: 'dumbbell chest flyes flat bench form tutorial',
     videoId: 'eozdVDA78K0',
     instructions: [
@@ -588,7 +588,7 @@ export const exercises = {
     sets: 4,
     reps: '15–20',
     rest: '45 sec',
-    image: 'https://images.unsplash.com/photo-1549476464-37392f717541?w=600&q=80',
+    image: 'https://img.youtube.com/vi/lPt0GqwaqBQ/mqdefault.jpg',
     videoSearch: 'single arm cable lateral raise side delt',
     videoId: 'lPt0GqwaqBQ',
     instructions: [
@@ -611,7 +611,7 @@ export const exercises = {
     sets: 4,
     reps: '10–12',
     rest: '90 sec',
-    image: 'https://images.unsplash.com/photo-1520334363614-e22c0dd4fcbb?w=600&q=80',
+    image: 'https://img.youtube.com/vi/2z8JmcrW-As/mqdefault.jpg',
     videoSearch: 'weighted dips chest triceps form tutorial',
     videoId: '2z8JmcrW-As',
     instructions: [
@@ -634,7 +634,7 @@ export const exercises = {
     sets: 4,
     reps: '10–12',
     rest: '75 sec',
-    image: 'https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=600&q=80',
+    image: 'https://img.youtube.com/vi/nEF0bv2FW74/mqdefault.jpg',
     videoSearch: 'close grip bench press triceps form tutorial',
     videoId: 'nEF0bv2FW74',
     instructions: [
@@ -656,7 +656,7 @@ export const exercises = {
     sets: 3,
     reps: '12–15',
     rest: '60 sec',
-    image: 'https://images.unsplash.com/photo-1530822847156-5df684ec5933?w=600&q=80',
+    image: 'https://img.youtube.com/vi/YbX7Wd8jQ-c/mqdefault.jpg',
     videoSearch: 'overhead tricep extension dumbbell long head form',
     videoId: 'YbX7Wd8jQ-c',
     instructions: [
@@ -681,7 +681,7 @@ export const exercises = {
     sets: 4,
     reps: '6–10',
     rest: '2–3 min',
-    image: 'https://images.unsplash.com/photo-1598971639058-fab3c3109a3a?w=600&q=80',
+    image: 'https://img.youtube.com/vi/eGo4IYlbE5g/mqdefault.jpg',
     videoSearch: 'pull ups proper form lats back tutorial',
     videoId: 'eGo4IYlbE5g',
     instructions: [
@@ -704,7 +704,7 @@ export const exercises = {
     sets: 4,
     reps: '10–12',
     rest: '90 sec',
-    image: 'https://images.unsplash.com/photo-1579758629938-03607ccdbaba?w=600&q=80',
+    image: 'https://img.youtube.com/vi/j3Igk5NYja8/mqdefault.jpg',
     videoSearch: 'T-bar row back thickness form tutorial',
     videoId: 'j3Igk5NYja8',
     instructions: [
@@ -727,7 +727,7 @@ export const exercises = {
     sets: 3,
     reps: '10–12',
     rest: '60 sec',
-    image: 'https://images.unsplash.com/photo-1567598508481-65985588e295?w=600&q=80',
+    image: 'https://img.youtube.com/vi/dFzUjzfih7k/mqdefault.jpg',
     videoSearch: 'single arm dumbbell row lats back form tutorial',
     videoId: 'dFzUjzfih7k',
     instructions: [
@@ -750,7 +750,7 @@ export const exercises = {
     sets: 4,
     reps: '10–12',
     rest: '60 sec',
-    image: 'https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?w=600&q=80',
+    image: 'https://img.youtube.com/vi/fIWP-FRFNU0/mqdefault.jpg',
     videoSearch: 'preacher curl EZ bar bicep peak form tutorial',
     videoId: 'fIWP-FRFNU0',
     instructions: [
@@ -773,7 +773,7 @@ export const exercises = {
     sets: 3,
     reps: '12–15',
     rest: '45 sec',
-    image: 'https://images.unsplash.com/photo-1547226761-b55ec51cd7d7?w=600&q=80',
+    image: 'https://img.youtube.com/vi/Jvj2wV0vOYU/mqdefault.jpg',
     videoSearch: 'concentration curl biceps short head form tutorial',
     videoId: 'Jvj2wV0vOYU',
     instructions: [
@@ -796,7 +796,7 @@ export const exercises = {
     sets: 4,
     reps: '12–15',
     rest: '60 sec',
-    image: 'https://images.unsplash.com/photo-1550345332-09e3ac987658?w=600&q=80',
+    image: 'https://img.youtube.com/vi/NAqCVe2mwzA/mqdefault.jpg',
     videoSearch: 'barbell shrug upper traps form tutorial',
     videoId: 'NAqCVe2mwzA',
     instructions: [
@@ -821,7 +821,7 @@ export const exercises = {
     sets: 4,
     reps: '6–8',
     rest: '3 min',
-    image: 'https://images.unsplash.com/photo-1620188467120-5042ed1eb5da?w=600&q=80',
+    image: 'https://img.youtube.com/vi/uYumuL_G_V0/mqdefault.jpg',
     videoSearch: 'front squat quads form tutorial barbell',
     videoId: 'uYumuL_G_V0',
     instructions: [
@@ -844,7 +844,7 @@ export const exercises = {
     sets: 4,
     reps: '10–12 per leg',
     rest: '90 sec',
-    image: 'https://images.unsplash.com/photo-1534367610401-9f5ed68180aa?w=600&q=80',
+    image: 'https://img.youtube.com/vi/2C-uNgKwPLE/mqdefault.jpg',
     videoSearch: 'bulgarian split squat form dumbbell barbell tutorial',
     videoId: '2C-uNgKwPLE',
     instructions: [
@@ -867,7 +867,7 @@ export const exercises = {
     sets: 4,
     reps: '10–12',
     rest: '90 sec',
-    image: 'https://images.unsplash.com/photo-1562771379-eafdca7a02f8?w=600&q=80',
+    image: 'https://img.youtube.com/vi/rMGRHRtQQdE/mqdefault.jpg',
     videoSearch: 'hack squat machine quad form tutorial',
     videoId: 'rMGRHRtQQdE',
     instructions: [
@@ -890,7 +890,7 @@ export const exercises = {
     sets: 4,
     reps: '10–12',
     rest: '90 sec',
-    image: 'https://images.unsplash.com/photo-1592188657297-c6473609e988?w=600&q=80',
+    image: 'https://img.youtube.com/vi/SEdqd1n0cvg/mqdefault.jpg',
     videoSearch: 'barbell hip thrust glutes form tutorial',
     videoId: 'SEdqd1n0cvg',
     instructions: [
@@ -914,7 +914,7 @@ export const exercises = {
     sets: 3,
     reps: '6–8',
     rest: '2 min',
-    image: 'https://images.unsplash.com/photo-1585184394271-4c0a47dc59c9?w=600&q=80',
+    image: 'https://img.youtube.com/vi/SB8BTRJ3OOs/mqdefault.jpg',
     videoSearch: 'nordic hamstring curl eccentric form tutorial',
     videoId: 'SB8BTRJ3OOs',
     instructions: [
@@ -937,7 +937,7 @@ export const exercises = {
     sets: 4,
     reps: '15–20',
     rest: '45 sec',
-    image: 'https://images.unsplash.com/photo-1619975942867-ba2fd8aebbab?w=600&q=80',
+    image: 'https://img.youtube.com/vi/Vwn5hSf3h6A/mqdefault.jpg',
     videoSearch: 'donkey calf raise machine form calves',
     videoId: 'Vwn5hSf3h6A',
     instructions: [
@@ -962,7 +962,7 @@ export const exercises = {
     sets: 3,
     reps: '12–15',
     rest: '60 sec',
-    image: 'https://images.unsplash.com/photo-1559612163-f7b2eb0b1a8a?w=600&q=80',
+    image: 'https://img.youtube.com/vi/sAq_ocpRh_I/mqdefault.jpg',
     videoSearch: 'incline dumbbell curl long head bicep stretch',
     videoId: 'sAq_ocpRh_I',
     instructions: [
@@ -985,7 +985,7 @@ export const exercises = {
     sets: 4,
     reps: '12–15',
     rest: '60 sec',
-    image: 'https://images.unsplash.com/photo-1516208398649-d5d401ba8c49?w=600&q=80',
+    image: 'https://img.youtube.com/vi/Vwn5hSf3h6A/mqdefault.jpg',
     videoSearch: 'bench tricep dip bodyweight form tutorial',
     videoId: 'Vwn5hSf3h6A',
     instructions: [
@@ -1008,7 +1008,7 @@ export const exercises = {
     sets: 4,
     reps: '15–20',
     rest: '45 sec',
-    image: 'https://images.unsplash.com/photo-1533681904393-9ab6eee7e408?w=600&q=80',
+    image: 'https://img.youtube.com/vi/kiuVA0gs3EI/mqdefault.jpg',
     videoSearch: 'rope tricep pushdown cable lateral head form',
     videoId: 'kiuVA0gs3EI',
     instructions: [
@@ -1031,7 +1031,7 @@ export const exercises = {
     sets: 3,
     reps: '15–20',
     rest: '45 sec',
-    image: 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=600&q=80',
+    image: 'https://img.youtube.com/vi/NFzTWp2qpiE/mqdefault.jpg',
     videoSearch: 'cable bicep curl constant tension form tutorial',
     videoId: 'NFzTWp2qpiE',
     instructions: [
@@ -1053,7 +1053,7 @@ export const exercises = {
     sets: 3,
     reps: '60 sec',
     rest: '45 sec',
-    image: 'https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=600&q=80',
+    image: 'https://img.youtube.com/vi/ASdvN_XEl_c/mqdefault.jpg',
     videoSearch: 'plank proper form core tutorial beginner',
     videoId: 'ASdvN_XEl_c',
     instructions: [
@@ -1076,7 +1076,7 @@ export const exercises = {
     sets: 4,
     reps: '15–20',
     rest: '45 sec',
-    image: 'https://images.unsplash.com/photo-1478224010867-4f50ca9e3d70?w=600&q=80',
+    image: 'https://img.youtube.com/vi/2fbujeH3F0E/mqdefault.jpg',
     videoSearch: 'cable crunches abs core weighted form tutorial',
     videoId: '2fbujeH3F0E',
     instructions: [
@@ -1099,7 +1099,7 @@ export const exercises = {
     sets: 3,
     reps: '20 total',
     rest: '45 sec',
-    image: 'https://images.unsplash.com/photo-1558611439-b5e58bc51f64?w=600&q=80',
+    image: 'https://img.youtube.com/vi/lS_Ql2jAmEc/mqdefault.jpg',
     videoSearch: 'russian twists obliques weighted form tutorial',
     videoId: 'lS_Ql2jAmEc',
     instructions: [
@@ -1124,7 +1124,7 @@ export const exercises = {
     sets: 4,
     reps: '5',
     rest: '3 min',
-    image: 'https://images.unsplash.com/photo-1574680188408-6a67e99a6040?w=600&q=80',
+    image: 'https://img.youtube.com/vi/e8TpDdMYq4Y/mqdefault.jpg',
     videoSearch: 'power clean form tutorial barbell Olympic',
     videoId: 'e8TpDdMYq4Y',
     instructions: [
@@ -1148,7 +1148,7 @@ export const exercises = {
     sets: 3,
     reps: '12 steps per leg',
     rest: '90 sec',
-    image: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=600&q=80',
+    image: 'https://img.youtube.com/vi/D7KaRcUTQeE/mqdefault.jpg',
     videoSearch: 'barbell walking lunges quads glutes form tutorial',
     videoId: 'D7KaRcUTQeE',
     instructions: [
@@ -1171,7 +1171,7 @@ export const exercises = {
     sets: 4,
     reps: '10–12',
     rest: '75 sec',
-    image: 'https://images.unsplash.com/photo-1531261635592-e114f3721059?w=600&q=80',
+    image: 'https://img.youtube.com/vi/pQDrcNoDNVM/mqdefault.jpg',
     videoSearch: 'Arnold press all three deltoid heads form tutorial',
     videoId: 'pQDrcNoDNVM',
     instructions: [
@@ -1196,7 +1196,7 @@ export const exercises = {
     sets: 1,
     reps: '15 min',
     rest: 'N/A',
-    image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&q=80',
+    image: 'https://img.youtube.com/vi/Oz4xHEgMaLY/mqdefault.jpg',
     videoSearch: 'foam rolling full body recovery tutorial',
     videoId: 'Oz4xHEgMaLY',
     instructions: [
@@ -1219,7 +1219,7 @@ export const exercises = {
     sets: 3,
     reps: '60 sec per side',
     rest: 'N/A',
-    image: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=600&q=80',
+    image: 'https://img.youtube.com/vi/L_xrDAtykMI/mqdefault.jpg',
     videoSearch: 'hip flexor stretch lunge form psoas recovery',
     videoId: 'L_xrDAtykMI',
     instructions: [
@@ -1242,7 +1242,7 @@ export const exercises = {
     sets: 3,
     reps: '60 sec per side',
     rest: 'N/A',
-    image: 'https://images.unsplash.com/photo-1599058945283-0f3428fba95c?w=600&q=80',
+    image: 'https://img.youtube.com/vi/9Mmy9DkKNe8/mqdefault.jpg',
     videoSearch: 'lat stretch mobility doorway pull-up bar recovery',
     videoId: '9Mmy9DkKNe8',
     instructions: [
@@ -1265,7 +1265,7 @@ export const exercises = {
     sets: 1,
     reps: '20 min',
     rest: 'N/A',
-    image: 'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=600&q=80',
+    image: 'https://img.youtube.com/vi/tBWP_zHFqiA/mqdefault.jpg',
     videoSearch: 'light cardio recovery LISS walking zone 2',
     videoId: 'tBWP_zHFqiA',
     instructions: [

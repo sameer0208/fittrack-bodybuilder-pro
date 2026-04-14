@@ -162,6 +162,59 @@ router.get('/week-status', auth, async (req, res) => {
   }
 });
 
+// Calendar: get completed workout dates for a given month
+router.get('/calendar/:year/:month', auth, async (req, res) => {
+  try {
+    const year = parseInt(req.params.year, 10);
+    const month = parseInt(req.params.month, 10); // 1-indexed
+
+    // Use wide date boundaries: start from day 0 of the month (= last day of prev month)
+    // and go up to day 1 of the next-next month, so timezone offsets never clip real data.
+    // Then map dates to local calendar days on the server side.
+    const start = new Date(year, month - 1, 1, 0, 0, 0, 0);
+    const end   = new Date(year, month, 1, 0, 0, 0, 0);
+
+    // Also search with UTC-based boundaries in case server & DB timezones differ
+    const utcStart = new Date(Date.UTC(year, month - 1, 1));
+    const utcEnd   = new Date(Date.UTC(year, month, 1));
+
+    // Use the wider of the two ranges to ensure we capture all logs
+    const qStart = utcStart < start ? utcStart : start;
+    const qEnd   = utcEnd > end ? utcEnd : end;
+
+    const logs = await WorkoutLog.find({
+      userId: req.user.id,
+      completed: true,
+      date: { $gte: qStart, $lt: qEnd },
+    }).select('date workoutDay workoutName totalVolume duration').lean();
+
+    const days = {};
+    for (const log of logs) {
+      const d = new Date(log.date);
+      // Use local date for grouping (matches what the user sees)
+      const localDay = d.getDate();
+      const localMonth = d.getMonth() + 1;
+      const localYear = d.getFullYear();
+
+      // Only include if the local date actually falls in the requested month
+      if (localYear !== year || localMonth !== month) continue;
+
+      if (!days[localDay]) days[localDay] = [];
+      days[localDay].push({
+        workoutDay: log.workoutDay,
+        workoutName: log.workoutName,
+        totalVolume: log.totalVolume,
+        duration: log.duration,
+      });
+    }
+
+    res.json({ year, month, days });
+  } catch (err) {
+    console.error('[Calendar] Error:', err.message);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Get workout stats / progress
 router.get('/stats', auth, async (req, res) => {
   try {
