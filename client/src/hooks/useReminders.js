@@ -3,36 +3,30 @@ import { useApp } from '../context/AppContext';
 import { weekSchedule } from '../data/workoutPlan';
 import { requestNotificationPermission } from '../utils/notifications';
 
-const INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
-const WATER_GOAL_DEFAULT = 3000; // ml
+const INTERVAL_MS = 30 * 60 * 1000;
+const WATER_GOAL_DEFAULT = 3000;
 
 const dayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-function todayKey() {
+// In-memory set — resets on page reload, which is fine for daily reminders
+const firedSet = new Set();
+
+function todayStr() {
   return new Date().toISOString().split('T')[0];
 }
 
-function firedKey() {
-  return `ft_reminders_${todayKey()}`;
-}
-
-function getAlreadyFired() {
-  try { return JSON.parse(localStorage.getItem(firedKey()) || '[]'); } catch { return []; }
+function hasFired(id) {
+  return firedSet.has(`${todayStr()}_${id}`);
 }
 
 function markFired(id) {
-  const list = getAlreadyFired();
-  if (!list.includes(id)) {
-    list.push(id);
-    localStorage.setItem(firedKey(), JSON.stringify(list));
-  }
+  firedSet.add(`${todayStr()}_${id}`);
 }
 
 export default function useReminders() {
   const { user, getNutritionLog, getWorkoutLog, addNotification } = useApp();
   const permAsked = useRef(false);
 
-  // Ask for browser notification permission once
   useEffect(() => {
     if (user && !permAsked.current) {
       permAsked.current = true;
@@ -46,8 +40,7 @@ export default function useReminders() {
     function runChecks() {
       const now = new Date();
       const hour = now.getHours();
-      const fired = getAlreadyFired();
-      const today = todayKey();
+      const today = todayStr();
 
       const nutrition = getNutritionLog(today);
       const totalCalories = (nutrition?.meals
@@ -62,12 +55,11 @@ export default function useReminders() {
       const proteinGoal = user.proteinTarget || 150;
 
       function fire(id, type, message) {
-        if (fired.includes(id)) return;
+        if (hasFired(id)) return;
         markFired(id);
         addNotification(type, message);
       }
 
-      // --- Water reminders ---
       if (hour >= 10 && hour < 14 && waterMl < waterGoal * 0.3) {
         fire('water_morning', 'water',
           `You've only had ${waterMl}ml of water. Aim for at least ${Math.round(waterGoal * 0.5)}ml by noon!`);
@@ -81,7 +73,6 @@ export default function useReminders() {
           `Only ${waterMl}ml of ${waterGoal}ml water consumed today. Try to finish your goal before bed.`);
       }
 
-      // --- Calorie reminders ---
       if (hour >= 13 && hour < 17 && totalCalories < calorieGoal * 0.4) {
         fire('cal_lunch', 'calories',
           `You've logged only ${totalCalories} kcal so far — that's below 40% of your ${calorieGoal} kcal goal. Time for a meal!`);
@@ -91,13 +82,11 @@ export default function useReminders() {
           `Calorie intake is ${totalCalories} kcal — still ${calorieGoal - totalCalories} kcal short. Don't skip dinner!`);
       }
 
-      // --- Protein reminder ---
       if (hour >= 17 && totalProtein < proteinGoal * 0.5) {
         fire('protein_evening', 'protein',
           `Protein so far: ${Math.round(totalProtein)}g of ${proteinGoal}g. Have a protein-rich meal or shake!`);
       }
 
-      // --- Workout reminder ---
       if (hour >= 9 && hour < 20) {
         const jsDay = now.getDay();
         const dayKey = dayKeys[jsDay];
@@ -114,7 +103,6 @@ export default function useReminders() {
         }
       }
 
-      // --- Daily Briefing (8-10 AM) ---
       if (hour >= 8 && hour < 10) {
         const jsDay = now.getDay();
         const dayKey = dayKeys[jsDay];

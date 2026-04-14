@@ -31,17 +31,8 @@ export default function Progress() {
     }
   };
 
-  // Build workout history from localStorage
-  const allWorkoutKeys = Object.keys(localStorage)
-    .filter((k) => k.startsWith('ft_workout_'))
-    .sort((a, b) => b.localeCompare(a));
-
-  const recentWorkouts = allWorkoutKeys.slice(0, 10).map((k) => {
-    try {
-      const d = JSON.parse(localStorage.getItem(k));
-      return d;
-    } catch { return null; }
-  }).filter(Boolean);
+  // Workout history from server stats (recentLogs) — no localStorage
+  const recentWorkouts = (stats?.recentLogs || []).slice().reverse();
 
   const totalVolume = recentWorkouts
     .filter((w) => w.completed)
@@ -49,22 +40,16 @@ export default function Progress() {
 
   const muscleHitsThisWeek = {};
   const startOfWeek = dayjs().startOf('week');
-  allWorkoutKeys.forEach((k) => {
-    const dateStr = k.split('_')[2]; // ft_workout_YYYY-MM-DD_sessionKey
-    if (dayjs(dateStr).isAfter(startOfWeek)) {
-      try {
-        const d = JSON.parse(localStorage.getItem(k));
-        if (d?.completed && d?.sessionKey) {
-          const plan = workoutPlan[d.sessionKey];
-          if (plan) {
-            plan.focus?.forEach((f) => {
-              muscleHitsThisWeek[f] = (muscleHitsThisWeek[f] || 0) + 1;
-            });
-          }
-        }
-      } catch {}
+  for (const log of recentWorkouts) {
+    if (!log.completed || !log.date) continue;
+    if (!dayjs(log.date).isAfter(startOfWeek)) continue;
+    const plan = log.workoutDay ? workoutPlan[log.workoutDay] : null;
+    if (plan) {
+      plan.focus?.forEach((f) => {
+        muscleHitsThisWeek[f] = (muscleHitsThisWeek[f] || 0) + 1;
+      });
     }
-  });
+  }
 
   const tabs = ['weight', 'workouts', 'muscles'];
 
@@ -251,10 +236,10 @@ export default function Progress() {
               ) : (
                 <div className="space-y-3">
                   {recentWorkouts.map((log, i) => {
-                    const plan = log.sessionKey ? workoutPlan[log.sessionKey] : null;
-                    const dateStr = Object.keys(localStorage)
-                      .find((k) => localStorage.getItem(k) === JSON.stringify(log))
-                      ?.split('_')[2] || 'Unknown';
+                    const plan = log.workoutDay ? workoutPlan[log.workoutDay] : null;
+                    const dateStr = log.date
+                      ? dayjs(log.date).format('MMM D')
+                      : 'Unknown';
                     return (
                       <div key={i} className={`p-3 rounded-xl border flex items-center gap-3 ${
                         log.completed
@@ -267,7 +252,7 @@ export default function Progress() {
                         <div className="flex-1 min-w-0">
                           <div className="font-semibold text-sm text-white">{log.workoutName || plan?.name || 'Workout'}</div>
                           <div className="text-xs text-slate-400">
-                            {log.duration ? `${log.duration} min` : '–'} · {log.totalVolume ? `${log.totalVolume.toFixed(0)}kg volume` : '–'}
+                            {dateStr} · {log.duration ? `${log.duration} min` : '–'} · {log.totalVolume ? `${Math.round(log.totalVolume)}kg` : '–'}
                           </div>
                         </div>
                         <div className={`text-xs font-bold ${log.completed ? 'text-emerald-400' : 'text-amber-400'}`}>

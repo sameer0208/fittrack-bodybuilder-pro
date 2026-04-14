@@ -5,6 +5,8 @@ import { Zap, ChevronRight, ChevronLeft, Scale, Ruler, Target, User, Mail, Lock,
 import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
 
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 const steps = [
   { id: 'welcome', title: 'Welcome to FitTrack Bodybuilder Pro' },
   { id: 'account', title: 'Create Account' },
@@ -12,6 +14,109 @@ const steps = [
   { id: 'goals', title: 'Set Your Goals' },
   { id: 'ready', title: "You're Ready!" },
 ];
+
+async function checkEmailExists(email) {
+  const url = `${API_BASE}/users/check-email?email=${encodeURIComponent(email)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Server returned ${res.status}`);
+  const data = await res.json();
+  return data.exists === true;
+}
+
+function AccountStep({ emailError, setEmailError, checkingEmail, backendOnline, onBack, onContinue }) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [nameErr, setNameErr] = useState('');
+
+  const handleSubmitAccount = async (e) => {
+    e.preventDefault();
+    setNameErr('');
+    if (!name.trim()) {
+      setNameErr('Name is required');
+      return;
+    }
+    await onContinue({ name: name.trim(), email: email.trim(), password });
+  };
+
+  return (
+    <div>
+      <h2 className="section-title">Create Account</h2>
+      <p className="section-subtitle">
+        {backendOnline ? 'Save your progress to the cloud.' : 'Running in offline mode — data saves locally.'}
+      </p>
+      {!backendOnline && (
+        <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+          <p className="text-xs text-amber-400">
+            Backend not connected. Your data will be saved locally. To enable cloud sync, start the server.
+          </p>
+        </div>
+      )}
+      <form onSubmit={handleSubmitAccount} className="space-y-4">
+        <div>
+          <label className="text-sm text-slate-400 mb-1.5 block">Your Name</label>
+          <div className="relative">
+            <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={name}
+              onChange={(e) => { setName(e.target.value); setNameErr(''); }}
+              placeholder="e.g. Alex Power"
+              className="input-field pl-10"
+            />
+          </div>
+          {nameErr && <p className="text-red-400 text-xs mt-1">{nameErr}</p>}
+        </div>
+        <div>
+          <label className="text-sm text-slate-400 mb-1.5 block">Email (optional)</label>
+          <div className="relative">
+            <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(''); }}
+              type="email"
+              placeholder="you@example.com"
+              className={`input-field pl-10 ${emailError ? 'border-red-500/60 focus:border-red-500' : ''}`}
+            />
+          </div>
+          {emailError && (
+            <div className="mt-2 p-2.5 bg-red-500/10 border border-red-500/20 rounded-xl">
+              <p className="text-xs text-red-400 font-medium">{emailError}</p>
+              <Link to="/login" className="text-xs text-indigo-400 font-semibold mt-1 inline-block hover:underline">
+                Go to Login →
+              </Link>
+            </div>
+          )}
+        </div>
+        <div>
+          <label className="text-sm text-slate-400 mb-1.5 block">Password (optional)</label>
+          <div className="relative">
+            <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              type="password"
+              placeholder="••••••••"
+              className="input-field pl-10"
+            />
+          </div>
+        </div>
+        <div className="flex gap-3 pt-2">
+          <button type="button" onClick={onBack} className="btn-secondary flex items-center gap-2">
+            <ChevronLeft size={16} />
+          </button>
+          <button type="submit" disabled={checkingEmail}
+            className="btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-60">
+            {checkingEmail ? (
+              <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Checking...</>
+            ) : (
+              <>Continue <ChevronRight size={18} /></>
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
 
 export default function Onboarding() {
   const [step, setStep] = useState(0);
@@ -25,12 +130,39 @@ export default function Onboarding() {
     ? (formData.currentWeight / Math.pow(formData.height / 100, 2)).toFixed(1)
     : null;
 
+  const [checkingEmail, setCheckingEmail] = useState(false);
+  const [emailError, setEmailError] = useState('');
+
   const next = (data) => {
     if (data) setFormData((prev) => ({ ...prev, ...data }));
     setStep((s) => Math.min(s + 1, steps.length - 1));
   };
 
   const prev = () => setStep((s) => Math.max(s - 1, 0));
+
+  const handleAccountStep = async (data) => {
+    setEmailError('');
+    const email = (data?.email || '').trim();
+
+    if (email) {
+      setCheckingEmail(true);
+      try {
+        const exists = await checkEmailExists(email);
+        if (exists) {
+          const msg = 'An account with this email already exists. Please log in instead.';
+          setEmailError(msg);
+          toast.error(msg, { duration: 5000 });
+          setCheckingEmail(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('[Onboarding] Email check failed:', err.message);
+      }
+      setCheckingEmail(false);
+    }
+
+    next(data);
+  };
 
   const handleFinish = async () => {
     setLoading(true);
@@ -43,13 +175,11 @@ export default function Onboarding() {
       toast.success('Profile created! Let\'s get swole! 💪');
       navigate('/dashboard');
     } catch (err) {
-      if (err.response?.status === 400) {
-        // Email already exists — try local mode
-        saveLocalProfile({ ...formData, name: formData.name || 'Athlete' });
-        toast.success('Using local mode. Let\'s get started!');
-        navigate('/dashboard');
+      const msg = err.response?.data?.message || '';
+      if (err.response?.status === 400 && /already registered/i.test(msg)) {
+        toast.error('An account with this email already exists. Please go back and log in instead.', { duration: 5000 });
       } else {
-        toast.error(err.response?.data?.message || 'Something went wrong');
+        toast.error(msg || 'Something went wrong');
       }
     } finally {
       setLoading(false);
@@ -138,68 +268,14 @@ export default function Onboarding() {
 
           {/* Step 1: Account */}
           {step === 1 && (
-            <div>
-              <h2 className="section-title">Create Account</h2>
-              <p className="section-subtitle">
-                {backendOnline ? 'Save your progress to the cloud.' : 'Running in offline mode — data saves locally.'}
-              </p>
-              {!backendOnline && (
-                <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-                  <p className="text-xs text-amber-400">
-                    ⚠️ Backend not connected. Your data will be saved locally. To enable cloud sync, start the server and add your MongoDB URI.
-                  </p>
-                </div>
-              )}
-              <form
-                onSubmit={handleSubmit(next)}
-                className="space-y-4"
-              >
-                <div>
-                  <label className="text-sm text-slate-400 mb-1.5 block">Your Name</label>
-                  <div className="relative">
-                    <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      {...register('name', { required: 'Name is required' })}
-                      placeholder="e.g. Alex Power"
-                      className="input-field pl-10"
-                    />
-                  </div>
-                  {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name.message}</p>}
-                </div>
-                <div>
-                  <label className="text-sm text-slate-400 mb-1.5 block">Email (optional)</label>
-                  <div className="relative">
-                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      {...register('email')}
-                      type="email"
-                      placeholder="you@example.com"
-                      className="input-field pl-10"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm text-slate-400 mb-1.5 block">Password (optional)</label>
-                  <div className="relative">
-                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      {...register('password')}
-                      type="password"
-                      placeholder="••••••••"
-                      className="input-field pl-10"
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={prev} className="btn-secondary flex items-center gap-2">
-                    <ChevronLeft size={16} />
-                  </button>
-                  <button type="submit" className="btn-primary flex-1 flex items-center justify-center gap-2">
-                    Continue <ChevronRight size={18} />
-                  </button>
-                </div>
-              </form>
-            </div>
+            <AccountStep
+              emailError={emailError}
+              setEmailError={setEmailError}
+              checkingEmail={checkingEmail}
+              backendOnline={backendOnline}
+              onBack={prev}
+              onContinue={handleAccountStep}
+            />
           )}
 
           {/* Step 2: Body Stats */}

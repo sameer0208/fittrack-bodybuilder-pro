@@ -53,35 +53,20 @@ export default function WorkoutDay() {
 
   const displayName = customName || plan?.name || '';
 
-  // Load customization from backend (with localStorage fallback)
+  // Load customization from backend only
   useEffect(() => {
     if (!sessionKey) return;
-    const lsKey = `ft_custom_workout_${sessionKey}`;
-
-    const cached = localStorage.getItem(lsKey);
-    if (cached) {
-      try {
-        const { added = [], removed = [], customName: cn = '' } = JSON.parse(cached);
-        setCustomAdded(added);
-        setCustomRemoved(removed);
-        if (cn) setCustomName(cn);
-      } catch { /* ignore */ }
-    }
-
     API.get(`/custom-workout/${sessionKey}`).then(({ data }) => {
       setCustomAdded(data.added || []);
       setCustomRemoved(data.removed || []);
       setCustomName(data.customName || '');
-      localStorage.setItem(lsKey, JSON.stringify(data));
-    }).catch(() => { /* use cached */ });
+    }).catch(() => { /* server unreachable — use defaults */ });
   }, [sessionKey]);
 
-  // Persist customization
+  // Persist customization to server
   const saveCustomization = useCallback(async (added, removed, cName) => {
-    const lsKey = `ft_custom_workout_${sessionKey}`;
     const payload = { added, removed, customName: cName ?? customName };
-    localStorage.setItem(lsKey, JSON.stringify(payload));
-    try { await API.put(`/custom-workout/${sessionKey}`, payload); } catch { /* offline ok */ }
+    try { await API.put(`/custom-workout/${sessionKey}`, payload); } catch { /* server unreachable */ }
   }, [sessionKey, customName]);
 
   // Merged exercise list = (original − removed) + added
@@ -105,7 +90,25 @@ export default function WorkoutDay() {
       setElapsed(existingLog.duration ? existingLog.duration * 60 : 0);
       setMood(existingLog.mood || 'good');
       setNotes(existingLog.notes || '');
-      if (existingLog.exerciseLogs) setExerciseLogs(existingLog.exerciseLogs);
+
+      // Restore exercise set data — prefer the UI-format map (localStorage),
+      // fall back to converting the server-format exercises array.
+      if (existingLog.exerciseLogs && Object.keys(existingLog.exerciseLogs).length > 0) {
+        setExerciseLogs(existingLog.exerciseLogs);
+      } else if (Array.isArray(existingLog.exercises) && existingLog.exercises.length > 0) {
+        const logsMap = {};
+        existingLog.exercises.forEach((ex) => {
+          if (ex.exerciseId && Array.isArray(ex.sets)) {
+            logsMap[ex.exerciseId] = ex.sets.map((s, i) => ({
+              setNumber: s.setNumber ?? i + 1,
+              weight: s.weight ? String(s.weight) : '',
+              reps: s.reps ? String(s.reps) : '',
+              completed: Boolean(s.completed),
+            }));
+          }
+        });
+        if (Object.keys(logsMap).length > 0) setExerciseLogs(logsMap);
+      }
     });
     return () => { cancelled = true; };
   }, [sessionKey, fetchWorkoutLog]);
@@ -177,6 +180,7 @@ export default function WorkoutDay() {
       await saveWorkoutLog(sessionKey, {
         workoutName: displayName,
         exercises: buildExercises(),
+        exerciseLogs,
         duration: Math.floor(elapsed / 60),
         totalVolume,
         completed: true,
@@ -198,6 +202,7 @@ export default function WorkoutDay() {
       await saveWorkoutLog(sessionKey, {
         workoutName: displayName,
         exercises: buildExercises(),
+        exerciseLogs,
         duration: Math.floor(elapsed / 60),
         totalVolume,
         completed: false,
@@ -460,6 +465,7 @@ export default function WorkoutDay() {
               <ExerciseCard
                 exercise={exercise}
                 index={idx}
+                savedSets={exerciseLogs[exercise.id]}
                 setLogs={(id, sets) => updateExerciseSets(id, sets)}
               />
             </div>

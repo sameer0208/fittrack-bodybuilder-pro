@@ -187,7 +187,7 @@ function RestTimer({ defaultSeconds, onDismiss }) {
 }
 
 // ── ExerciseCard ─────────────────────────────────────────────────────────────
-export default function ExerciseCard({ exercise, index, setLogs }) {
+export default function ExerciseCard({ exercise, index, setLogs, savedSets }) {
   const [showVideo,      setShowVideo]      = useState(false);
   const [expanded,       setExpanded]       = useState(false);
   const [activeSection,  setActiveSection]  = useState('log');
@@ -204,14 +204,39 @@ export default function ExerciseCard({ exercise, index, setLogs }) {
     return Math.round(isMin ? avg * 60 : avg);
   })();
 
-  const [localSets, setLocalSets] = useState(
-    Array.from({ length: exercise.sets }, (_, i) => ({
+  const buildDefaultSets = () =>
+    Array.from({ length: exercise.sets || 3 }, (_, i) => ({
       setNumber: i + 1,
       weight: '',
       reps: '',
       completed: false,
-    }))
-  );
+    }));
+
+  const normalizeSaved = (sets) =>
+    sets.map((s, i) => ({
+      setNumber: s.setNumber ?? i + 1,
+      weight: s.weight != null && s.weight !== 0 ? String(s.weight) : '',
+      reps: s.reps != null && s.reps !== 0 ? String(s.reps) : '',
+      completed: Boolean(s.completed),
+    }));
+
+  const [localSets, setLocalSets] = useState(() => {
+    if (Array.isArray(savedSets) && savedSets.length > 0) return normalizeSaved(savedSets);
+    return buildDefaultSets();
+  });
+
+  // Keep track of whether we've already applied saved data
+  const appliedSavedRef = useRef(false);
+
+  // When savedSets arrives asynchronously (after API fetch), update local state
+  useEffect(() => {
+    if (!Array.isArray(savedSets) || savedSets.length === 0) return;
+    if (appliedSavedRef.current) return;
+    const hasSavedData = savedSets.some((s) => s.weight || s.reps || s.completed);
+    if (!hasSavedData) return;
+    appliedSavedRef.current = true;
+    setLocalSets(normalizeSaved(savedSets));
+  }, [savedSets]);
 
   const allCompleted   = localSets.every((s) => s.completed);
   const completedCount = localSets.filter((s) => s.completed).length;

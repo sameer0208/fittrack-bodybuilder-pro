@@ -17,6 +17,18 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
+// Check if email is already registered (lightweight, no auth needed)
+router.get('/check-email', async (req, res) => {
+  try {
+    const email = (req.query.email || '').trim().toLowerCase();
+    if (!email) return res.json({ exists: false });
+    const user = await User.findOne({ email }).select('_id').lean();
+    res.json({ exists: !!user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Register
 router.post('/register', async (req, res) => {
   try {

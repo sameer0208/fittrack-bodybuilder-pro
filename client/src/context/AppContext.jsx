@@ -2,15 +2,26 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import axios from 'axios';
 import { sendBrowserNotification } from '../utils/notifications';
 
-// In development: relative '/api' is proxied by Vite to localhost:5001
-// In production: VITE_API_URL is set to the deployed Render backend URL
+/**
+ * AppContext — cloud-first data layer.
+ *
+ * When a user is logged in (has a JWT token) ALL user-specific data
+ * (workouts, nutrition, notifications) lives exclusively in MongoDB
+ * and React state.  localStorage is ONLY used for:
+ *   - ft_token        (auth JWT)
+ *   - ft_session       (session flag)
+ *   - ft_local_user    (offline-only profile — no account)
+ *
+ * This eliminates cross-user data leakage on shared browsers.
+ */
+
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
 });
 
 API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('ft_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const t = localStorage.getItem('ft_token');
+  if (t) config.headers.Authorization = `Bearer ${t}`;
   return config;
 });
 
@@ -19,12 +30,16 @@ const AppContext = createContext(null);
 export const AppProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('ft_token'));
-  const [workoutLogs, setWorkoutLogs] = useState({});
-  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [backendOnline, setBackendOnline] = useState(false);
 
-  // Check backend health — on mount, every 30s, and on window focus
+  // In-memory stores — populated from server, never from localStorage
+  const [workoutLogs, setWorkoutLogs] = useState({});
+  const [nutritionLogs, setNutritionLogs] = useState({});
+  const [stats, setStats] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+
+  // ── Health check ──────────────────────────────────────────────────────────
   const checkHealth = useCallback(() => {
     API.get('/health')
       .then(() => setBackendOnline(true))
@@ -35,13 +50,10 @@ export const AppProvider = ({ children }) => {
     checkHealth();
     const interval = setInterval(checkHealth, 30000);
     window.addEventListener('focus', checkHealth);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', checkHealth);
-    };
+    return () => { clearInterval(interval); window.removeEventListener('focus', checkHealth); };
   }, [checkHealth]);
 
-  // Load user from token or active local session
+  // ── Auth / user loading ───────────────────────────────────────────────────
   useEffect(() => {
     if (token) {
       API.get('/users/me')
@@ -56,7 +68,6 @@ export const AppProvider = ({ children }) => {
           setLoading(false);
         });
     } else {
-      // Local mode: only restore session if ft_session flag is active
       const session = localStorage.getItem('ft_session');
       const localProfile = localStorage.getItem('ft_local_user');
       if (session === 'true' && localProfile) {
@@ -65,6 +76,16 @@ export const AppProvider = ({ children }) => {
       setLoading(false);
     }
   }, [token]);
+
+  // Clear in-memory stores on logout / user change
+  useEffect(() => {
+    if (!user) {
+      setWorkoutLogs({});
+      setNutritionLogs({});
+      setNotifications([]);
+      setStats(null);
+    }
+  }, [user]);
 
   const register = async (data) => {
     const res = await API.post('/users/register', data);
@@ -84,12 +105,11 @@ export const AppProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('ft_token');
-    localStorage.removeItem('ft_session'); // only clear session flag; keep ft_local_user so login page can restore it
+    localStorage.removeItem('ft_session');
     setToken(null);
     setUser(null);
   };
 
-  // Login with local saved profile (offline mode)
   const loginLocal = () => {
     const localProfile = localStorage.getItem('ft_local_user');
     if (!localProfile) throw new Error('No local profile found');
@@ -97,7 +117,6 @@ export const AppProvider = ({ children }) => {
     setUser(JSON.parse(localProfile));
   };
 
-  // Save user profile locally (offline-first)
   const saveLocalProfile = (profileData) => {
     const bmi = (profileData.currentWeight / Math.pow(profileData.height / 100, 2)).toFixed(1);
     const bmr = 10 * profileData.currentWeight + 6.25 * profileData.height - 5 * (profileData.age || 25) + 5;
@@ -105,11 +124,8 @@ export const AppProvider = ({ children }) => {
     const proteinTarget = Math.round(profileData.currentWeight * 2.2);
     const enriched = {
       ...profileData,
-      bmi,
-      dailyCalories,
-      proteinTarget,
-      streak: 0,
-      totalWorkouts: 0,
+      bmi, dailyCalories, proteinTarget,
+      streak: 0, totalWorkouts: 0,
       programStartDate: new Date().toISOString(),
       weightHistory: [{ weight: profileData.currentWeight, date: new Date().toISOString() }],
       id: 'local',
@@ -125,109 +141,25 @@ export const AppProvider = ({ children }) => {
       const res = await API.put('/users/update', data);
       setUser(res.data);
       return res.data;
-    } else {
-      const updated = { ...user, ...data };
-      if (data.currentWeight && data.currentWeight !== user.currentWeight) {
-        updated.weightHistory = [
-          ...(user.weightHistory || []),
-          { weight: data.currentWeight, date: new Date().toISOString() },
-        ];
-        updated.bmi = (data.currentWeight / Math.pow((data.height || user.height) / 100, 2)).toFixed(1);
-      }
-      localStorage.setItem('ft_local_user', JSON.stringify(updated));
-      setUser(updated);
-      return updated;
     }
+    const updated = { ...user, ...data };
+    if (data.currentWeight && data.currentWeight !== user.currentWeight) {
+      updated.weightHistory = [
+        ...(user.weightHistory || []),
+        { weight: data.currentWeight, date: new Date().toISOString() },
+      ];
+      updated.bmi = (data.currentWeight / Math.pow((data.height || user.height) / 100, 2)).toFixed(1);
+    }
+    localStorage.setItem('ft_local_user', JSON.stringify(updated));
+    setUser(updated);
+    return updated;
   };
 
-  // Workout log management — keyed by week start (Monday) so logs persist all week
-  const getWorkoutKey = (sessionKey) => {
-    const now = new Date();
-    const day = now.getDay(); // 0=Sun .. 6=Sat
-    const diff = day === 0 ? -6 : 1 - day;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + diff);
-    const weekStart = monday.toISOString().split('T')[0];
-    return `ft_workout_${weekStart}_${sessionKey}`;
-  };
-
-  const saveWorkoutLog = useCallback(async (sessionKey, logData) => {
-    const key = getWorkoutKey(sessionKey);
-    // `exerciseLogs` is a UI-only map used to restore set inputs on reload.
-    // It must NOT be sent to the server — strip it before the API call.
-    const { exerciseLogs: uiLogs, ...serverData } = logData;
-    const data = { ...logData, sessionKey, savedAt: new Date().toISOString() };
-
-    if (token) {
-      // Cloud-first: save to MongoDB and throw on failure so the caller can handle it
-      const res = await API.post('/workouts/log', {
-        workoutDay: sessionKey,
-        ...serverData,  // clean payload — no exerciseLogs
-      });
-      // Cache full data (including exerciseLogs for UI restore) in localStorage
-      localStorage.setItem(key, JSON.stringify({ ...data, _id: res.data._id }));
-      setWorkoutLogs((prev) => ({ ...prev, [sessionKey]: data }));
-      return res.data;
-    }
-
-    // Local-only mode (no account): keep using localStorage
-    localStorage.setItem(key, JSON.stringify(data));
-    setWorkoutLogs((prev) => ({ ...prev, [sessionKey]: data }));
-    return data;
-  }, [token]);
-
-  // Synchronous read — for places that need instant access (falls back gracefully)
-  const getWorkoutLog = useCallback((sessionKey) => {
-    const key = getWorkoutKey(sessionKey);
-    const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : null;
-  }, []);
-
-  // Async read — always fetches from server first when logged in, caches locally
-  const fetchWorkoutLog = useCallback(async (sessionKey) => {
-    const key = getWorkoutKey(sessionKey);
-    if (token) {
-      try {
-        const res = await API.get(`/workouts/today/${sessionKey}`);
-        if (res.data) {
-          const cached = { ...res.data, sessionKey };
-          localStorage.setItem(key, JSON.stringify(cached));
-          setWorkoutLogs((prev) => ({ ...prev, [sessionKey]: cached }));
-          return cached;
-        }
-      } catch {
-        // fall through to localStorage
-      }
-    }
-    const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : null;
-  }, [token]);
-
-  const fetchStats = useCallback(async () => {
-    if (token && backendOnline) {
-      const res = await API.get('/workouts/stats');
-      setStats(res.data);
-    } else {
-      // Build stats from localStorage
-      const allKeys = Object.keys(localStorage).filter((k) => k.startsWith('ft_workout_'));
-      const logs = allKeys.map((k) => JSON.parse(localStorage.getItem(k))).filter(Boolean);
-      const completed = logs.filter((l) => l.completed);
-      setStats({
-        totalWorkouts: completed.length,
-        totalVolume: completed.reduce((sum, l) => sum + (l.totalVolume || 0), 0),
-        weeklyVolume: [],
-        completionByDay: {},
-      });
-    }
-  }, [token, backendOnline]);
-
-  // Migrate a local-mode user to the backend (creates account and returns JWT)
   const syncToCloud = async (email, password) => {
     const localUser = JSON.parse(localStorage.getItem('ft_local_user') || '{}');
     const res = await API.post('/users/register', {
       name: localUser.name || user?.name || 'Athlete',
-      email,
-      password,
+      email, password,
       currentWeight: localUser.currentWeight || user?.currentWeight,
       height: localUser.height || user?.height,
       targetWeight: localUser.targetWeight || user?.targetWeight,
@@ -241,96 +173,104 @@ export const AppProvider = ({ children }) => {
     return res.data;
   };
 
-  // ─── Nutrition / Water log ────────────────────────────────────────────────
-  // Synchronous read — for instant access (cached localStorage)
-  const getNutritionLog = useCallback((date) => {
-    const key = `ft_nutrition_${date}`;
-    const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : null;
-  }, []);
+  // ── Workout logs (server-only when logged in) ─────────────────────────────
+  const saveWorkoutLog = useCallback(async (sessionKey, logData) => {
+    const { exerciseLogs: _uiLogs, ...serverData } = logData;
 
-  // Async read — fetches from server first when logged in, caches locally
+    if (token) {
+      const res = await API.post('/workouts/log', { workoutDay: sessionKey, ...serverData });
+      setWorkoutLogs((prev) => ({ ...prev, [sessionKey]: { ...res.data, sessionKey } }));
+      return res.data;
+    }
+
+    // Local-only fallback (no account)
+    const data = { ...logData, sessionKey, savedAt: new Date().toISOString() };
+    setWorkoutLogs((prev) => ({ ...prev, [sessionKey]: data }));
+    return data;
+  }, [token]);
+
+  const getWorkoutLog = useCallback((sessionKey) => {
+    return workoutLogs[sessionKey] || null;
+  }, [workoutLogs]);
+
+  const fetchWorkoutLog = useCallback(async (sessionKey) => {
+    if (token) {
+      try {
+        const res = await API.get(`/workouts/today/${sessionKey}`);
+        if (res.data) {
+          const log = { ...res.data, sessionKey };
+          setWorkoutLogs((prev) => ({ ...prev, [sessionKey]: log }));
+          return log;
+        }
+      } catch { /* server unreachable — return in-memory */ }
+    }
+    return workoutLogs[sessionKey] || null;
+  }, [token, workoutLogs]);
+
+  const fetchStats = useCallback(async () => {
+    if (token) {
+      try {
+        const res = await API.get('/workouts/stats');
+        setStats(res.data);
+        return;
+      } catch { /* fall through */ }
+    }
+    setStats({ totalWorkouts: 0, totalVolume: 0, weeklyVolume: [], completionByDay: {} });
+  }, [token]);
+
+  // ── Nutrition logs (server-only when logged in) ───────────────────────────
+  const getNutritionLog = useCallback((date) => {
+    return nutritionLogs[date] || null;
+  }, [nutritionLogs]);
+
   const fetchNutritionLog = useCallback(async (date) => {
-    const key = `ft_nutrition_${date}`;
     if (token) {
       try {
         const res = await API.get(`/nutrition/date/${date}`);
         if (res.data) {
-          localStorage.setItem(key, JSON.stringify(res.data));
+          setNutritionLogs((prev) => ({ ...prev, [date]: res.data }));
           return res.data;
         }
-      } catch {
-        // fall through to localStorage
-      }
+      } catch { /* server unreachable */ }
     }
-    const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : null;
-  }, [token]);
+    return nutritionLogs[date] || null;
+  }, [token, nutritionLogs]);
 
   const saveNutritionLog = useCallback(async (date, logData) => {
-    const key = `ft_nutrition_${date}`;
-    const data = { ...logData, date, savedAt: new Date().toISOString() };
-
     if (token) {
-      // Cloud-first: save to MongoDB and throw on failure
       const res = await API.post('/nutrition/save', { ...logData, date });
-      // Cache locally for instant offline reads
-      localStorage.setItem(key, JSON.stringify(data));
+      setNutritionLogs((prev) => ({ ...prev, [date]: { ...logData, date } }));
       return res.data;
     }
-
-    // Local-only mode
-    localStorage.setItem(key, JSON.stringify(data));
+    const data = { ...logData, date, savedAt: new Date().toISOString() };
+    setNutritionLogs((prev) => ({ ...prev, [date]: data }));
     return data;
   }, [token]);
 
-  // ─── Notifications ─────────────────────────────────────────────────────────
-  const [notifications, setNotifications] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('ft_notifications') || '[]');
-    } catch { return []; }
-  });
-
-  const persistNotifications = useCallback((list) => {
-    const trimmed = list.slice(0, 100);
-    localStorage.setItem('ft_notifications', JSON.stringify(trimmed));
-    setNotifications(trimmed);
-  }, []);
-
+  // ── Notifications (in-memory only) ────────────────────────────────────────
   const addNotification = useCallback((type, message) => {
     const entry = {
       id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      type,
-      message,
+      type, message,
       timestamp: new Date().toISOString(),
       read: false,
     };
-    setNotifications((prev) => {
-      const next = [entry, ...prev].slice(0, 100);
-      localStorage.setItem('ft_notifications', JSON.stringify(next));
-      return next;
-    });
+    setNotifications((prev) => [entry, ...prev].slice(0, 100));
     sendBrowserNotification('SamAI Reminder', message);
   }, []);
 
   const markAllRead = useCallback(() => {
-    setNotifications((prev) => {
-      const next = prev.map((n) => ({ ...n, read: true }));
-      localStorage.setItem('ft_notifications', JSON.stringify(next));
-      return next;
-    });
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   }, []);
 
-  const clearNotifications = useCallback(() => {
-    localStorage.setItem('ft_notifications', '[]');
-    setNotifications([]);
-  }, []);
+  const clearNotifications = useCallback(() => setNotifications([]), []);
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
     [notifications],
   );
 
+  // ── Context value ─────────────────────────────────────────────────────────
   const value = {
     user, token, loading, backendOnline,
     register, login, logout, loginLocal,

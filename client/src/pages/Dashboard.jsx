@@ -27,22 +27,15 @@ const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'frid
 const ALL_WEEK_SESSIONS = weekSchedule.flatMap((d) => d.sessions);
 
 export default function Dashboard() {
-  const { user, getWorkoutLog, getNutritionLog, fetchWorkoutLog, fetchNutritionLog } = useApp();
+  const { user, fetchWorkoutLog, fetchNutritionLog } = useApp();
   const today = dayjs();
   const todayDayName = DAY_NAMES[today.day()];
 
   const todaySessions = weekSchedule.find((d) => d.key === todayDayName)?.sessions || [];
 
-  // Server-synced state for ALL week sessions (not just today's)
-  // Starts with localStorage snapshot, then updates from server
-  const [serverWorkoutLogs, setServerWorkoutLogs] = useState(() => {
-    const init = {};
-    ALL_WEEK_SESSIONS.forEach((s) => { init[s] = getWorkoutLog(s); });
-    return init;
-  });
-  const [serverNutrition, setServerNutrition] = useState(
-    () => getNutritionLog(today.format('YYYY-MM-DD'))
-  );
+  // Server-only state — starts empty, populated from backend
+  const [serverWorkoutLogs, setServerWorkoutLogs] = useState({});
+  const [serverNutrition, setServerNutrition] = useState(null);
 
   // On mount: fetch week status from server so cross-device data is accurate
   useEffect(() => {
@@ -190,7 +183,7 @@ export default function Dashboard() {
               {todaySessions.map((sessionKey) => {
                 const plan = workoutPlan[sessionKey];
                 if (!plan) return null;
-                const done = getWorkoutLog(sessionKey)?.completed;
+                const done = serverWorkoutLogs[sessionKey]?.completed;
                 return (
                   <Link key={sessionKey} to={`/workout/${sessionKey}`}>
                     <div className={`relative overflow-hidden rounded-2xl p-4 border transition-all duration-200 active:scale-[0.98] group ${
