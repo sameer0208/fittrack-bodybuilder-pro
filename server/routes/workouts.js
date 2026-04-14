@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const WorkoutLog = require('../models/WorkoutLog');
 const User = require('../models/User');
+const socialRoutes = require('./social');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fittrack_secret_2024';
 
@@ -96,6 +97,24 @@ router.post('/log', auth, async (req, res) => {
           : 1;
         user.lastWorkoutDate = now;
         await user.save();
+
+        // Log buddy activity + update challenge scores (fire-and-forget)
+        const vol = log.totalVolume ? `${Math.round(log.totalVolume).toLocaleString()}kg volume` : '';
+        const dur = duration ? `${duration} min` : '';
+        const detail = [workoutName, vol, dur].filter(Boolean).join(' · ');
+        socialRoutes.logBuddyActivity(req.user.id, 'workout_completed',
+          `${user.name || 'Your buddy'} completed a workout! ${detail}`,
+          { workoutName, totalVolume: log.totalVolume, duration }
+        ).catch(() => {});
+
+        if (user.streak > 0 && user.streak % 7 === 0) {
+          socialRoutes.logBuddyActivity(req.user.id, 'streak_milestone',
+            `${user.name || 'Your buddy'} hit a ${user.streak}-day streak! 🔥`,
+            { streak: user.streak }
+          ).catch(() => {});
+        }
+
+        socialRoutes.updateBuddyChallengeScores(req.user.id).catch(() => {});
       }
     }
 

@@ -115,11 +115,15 @@ export default function Profile() {
   const [buddyCode, setBuddyCode] = useState('');
   const [buddyInput, setBuddyInput] = useState('');
   const [buddyStatus, setBuddyStatus] = useState(null);
+  const [buddyInfo, setBuddyInfo] = useState(null);
   const [pushEnabled, setPushEnabled] = useState(false);
 
   useEffect(() => {
     API.get('/social/buddy').then(({ data }) => {
-      if (data.paired) setBuddyStatus('active');
+      if (data.paired) {
+        setBuddyStatus('active');
+        setBuddyInfo(data.buddy);
+      }
     }).catch(() => {});
     if ('Notification' in window && Notification.permission === 'granted') {
       navigator.serviceWorker?.getRegistration().then((reg) => {
@@ -158,6 +162,7 @@ export default function Profile() {
       await API.delete('/social/buddy');
       setBuddyStatus(null);
       setBuddyCode('');
+      setBuddyInfo(null);
       toast.success('Buddy removed');
     } catch { toast.error('Failed to remove buddy'); }
   };
@@ -605,9 +610,33 @@ export default function Profile() {
               <span className="text-sm font-semibold text-white">Workout Buddy</span>
             </div>
             {buddyStatus === 'active' ? (
-              <div className="flex items-center justify-between p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl">
-                <span className="text-sm text-purple-300 font-medium">Buddy paired!</span>
-                <button onClick={removeBuddy} className="text-xs text-red-400 hover:text-red-300">Remove</button>
+              <div className="space-y-2">
+                {buddyInfo && (
+                  <div className="p-3 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0">
+                        {buddyInfo.name?.[0]?.toUpperCase() || 'B'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-white">{buddyInfo.fullName || buddyInfo.name}</div>
+                        <div className="text-[10px] text-slate-400">
+                          {buddyInfo.fitnessGoal ? `Goal: ${buddyInfo.fitnessGoal}` : 'Workout Buddy'}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-xs font-black text-orange-400">🔥 {buddyInfo.streak}</div>
+                        <div className="text-[10px] text-slate-500">{buddyInfo.totalWorkouts} total</div>
+                      </div>
+                    </div>
+                    {buddyInfo.lastWorkout && (
+                      <div className="p-2 bg-slate-800/40 rounded-lg mt-2">
+                        <div className="text-[10px] text-slate-500">Last workout</div>
+                        <div className="text-xs text-white font-medium">{buddyInfo.lastWorkout.name}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <button onClick={removeBuddy} className="w-full text-xs text-red-400 hover:text-red-300 py-1">Remove Buddy</button>
               </div>
             ) : (
               <div className="space-y-2">

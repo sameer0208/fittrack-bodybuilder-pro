@@ -6,6 +6,7 @@ import BMICard from '../components/BMICard';
 import ShareCard from '../components/ShareCard';
 import DailyChallenges from '../components/DailyChallenges';
 import WorkoutCalendar from '../components/WorkoutCalendar';
+import BuddyWidget from '../components/BuddyWidget';
 import dayjs from 'dayjs';
 import axios from 'axios';
 import {
@@ -71,12 +72,10 @@ export default function Dashboard() {
     return () => { cancelled = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [buddy, setBuddy] = useState(null);
   const [badgeCount, setBadgeCount] = useState(0);
   const [showShare, setShowShare] = useState(false);
 
   useEffect(() => {
-    API.get('/social/buddy').then(({ data }) => { if (data.paired) setBuddy(data.buddy); }).catch(() => {});
     API.get('/achievements').then(({ data }) => setBadgeCount(data?.length || 0)).catch(() => {});
     API.post('/achievements/check').catch(() => {});
   }, []);
@@ -420,23 +419,7 @@ export default function Dashboard() {
         </div>
 
         {/* ── Buddy Widget ────────────────────────────── */}
-        {buddy && (
-          <div className="card p-4 mb-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold text-lg">
-                {buddy.name?.[0]?.toUpperCase() || 'B'}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs text-slate-400 flex items-center gap-1"><Users size={10} /> Workout Buddy</div>
-                <div className="font-bold text-white text-sm">{buddy.name}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm font-black text-orange-400 flex items-center gap-1"><Flame size={12} /> {buddy.streak || 0}</div>
-                <div className="text-[10px] text-slate-500">{buddy.totalWorkouts || 0} workouts</div>
-              </div>
-            </div>
-          </div>
-        )}
+        <BuddyWidget />
 
         {showShare && (
           <ShareCard
