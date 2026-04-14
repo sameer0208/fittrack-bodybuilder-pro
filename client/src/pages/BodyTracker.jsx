@@ -30,7 +30,9 @@ import {
   Filter,
   Plus,
   ArrowRightLeft,
+  Aperture,
 } from 'lucide-react';
+import CameraCapture from '../components/CameraCapture';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 const API = axios.create({ baseURL: API_BASE });
@@ -149,6 +151,8 @@ export default function BodyTracker() {
 
   const [galleryFilter, setGalleryFilter] = useState('all');
   const [showUploadForm, setShowUploadForm] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const hasCameraSupport = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
 
   const [modalPhoto, setModalPhoto] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
@@ -267,6 +271,11 @@ export default function BodyTracker() {
   const handleFileInput = (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
+    handleFileSelect(file);
+  };
+
+  const handleCameraCapture = (file) => {
+    setShowCamera(false);
     handleFileSelect(file);
   };
 
@@ -529,7 +538,7 @@ export default function BodyTracker() {
             {/* ── Upload Panel ── */}
             {showUploadForm && (
               <div className="bg-gradient-to-br from-slate-800 to-slate-800/80 border border-slate-700 rounded-2xl overflow-hidden animate-fade-in">
-                {/* Drop zone / Preview */}
+                {/* Image source: Preview / Camera+Gallery picker / Drop zone */}
                 <div
                   className={`relative border-b border-slate-700/60 transition-colors ${dragOver ? 'bg-indigo-600/10' : ''}`}
                   onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -545,23 +554,36 @@ export default function BodyTracker() {
                       </button>
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full flex flex-col items-center justify-center gap-3 py-12 px-4 text-center cursor-pointer group"
-                    >
-                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${
-                        dragOver ? 'bg-indigo-600/30 scale-110' : 'bg-slate-700/60 group-hover:bg-indigo-600/20'
-                      }`}>
-                        <Camera size={28} className={`transition-colors ${dragOver ? 'text-indigo-400' : 'text-slate-400 group-hover:text-indigo-400'}`} />
+                    <div className="py-8 px-4">
+                      <div className="flex items-center justify-center gap-4 max-w-sm mx-auto">
+                        {/* Open Camera */}
+                        {hasCameraSupport && (
+                          <button type="button" onClick={() => setShowCamera(true)}
+                            className="flex-1 flex flex-col items-center gap-3 py-6 px-3 rounded-2xl border-2 border-dashed border-slate-600 hover:border-indigo-500/60 bg-slate-800/50 hover:bg-indigo-600/5 transition-all group cursor-pointer">
+                            <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 group-hover:bg-indigo-600/30 flex items-center justify-center transition-all group-hover:scale-110">
+                              <Aperture size={26} className="text-indigo-400" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-semibold text-white">Open Camera</p>
+                              <p className="text-[10px] text-slate-500 mt-0.5">Take a photo now</p>
+                            </div>
+                          </button>
+                        )}
+
+                        {/* Choose from gallery */}
+                        <button type="button" onClick={() => fileInputRef.current?.click()}
+                          className="flex-1 flex flex-col items-center gap-3 py-6 px-3 rounded-2xl border-2 border-dashed border-slate-600 hover:border-purple-500/60 bg-slate-800/50 hover:bg-purple-600/5 transition-all group cursor-pointer">
+                          <div className="w-14 h-14 rounded-2xl bg-purple-600/20 group-hover:bg-purple-600/30 flex items-center justify-center transition-all group-hover:scale-110">
+                            <Upload size={26} className="text-purple-400" />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm font-semibold text-white">Gallery</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">{hasCameraSupport ? 'Pick existing' : 'Select or drag & drop'}</p>
+                          </div>
+                        </button>
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-300 group-hover:text-white transition-colors">
-                          Tap to select or drag & drop
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">JPG, PNG up to 10MB · Resized to 1200px</p>
-                      </div>
-                    </button>
+                      <p className="text-center text-[10px] text-slate-600 mt-4">JPG, PNG up to 10MB · Auto-resized to 1200px</p>
+                    </div>
                   )}
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileInput} disabled={uploading} />
                 </div>
@@ -705,12 +727,24 @@ export default function BodyTracker() {
                 </div>
                 <h3 className="text-lg font-bold text-white mb-1">No progress photos yet</h3>
                 <p className="text-sm text-slate-400 max-w-xs mx-auto mb-5">
-                  Start documenting your transformation. Upload your first photo to track your journey.
+                  Start documenting your transformation. Capture or upload your first photo.
                 </p>
-                <button type="button" onClick={() => setShowUploadForm(true)}
-                  className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl px-5 py-2.5 font-semibold text-sm transition-colors">
-                  <Camera size={16} /> Take your first photo
-                </button>
+                <div className="flex items-center justify-center gap-3 flex-wrap">
+                  {hasCameraSupport && (
+                    <button type="button" onClick={() => { setShowUploadForm(true); setShowCamera(true); }}
+                      className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl px-5 py-2.5 font-semibold text-sm transition-colors">
+                      <Aperture size={16} /> Open Camera
+                    </button>
+                  )}
+                  <button type="button" onClick={() => setShowUploadForm(true)}
+                    className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold text-sm transition-colors ${
+                      hasCameraSupport
+                        ? 'bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-600'
+                        : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                    }`}>
+                    <Upload size={16} /> Upload Photo
+                  </button>
+                </div>
               </div>
             ) : filteredPhotos.length === 0 ? (
               <div className="text-center py-12 text-slate-500 text-sm bg-slate-800/30 rounded-2xl border border-slate-700/50">
@@ -870,6 +904,14 @@ export default function BodyTracker() {
             )}
           </div>
         </div>
+      )}
+
+      {/* ═══ CAMERA OVERLAY ═══ */}
+      {showCamera && (
+        <CameraCapture
+          onCapture={handleCameraCapture}
+          onClose={() => setShowCamera(false)}
+        />
       )}
     </div>
   );
