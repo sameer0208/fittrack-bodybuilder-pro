@@ -18,6 +18,7 @@ if (CLOUDINARY_CONFIGURED) {
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
   });
 }
 
@@ -75,8 +76,9 @@ router.post('/photos', auth, async (req, res) => {
       photoUrl = uploadResult.secure_url;
       publicId = uploadResult.public_id;
       thumbUrl = cloudinary.url(uploadResult.public_id, {
-        width: 300, height: 300, crop: 'fill', quality: 'auto:low', format: 'jpg',
+        width: 300, height: 300, crop: 'fill', quality: 'auto:low', format: 'jpg', secure: true,
       });
+      console.log('[Body] Cloudinary upload OK:', { photoUrl, thumbUrl, publicId });
     } else {
       const matches = image.match(/^data:image\/(\w+);base64,(.+)$/);
       if (!matches) return res.status(400).json({ message: 'Invalid image format' });
