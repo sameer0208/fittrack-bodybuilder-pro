@@ -9,27 +9,47 @@ const BuddyMessage = require('../models/BuddyMessage');
 const BuddyChallenge = require('../models/BuddyChallenge');
 const crypto = require('crypto');
 const pushRoutes = require('./push');
+const { checkMessage } = require('../utils/contentFilter');
 
-// ── Helper: get active buddy pair + buddy user ────────────────────────────
-async function getActivePair(userId) {
-  const pair = await BuddyPair.findOne({
+// ── Helper: get ALL active buddy pairs for a user ─────────────────────────
+async function getActivePairs(userId) {
+  const pairs = await BuddyPair.find({
     $or: [{ userA: userId }, { userB: userId }],
     status: 'active',
   });
+  return pairs.map((pair) => {
+    const buddyId = pair.userA.toString() === userId.toString() ? pair.userB : pair.userA;
+    return { pair, buddyId };
+  });
+}
+
+// Helper: get a specific active pair by pairId, verify user belongs to it
+async function getPairById(pairId, userId) {
+  const pair = await BuddyPair.findOne({ _id: pairId, status: 'active' });
   if (!pair) return null;
-  const buddyId = pair.userA.toString() === userId.toString() ? pair.userB : pair.userA;
-  return { pair, buddyId };
+  const isA = pair.userA.toString() === userId.toString();
+  const isB = pair.userB?.toString() === userId.toString();
+  if (!isA && !isB) return null;
+  const buddyId = isA ? pair.userB : pair.userA;
+  return { pair, buddyId, isUserA: isA };
 }
 
 // Helper: log a buddy activity + push notify the target user
 async function logBuddyActivity(userId, type, message, meta = {}) {
   try {
     await BuddyActivity.create({ userId, type, message, meta });
-    // Fire push notification to the buddy (userId = the receiver)
     const pushTitle = type === 'nudge' ? 'Buddy Nudge' : 'Buddy Activity';
     pushRoutes.sendPushToUser(userId, pushTitle, message).catch(() => {});
   } catch (e) {
     console.warn('[BuddyActivity] Failed to log:', e.message);
+  }
+}
+
+// Helper: log activity to ALL buddies of a user
+async function logActivityToAllBuddies(userId, type, message, meta = {}) {
+  const pairs = await getActivePairs(userId);
+  for (const { buddyId } of pairs) {
+    await logBuddyActivity(buddyId, type, message, { ...meta, fromUserId: userId });
   }
 }
 
@@ -89,16 +109,13 @@ router.get('/leaderboard', auth, async (req, res) => {
   }
 });
 
-// ── Buddy: Invite ─────────────────────────────────────────────────────────
+// ── Buddy: Invite (always generates a fresh code) ─────────────────────────
 
 router.post('/buddy/invite', auth, async (req, res) => {
   try {
-    const existing = await BuddyPair.findOne({
-      $or: [{ userA: req.user.id }, { userB: req.user.id }],
-      status: { $in: ['pending', 'active'] },
-    });
-    if (existing) {
-      return res.json({ inviteCode: existing.inviteCode, status: existing.status });
+    const pending = await BuddyPair.findOne({ userA: req.user.id, status: 'pending' });
+    if (pending) {
+      return res.json({ inviteCode: pending.inviteCode, status: 'pending' });
     }
     const inviteCode = crypto.randomBytes(3).toString('hex').toUpperCase();
     const pair = await BuddyPair.create({ userA: req.user.id, inviteCode });
@@ -119,6 +136,14 @@ router.post('/buddy/accept', auth, async (req, res) => {
     if (!pair) return res.status(404).json({ message: 'Invalid or expired invite code' });
     if (pair.userA.toString() === req.user.id) return res.status(400).json({ message: 'Cannot pair with yourself' });
 
+    const alreadyPaired = await BuddyPair.findOne({
+      $or: [
+        { userA: req.user.id, userB: pair.userA, status: 'active' },
+        { userA: pair.userA, userB: req.user.id, status: 'active' },
+      ],
+    });
+    if (alreadyPaired) return res.status(400).json({ message: 'Already paired with this person' });
+
     pair.userB = req.user.id;
     pair.status = 'active';
     await pair.save();
@@ -134,37 +159,36 @@ router.post('/buddy/accept', auth, async (req, res) => {
   }
 });
 
-// ── Buddy: Get info (enhanced) ────────────────────────────────────────────
+// ── Buddy: Get ALL buddies ────────────────────────────────────────────────
 
 router.get('/buddy', auth, async (req, res) => {
   try {
-    const result = await getActivePair(req.user.id);
-    if (!result) return res.json({ paired: false });
-
-    const { pair, buddyId } = result;
-    const buddy = await User.findById(buddyId)
-      .select('name streak totalWorkouts currentWeight lastWorkoutDate fitnessGoal programStartDate')
-      .lean();
-    if (!buddy) return res.json({ paired: false });
-
-    const lastWorkout = await WorkoutLog.findOne({ userId: buddyId, completed: true })
-      .sort({ date: -1 }).select('workoutName totalVolume date duration').lean();
+    const results = await getActivePairs(req.user.id);
+    if (results.length === 0) return res.json({ paired: false, buddies: [] });
 
     const { weekStart, weekEnd } = getWeekBounds();
-    const weekWorkouts = await WorkoutLog.countDocuments({
-      userId: buddyId, completed: true, date: { $gte: weekStart, $lt: weekEnd },
-    });
-
+    const me = await User.findById(req.user.id).select('streak totalWorkouts').lean();
     const myWeekWorkouts = await WorkoutLog.countDocuments({
       userId: req.user.id, completed: true, date: { $gte: weekStart, $lt: weekEnd },
     });
 
-    const me = await User.findById(req.user.id).select('streak totalWorkouts').lean();
+    const buddies = [];
+    for (const { pair, buddyId } of results) {
+      const buddy = await User.findById(buddyId)
+        .select('name streak totalWorkouts currentWeight lastWorkoutDate fitnessGoal programStartDate')
+        .lean();
+      if (!buddy) continue;
 
-    res.json({
-      paired: true,
-      pairId: pair._id,
-      buddy: {
+      const lastWorkout = await WorkoutLog.findOne({ userId: buddyId, completed: true })
+        .sort({ date: -1 }).select('workoutName totalVolume date duration').lean();
+
+      const weekWorkouts = await WorkoutLog.countDocuments({
+        userId: buddyId, completed: true, date: { $gte: weekStart, $lt: weekEnd },
+      });
+
+      buddies.push({
+        pairId: pair._id,
+        buddyId: buddyId,
         name: buddy.name?.split(' ')[0] || 'Buddy',
         fullName: buddy.name || 'Buddy',
         streak: buddy.streak || 0,
@@ -178,7 +202,12 @@ router.get('/buddy', auth, async (req, res) => {
           duration: lastWorkout.duration,
         } : null,
         weekWorkouts,
-      },
+      });
+    }
+
+    res.json({
+      paired: buddies.length > 0,
+      buddies,
       you: {
         streak: me?.streak || 0,
         totalWorkouts: me?.totalWorkouts || 0,
@@ -190,12 +219,13 @@ router.get('/buddy', auth, async (req, res) => {
   }
 });
 
-// ── Buddy: Remove ─────────────────────────────────────────────────────────
+// ── Buddy: Remove a specific pair ─────────────────────────────────────────
 
-router.delete('/buddy', auth, async (req, res) => {
+router.delete('/buddy/:pairId', auth, async (req, res) => {
   try {
-    await BuddyPair.updateMany(
-      { $or: [{ userA: req.user.id }, { userB: req.user.id }], status: { $in: ['pending', 'active'] } },
+    const { pairId } = req.params;
+    await BuddyPair.updateOne(
+      { _id: pairId, $or: [{ userA: req.user.id }, { userB: req.user.id }], status: 'active' },
       { $set: { status: 'removed' } }
     );
     res.json({ message: 'Buddy removed' });
@@ -204,11 +234,24 @@ router.delete('/buddy', auth, async (req, res) => {
   }
 });
 
-// ── Buddy: Activity Feed ──────────────────────────────────────────────────
-
-router.get('/buddy/activity', auth, async (req, res) => {
+// Keep legacy DELETE /buddy for backward compat (removes all)
+router.delete('/buddy', auth, async (req, res) => {
   try {
-    const result = await getActivePair(req.user.id);
+    await BuddyPair.updateMany(
+      { $or: [{ userA: req.user.id }, { userB: req.user.id }], status: { $in: ['pending', 'active'] } },
+      { $set: { status: 'removed' } }
+    );
+    res.json({ message: 'All buddies removed' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── Buddy: Activity Feed (pair-specific) ──────────────────────────────────
+
+router.get('/buddy/activity/:pairId', auth, async (req, res) => {
+  try {
+    const result = await getPairById(req.params.pairId, req.user.id);
     if (!result) return res.json([]);
 
     const activities = await BuddyActivity.find({ userId: result.buddyId })
@@ -220,11 +263,11 @@ router.get('/buddy/activity', auth, async (req, res) => {
   }
 });
 
-// ── Buddy: Send Nudge ─────────────────────────────────────────────────────
+// ── Buddy: Send Nudge (pair-specific) ─────────────────────────────────────
 
-router.post('/buddy/nudge', auth, async (req, res) => {
+router.post('/buddy/nudge/:pairId', auth, async (req, res) => {
   try {
-    const result = await getActivePair(req.user.id);
+    const result = await getPairById(req.params.pairId, req.user.id);
     if (!result) return res.status(400).json({ message: 'No active buddy' });
 
     const me = await User.findById(req.user.id).select('name').lean();
@@ -244,11 +287,11 @@ router.post('/buddy/nudge', auth, async (req, res) => {
   }
 });
 
-// ── Buddy: Messages ───────────────────────────────────────────────────────
+// ── Buddy: Messages (pair-specific) ───────────────────────────────────────
 
-router.get('/buddy/messages', auth, async (req, res) => {
+router.get('/buddy/messages/:pairId', auth, async (req, res) => {
   try {
-    const result = await getActivePair(req.user.id);
+    const result = await getPairById(req.params.pairId, req.user.id);
     if (!result) return res.json([]);
 
     const messages = await BuddyMessage.find({ pairId: result.pair._id })
@@ -265,13 +308,18 @@ router.get('/buddy/messages', auth, async (req, res) => {
   }
 });
 
-router.post('/buddy/messages', auth, async (req, res) => {
+router.post('/buddy/messages/:pairId', auth, async (req, res) => {
   try {
-    const result = await getActivePair(req.user.id);
+    const result = await getPairById(req.params.pairId, req.user.id);
     if (!result) return res.status(400).json({ message: 'No active buddy' });
 
     const { text } = req.body;
     if (!text?.trim()) return res.status(400).json({ message: 'Message required' });
+
+    const moderation = checkMessage(text.trim());
+    if (!moderation.safe) {
+      return res.status(422).json({ message: moderation.reason, blocked: true });
+    }
 
     const msg = await BuddyMessage.create({
       pairId: result.pair._id,
@@ -285,38 +333,42 @@ router.post('/buddy/messages', auth, async (req, res) => {
   }
 });
 
-router.get('/buddy/messages/unread', auth, async (req, res) => {
+router.get('/buddy/unread', auth, async (req, res) => {
   try {
-    const result = await getActivePair(req.user.id);
-    if (!result) return res.json({ count: 0 });
+    const results = await getActivePairs(req.user.id);
+    if (results.length === 0) return res.json({ total: 0, perPair: {} });
 
-    const count = await BuddyMessage.countDocuments({
-      pairId: result.pair._id, senderId: result.buddyId, read: false,
-    });
+    const perPair = {};
+    let total = 0;
+    for (const { pair, buddyId } of results) {
+      const count = await BuddyMessage.countDocuments({
+        pairId: pair._id, senderId: buddyId, read: false,
+      });
+      perPair[pair._id.toString()] = count;
+      total += count;
+    }
 
-    res.json({ count });
+    res.json({ total, perPair });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// ── Buddy: Weekly Challenge ───────────────────────────────────────────────
+// ── Buddy: Weekly Challenge (pair-specific) ───────────────────────────────
 
-router.get('/buddy/challenge', auth, async (req, res) => {
+router.get('/buddy/challenge/:pairId', auth, async (req, res) => {
   try {
-    const result = await getActivePair(req.user.id);
+    const result = await getPairById(req.params.pairId, req.user.id);
     if (!result) return res.json({ active: false });
 
-    const { weekStart, weekEnd } = getWeekBounds();
+    const { weekStart } = getWeekBounds();
 
-    let challenge = await BuddyChallenge.findOne({
+    const challenge = await BuddyChallenge.findOne({
       pairId: result.pair._id, status: 'active',
       weekStart: { $gte: weekStart },
     });
 
     if (!challenge) return res.json({ active: false });
-
-    const isUserA = result.pair.userA.toString() === req.user.id;
 
     res.json({
       active: true,
@@ -325,8 +377,8 @@ router.get('/buddy/challenge', auth, async (req, res) => {
         type: challenge.type,
         weekStart: challenge.weekStart,
         weekEnd: challenge.weekEnd,
-        myScore: isUserA ? challenge.scoreA : challenge.scoreB,
-        buddyScore: isUserA ? challenge.scoreB : challenge.scoreA,
+        myScore: result.isUserA ? challenge.scoreA : challenge.scoreB,
+        buddyScore: result.isUserA ? challenge.scoreB : challenge.scoreA,
         winner: challenge.winner,
         status: challenge.status,
       },
@@ -336,9 +388,9 @@ router.get('/buddy/challenge', auth, async (req, res) => {
   }
 });
 
-router.post('/buddy/challenge', auth, async (req, res) => {
+router.post('/buddy/challenge/:pairId', auth, async (req, res) => {
   try {
-    const result = await getActivePair(req.user.id);
+    const result = await getPairById(req.params.pairId, req.user.id);
     if (!result) return res.status(400).json({ message: 'No active buddy' });
 
     const { weekStart, weekEnd } = getWeekBounds();
@@ -368,56 +420,49 @@ router.post('/buddy/challenge', auth, async (req, res) => {
   }
 });
 
-// ── Buddy: Update challenge scores (called internally after workout) ──────
+// ── Update challenge scores for ALL pairs (called internally after workout)
 
-async function updateBuddyChallengeScores(userId) {
+async function updateAllBuddyChallengeScores(userId) {
   try {
-    const result = await getActivePair(userId);
-    if (!result) return;
+    const pairs = await getActivePairs(userId);
+    if (pairs.length === 0) return;
 
     const { weekStart, weekEnd } = getWeekBounds();
-    const challenge = await BuddyChallenge.findOne({
-      pairId: result.pair._id, status: 'active',
-      weekStart: { $gte: weekStart },
-    });
-    if (!challenge) return;
 
-    const isUserA = result.pair.userA.toString() === userId.toString();
-
-    if (challenge.type === 'weekly_workouts') {
-      const count = await WorkoutLog.countDocuments({
-        userId, completed: true, date: { $gte: weekStart, $lt: weekEnd },
+    for (const { pair, buddyId } of pairs) {
+      const challenge = await BuddyChallenge.findOne({
+        pairId: pair._id, status: 'active',
+        weekStart: { $gte: weekStart },
       });
-      if (isUserA) challenge.scoreA = count; else challenge.scoreB = count;
-    } else if (challenge.type === 'weekly_volume') {
-      const agg = await WorkoutLog.aggregate([
-        { $match: { userId: require('mongoose').Types.ObjectId.createFromHexString(userId.toString()), completed: true, date: { $gte: weekStart, $lt: weekEnd } } },
-        { $group: { _id: null, total: { $sum: '$totalVolume' } } },
-      ]);
-      const vol = agg[0]?.total || 0;
-      if (isUserA) challenge.scoreA = vol; else challenge.scoreB = vol;
-    } else if (challenge.type === 'weekly_streak') {
-      const user = await User.findById(userId).select('streak').lean();
-      if (isUserA) challenge.scoreA = user?.streak || 0; else challenge.scoreB = user?.streak || 0;
-    }
+      if (!challenge) continue;
 
-    // Also update buddy's score
-    const buddyId = isUserA ? result.pair.userB : result.pair.userA;
-    if (challenge.type === 'weekly_workouts') {
-      const bCount = await WorkoutLog.countDocuments({
-        userId: buddyId, completed: true, date: { $gte: weekStart, $lt: weekEnd },
-      });
-      if (isUserA) challenge.scoreB = bCount; else challenge.scoreA = bCount;
-    }
+      const isUserA = pair.userA.toString() === userId.toString();
 
-    // Check if week ended
-    if (new Date() >= weekEnd) {
-      challenge.status = 'completed';
-      if (challenge.scoreA > challenge.scoreB) challenge.winner = result.pair.userA;
-      else if (challenge.scoreB > challenge.scoreA) challenge.winner = result.pair.userB;
-    }
+      if (challenge.type === 'weekly_workouts') {
+        const myCount = await WorkoutLog.countDocuments({ userId, completed: true, date: { $gte: weekStart, $lt: weekEnd } });
+        const bCount = await WorkoutLog.countDocuments({ userId: buddyId, completed: true, date: { $gte: weekStart, $lt: weekEnd } });
+        if (isUserA) { challenge.scoreA = myCount; challenge.scoreB = bCount; }
+        else { challenge.scoreB = myCount; challenge.scoreA = bCount; }
+      } else if (challenge.type === 'weekly_volume') {
+        const agg = await WorkoutLog.aggregate([
+          { $match: { userId: require('mongoose').Types.ObjectId.createFromHexString(userId.toString()), completed: true, date: { $gte: weekStart, $lt: weekEnd } } },
+          { $group: { _id: null, total: { $sum: '$totalVolume' } } },
+        ]);
+        const vol = agg[0]?.total || 0;
+        if (isUserA) challenge.scoreA = vol; else challenge.scoreB = vol;
+      } else if (challenge.type === 'weekly_streak') {
+        const user = await User.findById(userId).select('streak').lean();
+        if (isUserA) challenge.scoreA = user?.streak || 0; else challenge.scoreB = user?.streak || 0;
+      }
 
-    await challenge.save();
+      if (new Date() >= weekEnd) {
+        challenge.status = 'completed';
+        if (challenge.scoreA > challenge.scoreB) challenge.winner = pair.userA;
+        else if (challenge.scoreB > challenge.scoreA) challenge.winner = pair.userB;
+      }
+
+      await challenge.save();
+    }
   } catch (e) {
     console.warn('[BuddyChallenge] Score update error:', e.message);
   }
@@ -425,7 +470,8 @@ async function updateBuddyChallengeScores(userId) {
 
 // Export helpers for use in other routes
 router.logBuddyActivity = logBuddyActivity;
-router.updateBuddyChallengeScores = updateBuddyChallengeScores;
-router.getActivePair = getActivePair;
+router.logActivityToAllBuddies = logActivityToAllBuddies;
+router.updateBuddyChallengeScores = updateAllBuddyChallengeScores;
+router.getActivePairs = getActivePairs;
 
 module.exports = router;

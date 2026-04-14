@@ -114,17 +114,18 @@ export default function Profile() {
   const [leaderboardOptIn, setLeaderboardOptIn] = useState(false);
   const [buddyCode, setBuddyCode] = useState('');
   const [buddyInput, setBuddyInput] = useState('');
-  const [buddyStatus, setBuddyStatus] = useState(null);
-  const [buddyInfo, setBuddyInfo] = useState(null);
+  const [buddyList, setBuddyList] = useState([]);
   const [pushEnabled, setPushEnabled] = useState(false);
 
-  useEffect(() => {
+  const fetchBuddies = () => {
     API.get('/social/buddy').then(({ data }) => {
-      if (data.paired) {
-        setBuddyStatus('active');
-        setBuddyInfo(data.buddy);
-      }
+      if (data.paired && data.buddies?.length > 0) setBuddyList(data.buddies);
+      else setBuddyList([]);
     }).catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchBuddies();
     if ('Notification' in window && Notification.permission === 'granted') {
       navigator.serviceWorker?.getRegistration().then((reg) => {
         reg?.pushManager?.getSubscription().then((sub) => { if (sub) setPushEnabled(true); });
@@ -152,17 +153,16 @@ export default function Profile() {
     if (!buddyInput.trim()) return;
     try {
       await API.post('/social/buddy/accept', { code: buddyInput.trim() });
-      setBuddyStatus('active');
+      setBuddyInput('');
       toast.success('Buddy paired!');
+      fetchBuddies();
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to pair'); }
   };
 
-  const removeBuddy = async () => {
+  const removeBuddy = async (pairId) => {
     try {
-      await API.delete('/social/buddy');
-      setBuddyStatus(null);
-      setBuddyCode('');
-      setBuddyInfo(null);
+      await API.delete(`/social/buddy/${pairId}`);
+      setBuddyList((prev) => prev.filter((b) => b.pairId !== pairId));
       toast.success('Buddy removed');
     } catch { toast.error('Failed to remove buddy'); }
   };
@@ -607,61 +607,67 @@ export default function Profile() {
           <div className="pt-3">
             <div className="flex items-center gap-2 mb-3">
               <Users size={14} className="text-purple-400" />
-              <span className="text-sm font-semibold text-white">Workout Buddy</span>
+              <span className="text-sm font-semibold text-white">
+                Workout Buddies {buddyList.length > 0 && <span className="text-purple-400/60">({buddyList.length})</span>}
+              </span>
             </div>
-            {buddyStatus === 'active' ? (
-              <div className="space-y-2">
-                {buddyInfo && (
-                  <div className="p-3 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl">
-                    <div className="flex items-center gap-3 mb-2">
+
+            {/* Existing buddies list */}
+            {buddyList.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {buddyList.map((b) => (
+                  <div key={b.pairId} className="p-3 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl">
+                    <div className="flex items-center gap-3">
                       <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0">
-                        {buddyInfo.name?.[0]?.toUpperCase() || 'B'}
+                        {b.name?.[0]?.toUpperCase() || 'B'}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-bold text-white">{buddyInfo.fullName || buddyInfo.name}</div>
+                        <div className="text-sm font-bold text-white">{b.fullName || b.name}</div>
                         <div className="text-[10px] text-slate-400">
-                          {buddyInfo.fitnessGoal ? `Goal: ${buddyInfo.fitnessGoal}` : 'Workout Buddy'}
+                          {b.fitnessGoal ? `Goal: ${b.fitnessGoal}` : 'Workout Buddy'} · 🔥 {b.streak} streak
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="text-xs font-black text-orange-400">🔥 {buddyInfo.streak}</div>
-                        <div className="text-[10px] text-slate-500">{buddyInfo.totalWorkouts} total</div>
+                        <div className="text-[10px] text-slate-500">{b.totalWorkouts} workouts</div>
+                        <button onClick={() => removeBuddy(b.pairId)} className="text-[10px] text-red-400 hover:text-red-300 mt-0.5">Remove</button>
                       </div>
                     </div>
-                    {buddyInfo.lastWorkout && (
+                    {b.lastWorkout && (
                       <div className="p-2 bg-slate-800/40 rounded-lg mt-2">
                         <div className="text-[10px] text-slate-500">Last workout</div>
-                        <div className="text-xs text-white font-medium">{buddyInfo.lastWorkout.name}</div>
+                        <div className="text-xs text-white font-medium">{b.lastWorkout.name}</div>
                       </div>
                     )}
                   </div>
-                )}
-                <button onClick={removeBuddy} className="w-full text-xs text-red-400 hover:text-red-300 py-1">Remove Buddy</button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex gap-2">
-                  <button onClick={generateBuddyCode} className="flex-1 btn-secondary text-xs py-2">Generate Invite Code</button>
-                  {buddyCode && (
-                    <button
-                      onClick={() => { navigator.clipboard.writeText(buddyCode); toast.success('Copied!'); }}
-                      className="flex items-center gap-1 px-3 py-2 bg-indigo-600/20 border border-indigo-500/30 rounded-xl text-indigo-400 text-xs font-bold"
-                    >
-                      <Copy size={12} /> {buddyCode}
-                    </button>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    value={buddyInput}
-                    onChange={(e) => setBuddyInput(e.target.value)}
-                    placeholder="Enter buddy's code"
-                    className="input-field flex-1 text-xs py-2"
-                  />
-                  <button onClick={acceptBuddy} disabled={!buddyInput.trim()} className="btn-primary text-xs px-4 py-2">Pair</button>
-                </div>
+                ))}
               </div>
             )}
+
+            {/* Always show invite/pair controls */}
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <button onClick={generateBuddyCode} className="flex-1 btn-secondary text-xs py-2">
+                  {buddyList.length > 0 ? 'Add Another Buddy' : 'Generate Invite Code'}
+                </button>
+                {buddyCode && (
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(buddyCode); toast.success('Copied!'); }}
+                    className="flex items-center gap-1 px-3 py-2 bg-indigo-600/20 border border-indigo-500/30 rounded-xl text-indigo-400 text-xs font-bold"
+                  >
+                    <Copy size={12} /> {buddyCode}
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={buddyInput}
+                  onChange={(e) => setBuddyInput(e.target.value)}
+                  placeholder="Enter buddy's invite code"
+                  className="input-field flex-1 text-xs py-2"
+                />
+                <button onClick={acceptBuddy} disabled={!buddyInput.trim()} className="btn-primary text-xs px-4 py-2">Pair</button>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -98,17 +98,17 @@ router.post('/log', auth, async (req, res) => {
         user.lastWorkoutDate = now;
         await user.save();
 
-        // Log buddy activity + update challenge scores (fire-and-forget)
+        // Log buddy activity to ALL buddies + update challenge scores (fire-and-forget)
         const vol = log.totalVolume ? `${Math.round(log.totalVolume).toLocaleString()}kg volume` : '';
         const dur = duration ? `${duration} min` : '';
         const detail = [workoutName, vol, dur].filter(Boolean).join(' · ');
-        socialRoutes.logBuddyActivity(req.user.id, 'workout_completed',
+        socialRoutes.logActivityToAllBuddies(req.user.id, 'workout_completed',
           `${user.name || 'Your buddy'} completed a workout! ${detail}`,
           { workoutName, totalVolume: log.totalVolume, duration }
         ).catch(() => {});
 
         if (user.streak > 0 && user.streak % 7 === 0) {
-          socialRoutes.logBuddyActivity(req.user.id, 'streak_milestone',
+          socialRoutes.logActivityToAllBuddies(req.user.id, 'streak_milestone',
             `${user.name || 'Your buddy'} hit a ${user.streak}-day streak! 🔥`,
             { streak: user.streak }
           ).catch(() => {});
