@@ -67,7 +67,7 @@ export default function BMICard({ user }) {
           <div className="text-xs text-slate-400 mt-0.5">Target (kg)</div>
         </div>
         <div className="text-center p-2.5 bg-slate-700/40 rounded-xl">
-          <div className="text-lg font-bold text-emerald-400">{weightToGo ? `+${weightToGo}` : '--'}</div>
+          <div className="text-lg font-bold text-emerald-400">{weightToGo ? `${isGaining ? '+' : '-'}${weightToGo}` : '--'}</div>
           <div className="text-xs text-slate-400 mt-0.5">{isGaining ? 'To Gain' : 'To Lose'}</div>
         </div>
       </div>

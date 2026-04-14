@@ -30,7 +30,7 @@ import {
   Apple,
   Scale,
 } from 'lucide-react';
-import { workoutPlan } from '../data/workoutPlan';
+import useWorkoutPlan from '../hooks/useWorkoutPlan';
 
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -92,9 +92,9 @@ function buildRadarData(totals) {
   }));
 }
 
-function collectExercisesFromPlan() {
+function collectExercisesFromPlan(plan) {
   const set = new Set(DEFAULT_EXERCISES);
-  Object.values(workoutPlan).forEach((day) => {
+  Object.values(plan || {}).forEach((day) => {
     day.exercises?.forEach((e) => set.add(e));
   });
   return Array.from(set).sort();
@@ -137,6 +137,7 @@ const chartTooltipStyle = {
 };
 
 export default function Analytics() {
+  const { workoutPlan: userPlan } = useWorkoutPlan();
   const [weekOffset, setWeekOffset] = useState(0);
   const [weekly, setWeekly] = useState(null);
   const [muscleRaw, setMuscleRaw] = useState(null);
@@ -148,7 +149,7 @@ export default function Analytics() {
   const [loadingVolume, setLoadingVolume] = useState(false);
   const [loadingForecast, setLoadingForecast] = useState(true);
 
-  const exerciseOptions = useMemo(() => collectExercisesFromPlan(), []);
+  const exerciseOptions = useMemo(() => collectExercisesFromPlan(userPlan), [userPlan]);
 
   const fetchWeekly = useCallback(async () => {
     setLoadingWeekly(true);

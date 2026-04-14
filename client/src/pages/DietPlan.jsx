@@ -287,20 +287,32 @@ export default function DietPlan() {
   const { user } = useApp();
   const [activeTab, setActiveTab] = useState('plan');
 
+  const goal = user?.fitnessGoal || 'bulk';
   const calorieGoal = user?.dailyCalories || 2800;
   const proteinGoal = user?.proteinTarget || 160;
-  const carbGoal = Math.round((calorieGoal * 0.45) / 4);
-  const fatGoal = Math.round((calorieGoal * 0.28) / 9);
+  const carbPct = goal === 'cut' ? 0.35 : goal === 'endurance' ? 0.55 : 0.45;
+  const fatPct = goal === 'cut' ? 0.30 : goal === 'endurance' ? 0.20 : 0.28;
+  const carbGoal = Math.round((calorieGoal * carbPct) / 4);
+  const fatGoal = Math.round((calorieGoal * fatPct) / 9);
 
   const mealPlan = generateMealPlan(calorieGoal, proteinGoal);
 
   const bmi = parseFloat(user?.bmi || 22);
   const bodyType = bmi < 18.5 ? 'Ectomorph (Hardgainer)' : bmi < 25 ? 'Mesomorph' : 'Endomorph';
-  const bulkAdvice = bmi < 18.5
-    ? 'You are underweight. Aggressive bulk (+600 kcal surplus). Prioritise calorie-dense foods like rice, roti, full fat dairy, peanut butter, and mass gainer.'
-    : bmi < 25
-    ? 'Great starting point. Lean bulk (+400 kcal surplus). Focus on quality calories from whole foods. Limit junk food even in a surplus.'
-    : 'Begin with body recomposition (minimal surplus). Prioritise high protein, moderate carbs. Fat will reduce while muscle builds. Transition to bulk phase after 2–3 months.';
+
+  const GOAL_ADVICE = {
+    bulk: bmi < 18.5
+      ? 'You are underweight. Aggressive bulk (+600 kcal surplus). Prioritise calorie-dense foods like rice, roti, full fat dairy, peanut butter, and mass gainer.'
+      : bmi < 25
+      ? 'Great starting point. Lean bulk (+400 kcal surplus). Focus on quality calories from whole foods. Limit junk food even in a surplus.'
+      : 'Begin with body recomposition (minimal surplus). Prioritise high protein, moderate carbs. Fat will reduce while muscle builds.',
+    cut: 'You are in a calorie deficit to lose fat. Prioritise high-protein meals to preserve muscle. Eat plenty of vegetables for volume and satiety. Avoid processed foods and sugar.',
+    maintain: 'Eat at maintenance calories to sustain your physique. Focus on balanced macros, whole foods, and consistent meal timing.',
+    strength: 'Moderate surplus to fuel strength gains. Prioritise protein and carbs around training. Recovery meals are critical for nervous system repair.',
+    endurance: 'Higher carb intake to fuel endurance work. Eat complex carbs before training and fast-digesting carbs during long sessions. Stay hydrated.',
+  };
+  const goalAdvice = GOAL_ADVICE[goal] || GOAL_ADVICE.bulk;
+  const GOAL_STRATEGY_LABEL = { bulk: 'Your Bulk Strategy', cut: 'Your Cut Strategy', maintain: 'Your Maintenance Plan', strength: 'Your Strength Strategy', endurance: 'Your Endurance Fuel Plan' };
 
   const tabs = [
     { key: 'plan', label: '📋 Meal Plan', icon: Target },
@@ -334,7 +346,7 @@ export default function DietPlan() {
             <Star size={22} className="text-amber-400" />
             Your Diet Plan
           </h1>
-          <p className="section-subtitle">Personalised for your bulk transformation</p>
+          <p className="section-subtitle">Personalised for your {goal === 'cut' ? 'fat loss' : goal === 'maintain' ? 'maintenance' : goal === 'strength' ? 'strength' : goal === 'endurance' ? 'endurance' : 'muscle building'} journey</p>
         </div>
 
         {/* Personal Summary Card */}
@@ -370,8 +382,8 @@ export default function DietPlan() {
           </div>
 
           <div className="p-3 bg-white/5 rounded-xl border border-white/10">
-            <div className="text-xs font-bold text-amber-400 mb-1">📊 Your Bulk Strategy:</div>
-            <p className="text-xs text-slate-300 leading-relaxed">{bulkAdvice}</p>
+            <div className="text-xs font-bold text-amber-400 mb-1">📊 {GOAL_STRATEGY_LABEL[goal] || 'Your Strategy'}:</div>
+            <p className="text-xs text-slate-300 leading-relaxed">{goalAdvice}</p>
           </div>
         </div>
 
@@ -412,7 +424,7 @@ export default function DietPlan() {
             <div className="card p-5 mt-2">
               <h3 className="font-bold text-white mb-3 flex items-center gap-2">
                 <TrendingUp size={16} className="text-emerald-400" />
-                Weekly Grocery Essentials for Bulking
+                Weekly Grocery Essentials
               </h3>
               <div className="grid grid-cols-2 gap-3">
                 {[

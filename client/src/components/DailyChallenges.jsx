@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { getTodayChallenges, getLevelFromXP, CATEGORY_COLORS, CATEGORY_ICONS } from '../data/dailyChallenges';
-import { weekSchedule, workoutPlan } from '../data/workoutPlan';
+import useWorkoutPlan from '../hooks/useWorkoutPlan';
 import { exercises as exerciseDb } from '../data/exercises';
 import axios from 'axios';
 import dayjs from 'dayjs';
@@ -19,6 +19,7 @@ const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'frid
 
 export default function DailyChallenges() {
   const { user, getWorkoutLog, getNutritionLog } = useApp();
+  const { workoutPlan, weekSchedule } = useWorkoutPlan();
   const [challenges, setChallenges] = useState([]);
   const [completedIds, setCompletedIds] = useState(new Set());
   const [totalXP, setTotalXP] = useState(0);

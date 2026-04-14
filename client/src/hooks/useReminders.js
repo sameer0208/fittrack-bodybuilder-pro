@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { weekSchedule } from '../data/workoutPlan';
+import useWorkoutPlan from './useWorkoutPlan';
 import { requestNotificationPermission } from '../utils/notifications';
 
 const INTERVAL_MS = 30 * 60 * 1000;
@@ -25,6 +25,7 @@ function markFired(id) {
 
 export default function useReminders() {
   const { user, getNutritionLog, getWorkoutLog, addNotification } = useApp();
+  const { weekSchedule } = useWorkoutPlan();
   const permAsked = useRef(false);
 
   useEffect(() => {

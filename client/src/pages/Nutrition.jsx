@@ -151,8 +151,11 @@ export default function Nutrition() {
 
   const calorieGoal = user?.dailyCalories || 2500;
   const proteinGoal = user?.proteinTarget || 150;
-  const carbGoal = Math.round((calorieGoal * 0.45) / 4);
-  const fatGoal = Math.round((calorieGoal * 0.25) / 9);
+  const goal = user?.fitnessGoal || 'bulk';
+  const carbPct = goal === 'cut' ? 0.35 : goal === 'endurance' ? 0.55 : 0.45;
+  const fatPct = goal === 'cut' ? 0.30 : goal === 'endurance' ? 0.20 : 0.25;
+  const carbGoal = Math.round((calorieGoal * carbPct) / 4);
+  const fatGoal = Math.round((calorieGoal * fatPct) / 9);
 
   const calLeft = Math.max(0, calorieGoal - totals.calories);
   const calPct = Math.min((totals.calories / calorieGoal) * 100, 100);

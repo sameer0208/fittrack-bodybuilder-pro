@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { workoutPlan } from '../data/workoutPlan';
 import { exercises as exerciseDb } from '../data/exercises';
 import { buildFullExerciseDb } from '../data/exerciseLibrary';
 import { useApp } from '../context/AppContext';
+import useWorkoutPlan from '../hooks/useWorkoutPlan';
 import ExerciseCard from '../components/ExerciseCard';
 import ExercisePickerModal from '../components/ExercisePickerModal';
 import toast from 'react-hot-toast';
@@ -28,6 +28,7 @@ export default function WorkoutDay() {
   const { sessionKey } = useParams();
   const navigate = useNavigate();
   const { saveWorkoutLog, getWorkoutLog, fetchWorkoutLog, user } = useApp();
+  const { workoutPlan } = useWorkoutPlan();
 
   const plan = workoutPlan[sessionKey];
   const [exerciseLogs, setExerciseLogs] = useState({});

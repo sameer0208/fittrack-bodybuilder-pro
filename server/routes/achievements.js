@@ -21,9 +21,50 @@ const ACHIEVEMENT_DEFS = [
   { key: 'streak_14', name: 'Fortnight Fire', desc: '14-day workout streak', tier: 'silver', check: (u) => u.streak >= 14 },
   { key: 'streak_30', name: 'Monthly Beast', desc: '30-day workout streak', tier: 'gold', check: (u) => u.streak >= 30 },
   { key: 'streak_100', name: 'Unstoppable', desc: '100-day workout streak', tier: 'platinum', check: (u) => u.streak >= 100 },
-  { key: 'weight_gained_5', name: 'Bulk Started', desc: 'Gain 5kg from starting weight', tier: 'silver', check: (u) => (u.currentWeight - (u.weightHistory?.[0]?.weight || u.currentWeight)) >= 5 },
-  { key: 'weight_gained_10', name: 'Mass Monster', desc: 'Gain 10kg from starting weight', tier: 'gold', check: (u) => (u.currentWeight - (u.weightHistory?.[0]?.weight || u.currentWeight)) >= 10 },
-  { key: 'target_reached', name: 'Goal Crusher', desc: 'Reach your target weight', tier: 'platinum', check: (u) => u.currentWeight >= u.targetWeight },
+  {
+    key: 'weight_gained_5', name: 'Bulk Started', desc: 'Gain 5kg from starting weight', tier: 'silver',
+    check: (u) => {
+      const goal = u.fitnessGoal || 'bulk';
+      if (goal === 'cut') return false;
+      return (u.currentWeight - (u.weightHistory?.[0]?.weight || u.currentWeight)) >= 5;
+    },
+  },
+  {
+    key: 'weight_gained_10', name: 'Mass Monster', desc: 'Gain 10kg from starting weight', tier: 'gold',
+    check: (u) => {
+      const goal = u.fitnessGoal || 'bulk';
+      if (goal === 'cut') return false;
+      return (u.currentWeight - (u.weightHistory?.[0]?.weight || u.currentWeight)) >= 10;
+    },
+  },
+  {
+    key: 'weight_lost_5', name: 'Cutting Progress', desc: 'Lose 5kg from starting weight', tier: 'silver',
+    check: (u) => {
+      const goal = u.fitnessGoal || 'bulk';
+      if (goal !== 'cut') return false;
+      return ((u.weightHistory?.[0]?.weight || u.currentWeight) - u.currentWeight) >= 5;
+    },
+  },
+  {
+    key: 'weight_lost_10', name: 'Lean Machine', desc: 'Lose 10kg from starting weight', tier: 'gold',
+    check: (u) => {
+      const goal = u.fitnessGoal || 'bulk';
+      if (goal !== 'cut') return false;
+      return ((u.weightHistory?.[0]?.weight || u.currentWeight) - u.currentWeight) >= 10;
+    },
+  },
+  {
+    key: 'target_reached', name: 'Goal Crusher', desc: 'Reach your target weight', tier: 'platinum',
+    check: (u) => {
+      const start = u.weightHistory?.[0]?.weight ?? u.currentWeight;
+      const hasHistory = (u.weightHistory?.length || 0) >= 2;
+      if (!hasHistory) return false;
+      const goal = u.fitnessGoal || 'bulk';
+      if (goal === 'cut') return u.currentWeight <= u.targetWeight;
+      if (goal === 'maintain') return Math.abs(u.currentWeight - u.targetWeight) <= 1;
+      return u.currentWeight >= u.targetWeight;
+    },
+  },
 ];
 
 const ASYNC_DEFS = [
@@ -95,8 +136,17 @@ router.post('/check', auth, async (req, res) => {
     const user = await User.findById(req.user.id).lean();
     if (!user) return res.status(404).json({ message: 'User not found' });
 
+    // Revoke badges that were falsely awarded (e.g. target_reached on signup)
     const existing = await Achievement.find({ userId: req.user.id }).lean();
-    const existingKeys = new Set(existing.map((a) => a.key));
+    for (const ach of existing) {
+      const def = ACHIEVEMENT_DEFS.find((d) => d.key === ach.key);
+      if (def && !def.check(user)) {
+        await Achievement.deleteOne({ _id: ach._id });
+      }
+    }
+
+    const freshExisting = await Achievement.find({ userId: req.user.id }).lean();
+    const existingKeys = new Set(freshExisting.map((a) => a.key));
     const newlyUnlocked = [];
 
     for (const def of ACHIEVEMENT_DEFS) {
@@ -124,7 +174,7 @@ router.post('/check', auth, async (req, res) => {
       }
     }
 
-    res.json({ newlyUnlocked, total: existing.length + newlyUnlocked.length });
+    res.json({ newlyUnlocked, total: freshExisting.length + newlyUnlocked.length });
   } catch (err) {
     console.error('[Achievements] Check error:', err.message);
     res.status(500).json({ message: err.message });

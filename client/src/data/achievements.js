@@ -14,6 +14,8 @@ export const BADGE_DEFS = [
   { key: 'streak_100', name: 'Unstoppable', description: '100-day workout streak', icon: 'Flame', tier: 'platinum' },
   { key: 'weight_gained_5', name: 'Bulk Started', description: 'Gain 5kg from starting weight', icon: 'TrendingUp', tier: 'silver' },
   { key: 'weight_gained_10', name: 'Mass Monster', description: 'Gain 10kg from starting weight', icon: 'Scale', tier: 'gold' },
+  { key: 'weight_lost_5', name: 'Cutting Progress', description: 'Lose 5kg from starting weight', icon: 'TrendingDown', tier: 'silver' },
+  { key: 'weight_lost_10', name: 'Lean Machine', description: 'Lose 10kg from starting weight', icon: 'Scale', tier: 'gold' },
   { key: 'target_reached', name: 'Goal Crusher', description: 'Reach your target weight', icon: 'Target', tier: 'platinum' },
   { key: 'volume_10k', name: 'Volume Beast', description: 'Lift 10,000kg total volume in a single workout', icon: 'Zap', tier: 'silver' },
   { key: 'volume_50k', name: 'Iron Mountain', description: 'Lift 50,000kg total volume in a single workout', icon: 'Zap', tier: 'gold' },

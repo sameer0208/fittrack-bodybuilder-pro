@@ -3,11 +3,12 @@ import { useApp } from '../context/AppContext';
 import { WeightChart, VolumeChart } from '../components/ProgressChart';
 import { TrendingUp, Scale, Award, Activity, Plus, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { workoutPlan } from '../data/workoutPlan';
+import useWorkoutPlan from '../hooks/useWorkoutPlan';
 import dayjs from 'dayjs';
 
 export default function Progress() {
   const { user, updateUser, stats, fetchStats } = useApp();
+  const { workoutPlan } = useWorkoutPlan();
   const [newWeight, setNewWeight] = useState('');
   const [logDate, setLogDate] = useState(dayjs().format('YYYY-MM-DD'));
   const [activeTab, setActiveTab] = useState('weight');

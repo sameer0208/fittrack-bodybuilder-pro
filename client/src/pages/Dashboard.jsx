@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { weekSchedule, workoutPlan } from '../data/workoutPlan';
+import useWorkoutPlan from '../hooks/useWorkoutPlan';
 import BMICard from '../components/BMICard';
 import ShareCard from '../components/ShareCard';
 import DailyChallenges from '../components/DailyChallenges';
@@ -23,11 +23,10 @@ API.interceptors.request.use((cfg) => {
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-// All session keys across the entire week
-const ALL_WEEK_SESSIONS = weekSchedule.flatMap((d) => d.sessions);
-
 export default function Dashboard() {
   const { user, fetchWorkoutLog, fetchNutritionLog } = useApp();
+  const { workoutPlan, weekSchedule } = useWorkoutPlan();
+  const ALL_WEEK_SESSIONS = weekSchedule.flatMap((d) => d.sessions);
   const today = dayjs();
   const todayDayName = DAY_NAMES[today.day()];
 

@@ -119,9 +119,14 @@ export const AppProvider = ({ children }) => {
 
   const saveLocalProfile = (profileData) => {
     const bmi = (profileData.currentWeight / Math.pow(profileData.height / 100, 2)).toFixed(1);
-    const bmr = 10 * profileData.currentWeight + 6.25 * profileData.height - 5 * (profileData.age || 25) + 5;
-    const dailyCalories = Math.round(bmr * 1.725 + 500);
-    const proteinTarget = Math.round(profileData.currentWeight * 2.2);
+    const bmr = profileData.gender === 'female'
+      ? 10 * profileData.currentWeight + 6.25 * profileData.height - 5 * (profileData.age || 25) - 161
+      : 10 * profileData.currentWeight + 6.25 * profileData.height - 5 * (profileData.age || 25) + 5;
+    const tdee = Math.round(bmr * 1.725);
+    const goal = profileData.fitnessGoal || 'bulk';
+    const dailyCalories = goal === 'bulk' ? tdee + 500 : goal === 'cut' ? Math.max(1200, tdee - 500) : goal === 'strength' ? tdee + 300 : goal === 'endurance' ? tdee + 200 : tdee;
+    const w = profileData.currentWeight;
+    const proteinTarget = goal === 'cut' ? Math.round(w * 2.4) : (goal === 'bulk' || goal === 'strength') ? Math.round(w * 2.2) : goal === 'endurance' ? Math.round(w * 1.6) : Math.round(w * 1.8);
     const enriched = {
       ...profileData,
       bmi, dailyCalories, proteinTarget,

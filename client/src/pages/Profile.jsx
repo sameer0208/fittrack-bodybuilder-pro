@@ -10,7 +10,7 @@ import {
   Users, Copy, Bell, BellOff, Trophy
 } from 'lucide-react';
 import dayjs from 'dayjs';
-import { muscleFrequency } from '../data/workoutPlan';
+import useWorkoutPlan from '../hooks/useWorkoutPlan';
 import { subscribeToPush, unsubscribeFromPush } from '../utils/pushSubscription';
 
 const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
@@ -20,8 +20,89 @@ API.interceptors.request.use((cfg) => {
   return cfg;
 });
 
+const GOAL_LABELS = { bulk: 'Bulking — Muscle Mass', cut: 'Cutting — Fat Loss', maintain: 'Maintenance — Stay Fit', strength: 'Strength — Max Power', endurance: 'Endurance — Stamina' };
+const SPLIT_LABELS = { push_pull_legs: 'Push / Pull / Legs', upper_lower: 'Upper / Lower', full_body: 'Full Body', bro_split: 'Bro Split', auto: 'Auto (Optimized)' };
+const DAY_SHORT_MAP = { monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu', friday: 'Fri', saturday: 'Sat', sunday: 'Sun' };
+
+function ProgramDetails({ user, weekSchedule, workoutPlan, muscleFrequency }) {
+  const goal = user?.fitnessGoal || 'bulk';
+  const split = user?.preferredSplit || 'auto';
+  const duration = user?.sessionDuration || '75-90';
+  const daysArr = user?.gymDays || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  const doubles = user?.weekendDoubles ?? true;
+  const totalSessions = Object.keys(workoutPlan || {}).length;
+
+  const gymDaysStr = daysArr.map((d) => DAY_SHORT_MAP[d] || d).join(', ');
+  const weekendDays = daysArr.filter((d) => d === 'saturday' || d === 'sunday');
+  const weekdayDays = daysArr.filter((d) => d !== 'saturday' && d !== 'sunday');
+
+  let scheduleLines = [];
+  if (weekdayDays.length > 0) {
+    scheduleLines.push(`🌅 ${weekdayDays.map((d) => DAY_SHORT_MAP[d]).join(', ')}: Morning session (${duration.replace('-', '–')} min)`);
+  }
+  if (weekendDays.length > 0 && doubles) {
+    scheduleLines.push(`🌅🌇 ${weekendDays.map((d) => DAY_SHORT_MAP[d]).join(', ')}: Morning + Evening (2 sessions)`);
+  } else if (weekendDays.length > 0) {
+    scheduleLines.push(`🌅 ${weekendDays.map((d) => DAY_SHORT_MAP[d]).join(', ')}: Morning session (${duration.replace('-', '–')} min)`);
+  }
+  const restDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].filter((d) => !daysArr.includes(d));
+  if (restDays.length > 0) {
+    scheduleLines.push(`😴 ${restDays.map((d) => DAY_SHORT_MAP[d]).join(', ')}: Rest day`);
+  }
+
+  return (
+    <div className="mt-4 space-y-3 animate-fade-in">
+      <div className="p-3 bg-slate-700/30 rounded-xl">
+        <div className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Program</div>
+        <div className="text-white font-semibold">{daysArr.length}-Day {SPLIT_LABELS[split] || split} Split</div>
+        <div className="text-xs text-slate-400 mt-0.5">{GOAL_LABELS[goal] || goal} · {totalSessions} sessions/week</div>
+      </div>
+      <div className="p-3 bg-slate-700/30 rounded-xl">
+        <div className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Schedule</div>
+        <div className="text-sm text-slate-300 space-y-1">
+          {scheduleLines.map((line, i) => <div key={i}>{line}</div>)}
+        </div>
+      </div>
+      <div className="p-3 bg-slate-700/30 rounded-xl">
+        <div className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Weekly Sessions</div>
+        <div className="space-y-1.5">
+          {weekSchedule.filter((d) => d.sessions.length > 0).map((day) => (
+            <div key={day.key} className="flex items-center justify-between text-sm">
+              <span className="text-slate-300 font-medium">{day.day}</span>
+              <div className="flex gap-1.5">
+                {day.sessions.map((sk) => {
+                  const plan = workoutPlan[sk];
+                  return plan ? (
+                    <span key={sk} className={`text-[10px] px-2 py-0.5 rounded-full font-semibold bg-gradient-to-r ${plan.colorClass} text-white`}>
+                      {plan.name}
+                    </span>
+                  ) : null;
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {Object.keys(muscleFrequency).length > 0 && (
+        <div className="p-3 bg-slate-700/30 rounded-xl">
+          <div className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Muscle Frequency</div>
+          <div className="space-y-1">
+            {Object.entries(muscleFrequency).slice(0, 8).map(([muscle, sessions]) => (
+              <div key={muscle} className="flex items-center justify-between text-sm">
+                <span className="text-slate-300">{muscle}</span>
+                <span className="text-indigo-400 font-semibold">{sessions.length}x / week</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Profile() {
   const { user, token, updateUser, logout, backendOnline, syncToCloud, checkHealth } = useApp();
+  const { workoutPlan, weekSchedule, muscleFrequency } = useWorkoutPlan();
   const [loading, setLoading] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const [showSyncForm, setShowSyncForm] = useState(false);
@@ -125,6 +206,12 @@ export default function Profile() {
       setSyncing(false);
     }
   };
+  const [fitnessGoal, setFitnessGoal] = useState(user?.fitnessGoal || 'bulk');
+  const [gymDays, setGymDays] = useState(user?.gymDays || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
+  const [preferredSplit, setPreferredSplit] = useState(user?.preferredSplit || 'auto');
+  const [weekendDoubles, setWeekendDoubles] = useState(user?.weekendDoubles ?? true);
+  const [sessionDuration, setSessionDuration] = useState(user?.sessionDuration || '75-90');
+
   const { register, handleSubmit, formState: { errors, isDirty } } = useForm({
     defaultValues: {
       name: user?.name || '',
@@ -146,8 +233,10 @@ export default function Profile() {
         height: parseFloat(data.height),
         targetWeight: parseFloat(data.targetWeight),
         age: parseInt(data.age),
+        fitnessGoal, gymDays, gymDaysPerWeek: gymDays.length,
+        preferredSplit, weekendDoubles, sessionDuration,
       });
-      toast.success('Profile updated! 💪');
+      toast.success('Profile updated! Your plan has been recalculated.');
     } catch {
       toast.error('Failed to update profile');
     } finally {
@@ -200,7 +289,7 @@ export default function Profile() {
             </div>
             <div>
               <h2 className="text-xl font-black text-white">{user?.name || 'Athlete'}</h2>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <span className={`badge ${
                   user?.fitnessLevel === 'advanced'
                     ? 'bg-red-500/20 text-red-400 border border-red-500/30'
@@ -209,6 +298,9 @@ export default function Profile() {
                     : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                 }`}>
                   {user?.fitnessLevel === 'advanced' ? '⚡' : user?.fitnessLevel === 'intermediate' ? '🏋️' : '🌱'} {user?.fitnessLevel}
+                </span>
+                <span className="badge bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
+                  {user?.fitnessGoal === 'cut' ? '🔥' : user?.fitnessGoal === 'maintain' ? '⚖️' : user?.fitnessGoal === 'strength' ? '🏋️' : user?.fitnessGoal === 'endurance' ? '🏃' : '💪'} {user?.fitnessGoal || 'bulk'}
                 </span>
                 {backendOnline ? (
                   <span className="badge bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
@@ -321,10 +413,79 @@ export default function Profile() {
               </div>
             </div>
 
+            {/* ── Personalization Settings ── */}
+            <div className="border-t border-slate-700/40 pt-4 mt-2">
+              <h3 className="text-sm font-bold text-indigo-400 mb-3">Workout Preferences</h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="text-sm text-slate-400 mb-1.5 block">Fitness Goal</label>
+                  <select value={fitnessGoal} onChange={(e) => setFitnessGoal(e.target.value)} className="input-field">
+                    <option value="bulk">Bulk Up 💪</option>
+                    <option value="cut">Lose Fat 🔥</option>
+                    <option value="maintain">Maintain ⚖️</option>
+                    <option value="strength">Strength 🏋️</option>
+                    <option value="endurance">Endurance 🏃</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm text-slate-400 mb-1.5 block">Workout Split</label>
+                  <select value={preferredSplit} onChange={(e) => setPreferredSplit(e.target.value)} className="input-field">
+                    <option value="auto">Auto (Recommended)</option>
+                    <option value="push_pull_legs">Push / Pull / Legs</option>
+                    <option value="upper_lower">Upper / Lower</option>
+                    <option value="full_body">Full Body</option>
+                    <option value="bro_split">Bro Split</option>
+                  </select>
+                </div>
+              </div>
+              <div className="mb-4">
+                <label className="text-sm text-slate-400 mb-2 block">Gym Days</label>
+                <div className="grid grid-cols-7 gap-1.5">
+                  {[
+                    { key: 'monday', short: 'M' }, { key: 'tuesday', short: 'T' },
+                    { key: 'wednesday', short: 'W' }, { key: 'thursday', short: 'T' },
+                    { key: 'friday', short: 'F' }, { key: 'saturday', short: 'S' },
+                    { key: 'sunday', short: 'S' },
+                  ].map((d) => {
+                    const active = gymDays.includes(d.key);
+                    return (
+                      <button key={d.key} type="button"
+                        onClick={() => setGymDays((prev) => active ? prev.filter((x) => x !== d.key) : [...prev, d.key])}
+                        className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                          active ? 'bg-indigo-600/30 border border-indigo-500 text-indigo-300' : 'bg-slate-700/40 border border-slate-600 text-slate-500'
+                        }`}>
+                        {d.short}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">{gymDays.length} day{gymDays.length !== 1 ? 's' : ''}/week</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-slate-400 mb-1.5 block">Session Duration</label>
+                  <select value={sessionDuration} onChange={(e) => setSessionDuration(e.target.value)} className="input-field">
+                    <option value="30-45">30–45 min</option>
+                    <option value="45-60">45–60 min</option>
+                    <option value="60-75">60–75 min</option>
+                    <option value="75-90">75–90 min</option>
+                  </select>
+                </div>
+                <div className="flex items-center">
+                  <label className="flex items-center gap-2 cursor-pointer mt-4">
+                    <input type="checkbox" checked={weekendDoubles}
+                      onChange={(e) => setWeekendDoubles(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-500 text-indigo-500 focus:ring-indigo-500 bg-slate-700" />
+                    <span className="text-xs text-slate-300">Weekend doubles</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full flex items-center justify-center gap-2 mt-2"
+              className="btn-primary w-full flex items-center justify-center gap-2 mt-4"
             >
               {loading ? (
                 <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -342,29 +503,45 @@ export default function Profile() {
             <div className="p-4 bg-gradient-to-br from-orange-500/10 to-amber-500/10 border border-orange-500/20 rounded-xl">
               <div className="text-3xl font-black text-orange-400">{user?.dailyCalories || '--'}</div>
               <div className="text-sm text-slate-400 mt-1">🔥 Daily Calories</div>
-              <div className="text-xs text-orange-300/60 mt-1">Includes +500 bulk surplus</div>
+              <div className="text-xs text-orange-300/60 mt-1">
+                {user?.fitnessGoal === 'cut' ? 'Deficit for fat loss' : user?.fitnessGoal === 'maintain' ? 'Maintenance level' : user?.fitnessGoal === 'strength' ? '+300 strength surplus' : user?.fitnessGoal === 'endurance' ? '+200 endurance fuel' : '+500 bulk surplus'}
+              </div>
             </div>
             <div className="p-4 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/20 rounded-xl">
               <div className="text-3xl font-black text-blue-400">{user?.proteinTarget || '--'}g</div>
               <div className="text-sm text-slate-400 mt-1">💪 Daily Protein</div>
-              <div className="text-xs text-blue-300/60 mt-1">2.2g × {user?.currentWeight}kg BW</div>
+              <div className="text-xs text-blue-300/60 mt-1">
+                {user?.fitnessGoal === 'cut' ? '2.4' : (user?.fitnessGoal === 'endurance') ? '1.6' : (user?.fitnessGoal === 'maintain') ? '1.8' : '2.2'}g × {user?.currentWeight}kg BW
+              </div>
             </div>
             <div className="p-4 bg-gradient-to-br from-purple-500/10 to-violet-500/10 border border-purple-500/20 rounded-xl">
               <div className="text-3xl font-black text-purple-400">{user?.bmi || '--'}</div>
               <div className="text-sm text-slate-400 mt-1">📊 BMI</div>
               <div className="text-xs text-purple-300/60 mt-1">Body Mass Index</div>
             </div>
-            <div className="p-4 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-xl">
-              <div className="text-3xl font-black text-emerald-400">
-                {user?.targetWeight && user?.currentWeight
-                  ? `+${(user.targetWeight - user.currentWeight).toFixed(1)}`
-                  : '--'}
-              </div>
-              <div className="text-sm text-slate-400 mt-1">⚡ To Gain (kg)</div>
-              <div className="text-xs text-emerald-300/60 mt-1">
-                ~{Math.ceil(Math.abs((user?.targetWeight || 0) - (user?.currentWeight || 0)) / 0.5)} weeks
-              </div>
-            </div>
+            {(() => {
+              const g = user?.fitnessGoal || 'bulk';
+              const diff = (user?.targetWeight || 0) - (user?.currentWeight || 0);
+              const absDiff = Math.abs(diff).toFixed(1);
+              const isCut = g === 'cut';
+              const isMaintain = g === 'maintain';
+              const weeks = Math.ceil(Math.abs(diff) / 0.5);
+              return (
+                <div className="p-4 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-xl">
+                  <div className="text-3xl font-black text-emerald-400">
+                    {user?.targetWeight && user?.currentWeight
+                      ? (isMaintain ? `±${absDiff}` : isCut ? `-${absDiff}` : `+${absDiff}`)
+                      : '--'}
+                  </div>
+                  <div className="text-sm text-slate-400 mt-1">
+                    {isCut ? '🔥 To Lose (kg)' : isMaintain ? '⚖️ Delta (kg)' : '⚡ To Gain (kg)'}
+                  </div>
+                  <div className="text-xs text-emerald-300/60 mt-1">
+                    {isMaintain ? 'Staying at target' : `~${weeks} weeks at 0.5kg/week`}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -379,31 +556,7 @@ export default function Profile() {
           </button>
 
           {showPlan && (
-            <div className="mt-4 space-y-3 animate-fade-in">
-              <div className="p-3 bg-slate-700/30 rounded-xl">
-                <div className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Program Name</div>
-                <div className="text-white font-semibold">7-Day PPL Bodybuilding Split</div>
-                <div className="text-xs text-slate-400 mt-0.5">Push · Pull · Legs × 2 + Weekend Double Sessions</div>
-              </div>
-              <div className="p-3 bg-slate-700/30 rounded-xl">
-                <div className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Schedule</div>
-                <div className="text-sm text-slate-300 space-y-1">
-                  <div>🌅 Mon–Fri: Morning session only (75–90 min)</div>
-                  <div>🌅🌇 Sat–Sun: Morning + Evening (2 sessions)</div>
-                </div>
-              </div>
-              <div className="p-3 bg-slate-700/30 rounded-xl">
-                <div className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Muscle Frequency</div>
-                <div className="space-y-1">
-                  {Object.entries(muscleFrequency).slice(0, 6).map(([muscle, sessions]) => (
-                    <div key={muscle} className="flex items-center justify-between text-sm">
-                      <span className="text-slate-300">{muscle}</span>
-                      <span className="text-indigo-400 font-semibold">{sessions.length}x / week</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <ProgramDetails user={user} weekSchedule={weekSchedule} workoutPlan={workoutPlan} muscleFrequency={muscleFrequency} />
           )}
         </div>
 

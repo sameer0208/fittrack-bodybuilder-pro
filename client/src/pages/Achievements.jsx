@@ -17,6 +17,7 @@ import {
   Apple,
   Scale,
   TrendingUp,
+  TrendingDown,
   Award,
   Heart,
   Lock,
@@ -48,6 +49,7 @@ const ICON_MAP = {
   Apple,
   Scale,
   TrendingUp,
+  TrendingDown,
   Award,
   Heart,
 };
