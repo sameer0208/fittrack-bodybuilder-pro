@@ -228,6 +228,14 @@ export default function ExerciseCard({ exercise, index, setLogs, savedSets }) {
   // Keep track of whether we've already applied saved data
   const appliedSavedRef = useRef(false);
 
+  // Sync initial sets to parent on mount so buildExercises() always has data
+  const didSyncInit = useRef(false);
+  useEffect(() => {
+    if (didSyncInit.current) return;
+    didSyncInit.current = true;
+    setLogs?.(exercise.id, localSets);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // When savedSets arrives asynchronously (after API fetch), update local state
   useEffect(() => {
     if (!Array.isArray(savedSets) || savedSets.length === 0) return;
@@ -235,8 +243,10 @@ export default function ExerciseCard({ exercise, index, setLogs, savedSets }) {
     const hasSavedData = savedSets.some((s) => s.weight || s.reps || s.completed);
     if (!hasSavedData) return;
     appliedSavedRef.current = true;
-    setLocalSets(normalizeSaved(savedSets));
-  }, [savedSets]);
+    const normalized = normalizeSaved(savedSets);
+    setLocalSets(normalized);
+    setLogs?.(exercise.id, normalized);
+  }, [savedSets]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const allCompleted   = localSets.every((s) => s.completed);
   const completedCount = localSets.filter((s) => s.completed).length;

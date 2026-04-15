@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import axios from 'axios';
 import { sendBrowserNotification } from '../utils/notifications';
 
@@ -35,6 +35,8 @@ export const AppProvider = ({ children }) => {
 
   // In-memory stores — populated from server, never from localStorage
   const [workoutLogs, setWorkoutLogs] = useState({});
+  const workoutLogsRef = useRef(workoutLogs);
+  workoutLogsRef.current = workoutLogs;
   const [nutritionLogs, setNutritionLogs] = useState({});
   const [stats, setStats] = useState(null);
   const [notifications, setNotifications] = useState([]);
@@ -209,8 +211,8 @@ export const AppProvider = ({ children }) => {
         }
       } catch { /* server unreachable — return in-memory */ }
     }
-    return workoutLogs[sessionKey] || null;
-  }, [token, workoutLogs]);
+    return workoutLogsRef.current[sessionKey] || null;
+  }, [token]);
 
   const fetchStats = useCallback(async () => {
     if (token) {

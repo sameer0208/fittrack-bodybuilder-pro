@@ -82,18 +82,20 @@ export default function WorkoutDay() {
     [mergedIds]
   );
 
-  // ── Existing workout log loading ───────────────────────────────────────────
+  // ── Existing workout log loading (runs ONCE per session) ───────────────────
+  const initialLoadDone = useRef(false);
+
   useEffect(() => {
+    if (initialLoadDone.current) return;
     let cancelled = false;
     fetchWorkoutLog(sessionKey).then((existingLog) => {
-      if (cancelled || !existingLog) return;
+      if (cancelled || !existingLog || initialLoadDone.current) return;
+      initialLoadDone.current = true;
       setCompleted(existingLog.completed || false);
       setElapsed(existingLog.duration ? existingLog.duration * 60 : 0);
       setMood(existingLog.mood || 'good');
       setNotes(existingLog.notes || '');
 
-      // Restore exercise set data — prefer the UI-format map (localStorage),
-      // fall back to converting the server-format exercises array.
       if (existingLog.exerciseLogs && Object.keys(existingLog.exerciseLogs).length > 0) {
         setExerciseLogs(existingLog.exerciseLogs);
       } else if (Array.isArray(existingLog.exercises) && existingLog.exercises.length > 0) {
