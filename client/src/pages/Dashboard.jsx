@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import useWorkoutPlan from '../hooks/useWorkoutPlan';
@@ -36,15 +36,15 @@ export default function Dashboard() {
   // Server-only state — starts empty, populated from backend
   const [serverWorkoutLogs, setServerWorkoutLogs] = useState({});
   const [serverNutrition, setServerNutrition] = useState(null);
+  const lastFetchRef = useRef(0);
 
-  // On mount: fetch week status from server so cross-device data is accurate
-  useEffect(() => {
-    let cancelled = false;
+  const refreshDashboardData = useCallback(() => {
+    const now = Date.now();
+    if (now - lastFetchRef.current < 5000) return;
+    lastFetchRef.current = now;
 
-    // Batch fetch completion status for all sessions this week
     API.get('/workouts/week-status')
       .then(({ data }) => {
-        if (cancelled) return;
         setServerWorkoutLogs((prev) => {
           const updated = { ...prev };
           for (const [sessionKey, status] of Object.entries(data)) {
@@ -55,22 +55,38 @@ export default function Dashboard() {
       })
       .catch(() => {});
 
-    // Also fetch full logs for today's sessions (for detailed data like exerciseLogs)
     todaySessions.forEach((sessionKey) => {
       fetchWorkoutLog(sessionKey).then((log) => {
-        if (cancelled) return;
-        setServerWorkoutLogs((prev) => ({ ...prev, [sessionKey]: log }));
+        if (log) setServerWorkoutLogs((prev) => ({ ...prev, [sessionKey]: log }));
       });
     });
 
-    // Fetch today's nutrition log
     fetchNutritionLog(today.format('YYYY-MM-DD')).then((log) => {
-      if (cancelled || !log) return;
-      setServerNutrition(log);
+      if (log) setServerNutrition(log);
     });
+  }, [todaySessions, today, fetchWorkoutLog, fetchNutritionLog]);
 
-    return () => { cancelled = true; };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Fetch on mount
+  useEffect(() => {
+    refreshDashboardData();
+  }, [refreshDashboardData]);
+
+  // Re-fetch when user returns to the app (tab focus / visibility change)
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refreshDashboardData();
+    };
+    const onFocus = () => refreshDashboardData();
+
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('pageshow', onFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('pageshow', onFocus);
+    };
+  }, [refreshDashboardData]);
 
   const [badgeCount, setBadgeCount] = useState(0);
   const [showShare, setShowShare] = useState(false);

@@ -52,10 +52,10 @@ export default function FoodSearchModal({ meal, onAdd, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-slate-800 border border-slate-700 rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg max-h-[92vh] flex flex-col overflow-hidden animate-slide-up">
+      <div className="bg-slate-800 border border-slate-700 rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg max-h-[85vh] sm:max-h-[92vh] flex flex-col overflow-hidden animate-slide-up">
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-700 shrink-0">
           <div>
@@ -174,7 +174,7 @@ export default function FoodSearchModal({ meal, onAdd, onClose }) {
         </div>
 
         {/* Add Button */}
-        <div className="p-4 border-t border-slate-700 shrink-0">
+        <div className="p-4 border-t border-slate-700 shrink-0" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}>
           <button
             onClick={handleAdd}
             disabled={!selected}
