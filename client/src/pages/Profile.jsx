@@ -276,10 +276,10 @@ export default function Profile() {
     : 1;
 
   return (
-    <div className="page-container relative" style={{ background: '#0a0e17' }}>
+    <div className="page-container relative">
       {/* Mobile Sticky Header */}
       <div className="sticky top-0 z-30 lg:hidden border-b border-slate-700/30 px-4 py-3 overflow-hidden w-full"
-        style={{ background: 'linear-gradient(180deg, rgba(10,14,23,0.97) 0%, rgba(10,14,23,0.95) 100%)', backdropFilter: 'blur(20px)' }}
+        style={{ background: '#0a0e17' }}
       >
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
         <div className="flex items-center justify-between">

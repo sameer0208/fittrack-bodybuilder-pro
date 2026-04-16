@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import {
-  Zap, ChevronRight, ChevronLeft, Scale, Ruler, Target,
-  User, Mail, Lock, Dumbbell, Calendar, Clock,
+  ChevronRight, ChevronLeft, Scale, Ruler, Target,
+  User, Mail, Lock, Dumbbell, Calendar, Clock, Flame,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
@@ -106,7 +106,7 @@ function AccountStep({ emailError, setEmailError, checkingEmail, backendOnline, 
           {emailError && (
             <div className="mt-2 p-2.5 bg-red-500/10 border border-red-500/20 rounded-xl">
               <p className="text-xs text-red-400 font-medium">{emailError}</p>
-              <Link to="/login" className="text-xs text-indigo-400 font-semibold mt-1 inline-block hover:underline">Go to Login →</Link>
+              <Link to="/login" className="text-xs text-red-400 font-semibold mt-1 inline-block hover:underline">Go to Login →</Link>
             </div>
           )}
         </div>
@@ -238,31 +238,33 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-slate-900">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4" style={{ background: '#0a0e17' }}>
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(239,68,68,0.06) 0%, transparent 70%)' }} />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(249,115,22,0.04) 0%, transparent 70%)' }} />
+        <svg className="absolute top-16 right-8 w-14 h-14 opacity-[0.03] gym-float-equipment" style={{ animationDuration: '42s' }} viewBox="0 0 26 24" fill="rgba(239,68,68,0.5)"><path d="M4 8h2v8H4zm3 2h10v4H7zm13-2h2v8h-2z"/></svg>
+        <svg className="absolute bottom-24 left-6 w-10 h-10 opacity-[0.03] gym-float-equipment" style={{ animationDuration: '55s', animationDelay: '-15s' }} viewBox="0 0 24 24" fill="rgba(239,68,68,0.5)"><path d="M8 4a4 4 0 018 0v2H8V4zm2 4h4l2 10H8l2-10z"/></svg>
       </div>
 
       <div className="w-full max-w-md relative z-10">
         <div className="flex items-center gap-3 justify-center mb-8">
-          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center glow-indigo">
-            <Zap size={24} className="text-white" />
+          <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-red-600/20">
+            <Dumbbell size={24} className="text-white" strokeWidth={2.5} />
           </div>
           <div>
-            <div className="font-black text-2xl text-white leading-tight">FitTrack Bodybuilder Pro</div>
-            <div className="text-[10px] text-slate-500 leading-tight">by Sameer Application Production</div>
+            <div className="font-black text-2xl text-white leading-tight tracking-tight">FitTrack Pro</div>
+            <div className="text-[10px] text-slate-600 leading-tight font-bold uppercase tracking-widest">Sameer App Production</div>
           </div>
         </div>
 
         {step > 0 && step < steps.length - 1 && (
           <div className="mb-6">
-            <div className="flex justify-between text-xs text-slate-500 mb-2">
-              <span>Step {step} of {totalSteps}</span>
-              <span>{Math.round((step / totalSteps) * 100)}%</span>
+            <div className="flex justify-between text-xs mb-2">
+              <span className="text-slate-600 font-bold uppercase tracking-wider text-[10px]">Step {step} of {totalSteps}</span>
+              <span className="text-red-400 font-black text-[10px]">{Math.round((step / totalSteps) * 100)}%</span>
             </div>
-            <div className="h-1.5 bg-slate-700 rounded-full">
-              <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+            <div className="h-1.5 rounded-full" style={{ background: 'rgba(30,41,59,0.8)' }}>
+              <div className="h-full bg-gradient-to-r from-red-500 to-orange-500 rounded-full transition-all duration-500"
                 style={{ width: `${(step / totalSteps) * 100}%` }} />
             </div>
           </div>
@@ -271,13 +273,14 @@ export default function Onboarding() {
         {step === 0 && (
           <div className="mb-4">
             <Link to="/login"
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-slate-600 hover:border-indigo-500/60 bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 hover:text-white text-sm font-semibold transition-all duration-200">
-              Already have an account? <span className="text-indigo-400">Sign In →</span>
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-slate-700/40 hover:border-red-500/30 bg-slate-800/40 hover:bg-red-500/5 text-slate-300 hover:text-white text-sm font-semibold transition-all duration-200">
+              Already have an account? <span className="text-red-400 font-bold">Sign In →</span>
             </Link>
           </div>
         )}
 
-        <div className="card p-8 animate-slide-up">
+        <div className="card p-8 animate-slide-up relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/25 to-transparent" />
           {/* ── Step 0: Welcome ── */}
           {step === 0 && (
             <div className="text-center">
@@ -294,14 +297,14 @@ export default function Onboarding() {
                   { emoji: '📅', label: 'Your Schedule' },
                   { emoji: '📊', label: 'Track Progress' },
                 ].map((item) => (
-                  <div key={item.label} className="p-3 bg-slate-700/50 rounded-xl text-center">
+                  <div key={item.label} className="p-3 rounded-xl text-center border border-slate-700/40" style={{ background: 'rgba(20,27,45,0.6)' }}>
                     <div className="text-2xl mb-1">{item.emoji}</div>
                     <div className="text-xs text-slate-400 font-medium">{item.label}</div>
                   </div>
                 ))}
               </div>
               <button onClick={() => next({})} className="btn-primary w-full flex items-center justify-center gap-2">
-                Get Started <ChevronRight size={18} />
+                <Flame size={16} /> Get Started <ChevronRight size={18} />
               </button>
             </div>
           )}
@@ -360,7 +363,7 @@ export default function Onboarding() {
                       <label key={level} className="cursor-pointer">
                         <input {...register('fitnessLevel')} type="radio" value={level} className="sr-only" />
                         <div className={`p-2.5 rounded-xl border text-center text-xs font-semibold capitalize transition-all ${
-                          watch('fitnessLevel') === level ? 'border-indigo-500 bg-indigo-600/20 text-indigo-300' : 'border-slate-600 text-slate-400 hover:border-slate-500'
+                          watch('fitnessLevel') === level ? 'border-red-500/50 bg-red-500/10 text-red-300' : 'border-slate-600 text-slate-400 hover:border-slate-500'
                         }`}>
                           {level === 'beginner' ? '🌱' : level === 'intermediate' ? '🏋️' : '⚡'} {level}
                         </div>
@@ -388,11 +391,11 @@ export default function Onboarding() {
                       onClick={() => setFormData((p) => ({ ...p, fitnessGoal: g.value }))}
                       className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
                         formData.fitnessGoal === g.value
-                          ? 'border-indigo-500 bg-indigo-600/20' : 'border-slate-600 hover:border-slate-500'
+                          ? 'border-red-500/50 bg-red-500/10' : 'border-slate-600 hover:border-slate-500'
                       }`}>
                       <span className="text-2xl">{g.emoji}</span>
                       <div>
-                        <div className={`text-sm font-bold ${formData.fitnessGoal === g.value ? 'text-indigo-300' : 'text-white'}`}>{g.label}</div>
+                        <div className={`text-sm font-bold ${formData.fitnessGoal === g.value ? 'text-red-300' : 'text-white'}`}>{g.label}</div>
                         <div className="text-xs text-slate-400">{g.desc}</div>
                       </div>
                     </button>
@@ -429,7 +432,7 @@ export default function Onboarding() {
                       return (
                         <button key={d.key} type="button" onClick={() => toggleDay(d.key)}
                           className={`py-2.5 rounded-xl text-center text-xs font-bold transition-all ${
-                            active ? 'bg-indigo-600/30 border border-indigo-500 text-indigo-300' : 'bg-slate-700/40 border border-slate-600 text-slate-500 hover:border-slate-500'
+                            active ? 'bg-red-500/10 border border-red-500/50 text-red-300' : 'bg-slate-700/40 border border-slate-600 text-slate-500 hover:border-slate-500'
                           }`}>
                           <div>{d.short}</div>
                           <div className="text-[9px] font-normal mt-0.5 opacity-70">{d.label}</div>
@@ -447,13 +450,13 @@ export default function Onboarding() {
                       <button key={s.value} type="button"
                         onClick={() => setFormData((p) => ({ ...p, preferredSplit: s.value }))}
                         className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-left transition-all ${
-                          formData.preferredSplit === s.value ? 'border-indigo-500 bg-indigo-600/20' : 'border-slate-600 hover:border-slate-500'
+                          formData.preferredSplit === s.value ? 'border-red-500/50 bg-red-500/10' : 'border-slate-600 hover:border-slate-500'
                         }`}>
                         <div>
-                          <div className={`text-xs font-bold ${formData.preferredSplit === s.value ? 'text-indigo-300' : 'text-white'}`}>{s.label}</div>
+                          <div className={`text-xs font-bold ${formData.preferredSplit === s.value ? 'text-red-300' : 'text-white'}`}>{s.label}</div>
                           <div className="text-[10px] text-slate-400">{s.desc}</div>
                         </div>
-                        {formData.preferredSplit === s.value && <div className="w-2 h-2 rounded-full bg-indigo-400" />}
+                        {formData.preferredSplit === s.value && <div className="w-2 h-2 rounded-full bg-red-400" />}
                       </button>
                     ))}
                   </div>
@@ -466,7 +469,7 @@ export default function Onboarding() {
                       <button key={d.value} type="button"
                         onClick={() => setFormData((p) => ({ ...p, sessionDuration: d.value }))}
                         className={`p-2 rounded-xl border text-center transition-all ${
-                          formData.sessionDuration === d.value ? 'border-indigo-500 bg-indigo-600/20 text-indigo-300' : 'border-slate-600 text-slate-400 hover:border-slate-500'
+                          formData.sessionDuration === d.value ? 'border-red-500/50 bg-red-500/10 text-red-300' : 'border-slate-600 text-slate-400 hover:border-slate-500'
                         }`}>
                         <div className="text-lg">{d.emoji}</div>
                         <div className="text-[10px] font-semibold">{d.label}</div>
@@ -479,7 +482,7 @@ export default function Onboarding() {
                   <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-slate-600 hover:border-slate-500 transition-all">
                     <input type="checkbox" checked={formData.weekendDoubles}
                       onChange={(e) => setFormData((p) => ({ ...p, weekendDoubles: e.target.checked }))}
-                      className="w-4 h-4 rounded border-slate-500 text-indigo-500 focus:ring-indigo-500 bg-slate-700" />
+                      className="w-4 h-4 rounded border-slate-500 text-red-500 focus:ring-red-500 bg-slate-700" />
                     <div>
                       <div className="text-xs font-bold text-white">Weekend Double Sessions</div>
                       <div className="text-[10px] text-slate-400">Train morning + evening on weekends</div>
@@ -503,11 +506,11 @@ export default function Onboarding() {
           {/* ── Step 5: Ready ── */}
           {step === 5 && (
             <div className="text-center">
-              <div className="text-6xl mb-4">🎯</div>
-              <h2 className="text-2xl font-black text-white mb-2">Your Plan is Ready!</h2>
-              <p className="text-slate-400 mb-6 text-sm">Personalized program based on your goals</p>
+              <div className="text-6xl mb-4">🔥</div>
+              <h2 className="text-2xl font-black text-white mb-2">Your Plan is <span className="text-gradient">Ready!</span></h2>
+              <p className="text-slate-500 mb-6 text-sm font-medium">Personalized program built for your goals</p>
 
-              <div className="space-y-3 mb-6 text-left">
+              <div className="space-y-2.5 mb-6 text-left">
                 {[
                   { icon: '🎯', label: 'Goal', value: goalLabel },
                   { icon: '📅', label: 'Schedule', value: `${daysCount} days/week${formData.weekendDoubles ? ' (doubles on weekends)' : ''}` },
@@ -522,9 +525,9 @@ export default function Onboarding() {
                     value: calcProtein() ? `${calcProtein()}g` : 'Calculated after signup',
                   },
                 ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between p-3 bg-slate-700/40 rounded-xl">
+                  <div key={item.label} className="flex items-center justify-between p-3 rounded-xl border border-slate-700/40" style={{ background: 'rgba(20,27,45,0.6)' }}>
                     <span className="text-sm text-slate-400">{item.icon} {item.label}</span>
-                    <span className="text-sm font-semibold text-white">{item.value}</span>
+                    <span className="text-sm font-bold text-white">{item.value}</span>
                   </div>
                 ))}
               </div>
@@ -532,7 +535,7 @@ export default function Onboarding() {
               <button onClick={handleFinish} disabled={loading}
                 className="btn-primary w-full flex items-center justify-center gap-3 text-base py-4">
                 {loading ? (<span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />)
-                  : (<><Dumbbell size={20} /> Start My Program!</>)}
+                  : (<><Dumbbell size={20} /> Enter The Gym</>)}
               </button>
             </div>
           )}

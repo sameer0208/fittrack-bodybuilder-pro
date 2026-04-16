@@ -1,35 +1,115 @@
-import { memo } from 'react';
+import { memo, useEffect, useRef } from 'react';
 
-function GymAmbience({ variant = 'default' }) {
+const ITEMS = [
+  { x: 5,  y: 10, size: 64, speed: 40, delay: 0,   rot: 15,  type: 'dumbbell', op: 0.18 },
+  { x: 82, y: 22, size: 52, speed: 50, delay: -8,  rot: -10, type: 'flame',    op: 0.14 },
+  { x: 12, y: 55, size: 48, speed: 45, delay: -15, rot: 5,   type: 'target',   op: 0.14 },
+  { x: 72, y: 65, size: 68, speed: 55, delay: -20, rot: 20,  type: 'dumbbell', op: 0.16 },
+  { x: 40, y: 80, size: 44, speed: 42, delay: -5,  rot: -20, type: 'trophy',   op: 0.12 },
+  { x: 28, y: 16, size: 40, speed: 48, delay: -12, rot: 8,   type: 'heart',    op: 0.12 },
+  { x: 90, y: 45, size: 42, speed: 52, delay: -25, rot: -15, type: 'bolt',     op: 0.14 },
+  { x: 55, y: 6,  size: 58, speed: 58, delay: -30, rot: 12,  type: 'dumbbell', op: 0.16 },
+];
+
+const SW = '2.5';
+
+const SVGS = {
+  dumbbell: (
+    <g stroke="currentColor" strokeWidth={SW} strokeLinecap="round" fill="none">
+      <path d="M6.5 6.5a2 2 0 00-3 0l-1 1a2 2 0 000 3l10 10a2 2 0 003 0l1-1a2 2 0 000-3z" />
+      <path d="M14.5 14.5L9 9" />
+      <path d="M14 4l6 6" /><path d="M4 14l6 6" />
+      <path d="M20 10l1.5-1.5a2 2 0 000-3L20 4" />
+      <path d="M10 20l-1.5 1.5a2 2 0 01-3 0L4 20" />
+    </g>
+  ),
+  flame: (
+    <path d="M8.5 14.5A4 4 0 0013 18c2.2 0 4-1.8 4-4 0-3-2-5.5-4-8-2 2.5-4 5-4 8zM12 12v1" stroke="currentColor" strokeWidth={SW} strokeLinecap="round" fill="none" />
+  ),
+  target: (
+    <g stroke="currentColor" strokeWidth={SW} fill="none">
+      <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
+    </g>
+  ),
+  trophy: (
+    <g stroke="currentColor" strokeWidth={SW} strokeLinecap="round" fill="none">
+      <path d="M6 9H4.5a2.5 2.5 0 010-5H6" /><path d="M18 9h1.5a2.5 2.5 0 000-5H18" />
+      <path d="M4 22h16" /><path d="M10 22V18a2 2 0 012-2v0a2 2 0 012 2v4" />
+      <path d="M18 2H6v7a6 6 0 0012 0V2z" />
+    </g>
+  ),
+  heart: (
+    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5l7 7z" stroke="currentColor" strokeWidth={SW} fill="none" />
+  ),
+  bolt: (
+    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" strokeWidth={SW} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+  ),
+};
+
+function GymAmbience() {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const children = el.querySelectorAll('.gym-eq');
+    const start = performance.now();
+    let raf;
+
+    const animate = (now) => {
+      const t = (now - start) / 1000;
+      children.forEach((child, i) => {
+        const item = ITEMS[i];
+        const phase = t / item.speed + item.delay;
+        const yOff = Math.sin(phase * Math.PI * 2) * 18;
+        const xOff = Math.cos(phase * Math.PI * 2 * 0.7) * 8;
+        child.style.transform = `translate(${xOff}px, ${yOff}px)`;
+      });
+      raf = requestAnimationFrame(animate);
+    };
+
+    raf = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
   return (
-    <div className="gym-ambience pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
-      {/* Dark gym atmosphere glow */}
-      <div className="absolute top-0 left-1/4 w-[600px] h-[400px] rounded-full bg-red-900/[0.04] blur-[120px]" />
-      <div className="absolute bottom-0 right-1/4 w-[500px] h-[400px] rounded-full bg-indigo-900/[0.04] blur-[120px]" />
-
-      {/* Subtle gym grid floor texture */}
-      <div
-        className="absolute inset-0 opacity-[0.015]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)',
-          backgroundSize: '80px 80px',
-        }}
-      />
-
-      {/* Top edge red energy line */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/15 to-transparent" />
-
-      {variant === 'workout' && (
-        <>
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-orange-600/[0.03] blur-[100px] gym-pulse" />
-          <div className="absolute bottom-1/4 right-0 w-[300px] h-[300px] rounded-full bg-red-600/[0.03] blur-[80px]" />
-        </>
-      )}
-
-      {variant === 'nutrition' && (
-        <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-emerald-600/[0.03] blur-[100px]" />
-      )}
+    <div
+      ref={containerRef}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 0,
+        pointerEvents: 'none',
+        overflow: 'hidden',
+      }}
+      aria-hidden="true"
+    >
+      {ITEMS.map((item, i) => (
+        <div
+          key={i}
+          style={{
+            position: 'absolute',
+            left: `${item.x}%`,
+            top: `${item.y}%`,
+            opacity: item.op,
+            transform: `rotate(${item.rot}deg)`,
+            color: '#ef4444',
+          }}
+        >
+          <div className="gym-eq">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={item.size}
+              height={item.size}
+              viewBox="0 0 24 24"
+              style={{ display: 'block' }}
+            >
+              {SVGS[item.type]}
+            </svg>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

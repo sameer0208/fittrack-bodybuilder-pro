@@ -3,6 +3,9 @@ import { Toaster } from 'react-hot-toast';
 import { AppProvider, useApp } from './context/AppContext';
 import Navbar from './components/Navbar';
 import SmartAgent from './components/SmartAgent';
+import GymAmbience from './components/GymAmbience';
+import GymClickEffect from './components/GymClickEffect';
+import GymLoader from './components/GymLoader';
 import Onboarding from './pages/Onboarding';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -49,6 +52,7 @@ function AuthenticatedLayout() {
       <SmartAgent />
       <FeatureTour />
       <ContextualTip pathname={pathname} />
+      <GymClickEffect />
     </div>
   );
 }
@@ -57,14 +61,7 @@ function AppRoutes() {
   const { user, loading } = useApp();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0e17' }}>
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
-          <p className="text-slate-500 text-xs font-black uppercase tracking-[0.2em]">Loading FitTrack...</p>
-        </div>
-      </div>
-    );
+    return <GymLoader />;
   }
 
   if (!user) {
@@ -87,6 +84,7 @@ export default function App() {
   return (
     <AppProvider>
       <BrowserRouter>
+        <GymAmbience />
         <AppRoutes />
         <Toaster
           position="top-right"

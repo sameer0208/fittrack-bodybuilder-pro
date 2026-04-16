@@ -105,7 +105,7 @@ export default function ContextualTip({ pathname }) {
           transition={{ type: 'spring', damping: 20, stiffness: 300 }}
           className="fixed bottom-20 lg:bottom-6 left-3 right-3 lg:left-auto lg:right-6 lg:max-w-sm z-[9990] pointer-events-auto"
         >
-          <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800/95 to-slate-900 backdrop-blur-xl border border-red-500/20 rounded-2xl p-4 shadow-2xl shadow-red-500/5">
+          <div className="relative overflow-hidden border border-red-500/20 rounded-2xl p-4 shadow-2xl shadow-red-500/5" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #141b2d 50%, #0f172a 100%)' }}>
             {/* Top accent line */}
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-red-500 via-orange-500 to-amber-500" />
 

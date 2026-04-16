@@ -302,7 +302,7 @@ export default function WorkoutDay() {
   }
 
   return (
-    <div className="min-h-screen pb-40 lg:pb-8 relative" style={{ background: '#0a0e17' }}>
+    <div className="min-h-screen pb-40 lg:pb-8 relative">
       {/* ── Hero Header ────────────────────────────── */}
       <div className={`relative bg-gradient-to-br ${plan.colorClass} overflow-hidden`}>
         <div className="absolute inset-0 bg-black/60" />

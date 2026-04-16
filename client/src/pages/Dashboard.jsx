@@ -7,7 +7,6 @@ import ShareCard from '../components/ShareCard';
 import DailyChallenges from '../components/DailyChallenges';
 import WorkoutCalendar from '../components/WorkoutCalendar';
 import BuddyWidget from '../components/BuddyWidget';
-import GymAmbience from '../components/GymAmbience';
 import dayjs from 'dayjs';
 import axios from 'axios';
 import {
@@ -124,11 +123,10 @@ export default function Dashboard() {
 
   return (
     <div className="page-container relative">
-      <GymAmbience />
 
       {/* ── Mobile Top Header ───────────────────────── */}
       <div className="sticky top-0 z-30 lg:hidden border-b border-slate-700/30 px-4 py-3 overflow-hidden"
-        style={{ background: 'linear-gradient(180deg, rgba(10,14,23,0.97) 0%, rgba(10,14,23,0.95) 100%)', backdropFilter: 'blur(20px)' }}
+        style={{ background: '#0a0e17' }}
       >
         {/* Red energy line */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/25 to-transparent" />

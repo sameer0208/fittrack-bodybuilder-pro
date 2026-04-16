@@ -296,7 +296,7 @@ export default function Analytics() {
   }, [forecast]);
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen">
       {/* Mobile sticky header */}
       <div className="sticky top-0 z-30 lg:hidden bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/40 px-4 py-3">
         <div className="flex items-center gap-2">

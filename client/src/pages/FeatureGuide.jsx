@@ -491,7 +491,7 @@ export default function FeatureGuide() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] pb-32 lg:pb-8 overflow-x-hidden">
+    <div className="min-h-screen pb-32 lg:pb-8 overflow-x-hidden">
 
       {/* ── Ambient Background ──────────────────────── */}
       <div className="fixed inset-0 pointer-events-none z-0">
