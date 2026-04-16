@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AppProvider, useApp } from './context/AppContext';
 import Navbar from './components/Navbar';
@@ -16,10 +16,14 @@ import BodyTracker from './pages/BodyTracker';
 import HealthRecovery from './pages/HealthRecovery';
 import Nutrition from './pages/Nutrition';
 import DietPlan from './pages/DietPlan';
+import FeatureGuide from './pages/FeatureGuide';
+import FeatureTour from './components/guide/FeatureTour';
+import ContextualTip from './components/guide/ContextualTip';
 import useReminders from './hooks/useReminders';
 
 function AuthenticatedLayout() {
   useReminders();
+  const { pathname } = useLocation();
 
   return (
     <div className="flex min-h-screen w-full overflow-x-hidden">
@@ -38,10 +42,13 @@ function AuthenticatedLayout() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/achievements" element={<Achievements />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/guide" element={<FeatureGuide />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>
       <SmartAgent />
+      <FeatureTour />
+      <ContextualTip pathname={pathname} />
     </div>
   );
 }
@@ -51,10 +58,10 @@ function AppRoutes() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0e17' }}>
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
-          <p className="text-slate-400 text-sm">Loading FitTrack...</p>
+          <div className="w-12 h-12 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
+          <p className="text-slate-500 text-xs font-black uppercase tracking-[0.2em]">Loading FitTrack...</p>
         </div>
       </div>
     );
@@ -85,11 +92,13 @@ export default function App() {
           position="top-right"
           toastOptions={{
             style: {
-              background: '#1e293b',
+              background: '#0f1724',
               color: '#f1f5f9',
-              border: '1px solid rgba(99, 102, 241, 0.3)',
+              border: '1px solid rgba(239, 68, 68, 0.15)',
               borderRadius: '12px',
-              fontSize: '14px',
+              fontSize: '13px',
+              fontWeight: '600',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
             },
             success: {
               iconTheme: { primary: '#10b981', secondary: '#fff' },

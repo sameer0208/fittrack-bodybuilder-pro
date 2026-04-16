@@ -190,17 +190,20 @@ export default function Nutrition() {
   });
 
   return (
-    <div className="page-container">
+    <div className="page-container relative" style={{ background: '#0a0e17' }}>
       {/* ── Mobile Sticky Header ───────────────────── */}
-      <div className="sticky top-0 z-30 lg:hidden bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/40 px-4 py-3 overflow-hidden w-full">
+      <div className="sticky top-0 z-30 lg:hidden border-b border-slate-700/30 px-4 py-3 overflow-hidden w-full"
+        style={{ background: 'linear-gradient(180deg, rgba(10,14,23,0.97) 0%, rgba(10,14,23,0.95) 100%)', backdropFilter: 'blur(20px)' }}
+      >
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-emerald-600/20 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center border border-emerald-500/15">
               <UtensilsCrossed size={15} className="text-emerald-400" />
             </div>
             <div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Daily Log</div>
-              <div className="text-sm font-bold text-white leading-tight">Nutrition Tracker</div>
+              <div className="text-[9px] text-slate-600 uppercase tracking-[0.2em] font-black">Daily Log</div>
+              <div className="text-sm font-black text-white leading-tight">Nutrition Tracker</div>
             </div>
           </div>
           <div className="flex items-center gap-3 text-xs">

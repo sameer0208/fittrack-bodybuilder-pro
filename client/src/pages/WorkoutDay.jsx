@@ -302,15 +302,19 @@ export default function WorkoutDay() {
   }
 
   return (
-    <div className="min-h-screen pb-40 lg:pb-8">
+    <div className="min-h-screen pb-40 lg:pb-8 relative" style={{ background: '#0a0e17' }}>
       {/* ── Hero Header ────────────────────────────── */}
       <div className={`relative bg-gradient-to-br ${plan.colorClass} overflow-hidden`}>
-        <div className="absolute inset-0 bg-black/50" />
+        <div className="absolute inset-0 bg-black/60" />
+        {/* Energy lines */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
+
         <div className="relative max-w-3xl mx-auto px-4 pt-5 pb-8">
           <button onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 text-white/80 active:text-white mb-5 text-sm transition-colors touch-manipulation min-h-[44px]">
+            className="flex items-center gap-2 text-white/60 active:text-white mb-5 text-sm transition-colors touch-manipulation min-h-[44px] font-bold">
             <ArrowLeft size={18} />
-            <span className="font-medium">Back</span>
+            <span>Back</span>
           </button>
 
           <div className="flex items-start justify-between gap-3">
@@ -318,9 +322,8 @@ export default function WorkoutDay() {
               <div className="flex items-center gap-2.5 mb-1">
                 <span className="text-3xl">{plan.muscleEmoji}</span>
                 <div className="min-w-0 flex-1">
-                  <div className="text-white/60 text-xs font-medium">{plan.dayLabel} · {plan.time}</div>
+                  <div className="text-white/40 text-[10px] font-black uppercase tracking-[0.2em]">{plan.dayLabel} · {plan.time}</div>
 
-                  {/* ── Editable Session Name ── */}
                   {editingName ? (
                     <div className="flex items-center gap-2 mt-0.5">
                       <input
@@ -344,7 +347,7 @@ export default function WorkoutDay() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 group">
-                      <h1 className="text-2xl font-black text-white leading-tight truncate">{displayName}</h1>
+                      <h1 className="text-2xl font-black text-white leading-tight truncate tracking-tight">{displayName}</h1>
                       {editMode && (
                         <button onClick={startEditName}
                           className="w-7 h-7 rounded-lg bg-white/10 text-white/60 hover:text-white hover:bg-white/20 flex items-center justify-center shrink-0 transition-all active:scale-90"
@@ -356,17 +359,17 @@ export default function WorkoutDay() {
                   )}
                 </div>
               </div>
-              <p className="text-white/70 text-sm ml-0.5">{plan.subtitle}</p>
+              <p className="text-white/50 text-sm ml-0.5">{plan.subtitle}</p>
               <div className="flex flex-wrap gap-1.5 mt-2.5">
                 {plan.focus?.map((f) => (
-                  <span key={f} className="px-2.5 py-1 bg-white/15 rounded-full text-white/90 text-xs font-medium border border-white/20">{f}</span>
+                  <span key={f} className="px-2.5 py-1 bg-white/10 rounded-full text-white/80 text-[10px] font-bold border border-white/10 uppercase tracking-wider">{f}</span>
                 ))}
               </div>
             </div>
             {completed && (
-              <div className="flex flex-col items-center gap-1 bg-emerald-500/25 border border-emerald-400/50 rounded-2xl px-3 py-2.5 shrink-0">
-                <CheckCircle2 size={24} className="text-emerald-400" />
-                <span className="text-xs text-emerald-300 font-bold">Done!</span>
+              <div className="flex flex-col items-center gap-1 bg-emerald-500/15 border border-emerald-400/30 rounded-2xl px-3 py-2.5 shrink-0">
+                <CheckCircle2 size={22} className="text-emerald-400" />
+                <span className="text-[10px] text-emerald-300 font-black uppercase tracking-wider">Done</span>
               </div>
             )}
           </div>
@@ -378,9 +381,9 @@ export default function WorkoutDay() {
               { label: 'Sets', value: `${totalSetsCompleted}/${totalSetsAll}` },
               { label: 'Volume', value: `${totalVolume.toFixed(0)}kg` },
             ].map(({ label, value }) => (
-              <div key={label} className="bg-white/10 backdrop-blur-sm rounded-xl py-2.5 px-1 text-center border border-white/10">
+              <div key={label} className="bg-white/5 backdrop-blur-sm rounded-xl py-2.5 px-1 text-center border border-white/5">
                 <div className="text-white font-black text-sm leading-tight">{value}</div>
-                <div className="text-white/50 text-[10px] mt-0.5">{label}</div>
+                <div className="text-white/30 text-[9px] mt-0.5 font-bold uppercase tracking-wider">{label}</div>
               </div>
             ))}
           </div>
@@ -390,35 +393,39 @@ export default function WorkoutDay() {
       <div className="max-w-3xl mx-auto px-4 -mt-3 relative z-10">
         {/* ── Sticky Timer Bar ───────────────────────── */}
         <div className="sticky top-0 z-20 mb-4">
-          <div className="card p-3 flex items-center gap-3 shadow-xl shadow-black/40">
+          <div className="card p-3 flex items-center gap-3 shadow-xl shadow-black/50 border-red-500/10">
             <div className="flex-1">
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider leading-none mb-0.5">Timer</div>
-              <div className="text-2xl font-black text-white font-mono leading-tight">{formatTime(elapsed)}</div>
+              <div className="text-[9px] text-slate-600 uppercase tracking-[0.2em] font-black leading-none mb-1">Timer</div>
+              <div className="text-2xl font-black text-white font-mono leading-tight tracking-tight">{formatTime(elapsed)}</div>
             </div>
             <button onClick={() => setTimerRunning(!timerRunning)}
               className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 touch-manipulation min-h-[44px] ${
-                timerRunning ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-              }`}>
+                timerRunning
+                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                  : 'text-white border-none'
+              }`}
+              style={!timerRunning ? { background: 'linear-gradient(135deg, rgba(239,68,68,0.8) 0%, rgba(249,115,22,0.8) 100%)', boxShadow: '0 4px 16px rgba(239,68,68,0.2)' } : undefined}
+            >
               {timerRunning ? <><Pause size={15} /> Pause</> : <><Play size={15} /> Start</>}
             </button>
             <button onClick={() => { setElapsed(0); setTimerRunning(false); }}
-              className="btn-icon bg-slate-700/60 text-slate-400 active:text-white min-w-[44px] min-h-[44px]">
+              className="btn-icon bg-white/5 text-slate-500 active:text-white border border-slate-700/30 min-w-[44px] min-h-[44px]">
               <RotateCcw size={15} />
             </button>
             <div className="hidden sm:flex flex-col items-end gap-1">
-              <span className="text-xs font-bold text-indigo-400">{completionPct.toFixed(0)}%</span>
+              <span className="text-xs font-black text-red-400">{completionPct.toFixed(0)}%</span>
               <div className="w-16 progress-bar">
-                <div className="progress-fill bg-gradient-to-r from-indigo-500 to-emerald-500" style={{ width: `${completionPct}%` }} />
+                <div className="progress-fill bg-gradient-to-r from-red-500 to-orange-500" style={{ width: `${completionPct}%` }} />
               </div>
             </div>
           </div>
           <div className="mt-2">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-semibold text-slate-400">Workout Progress</span>
-              <span className="text-xs text-indigo-400 font-bold">{totalSetsCompleted}/{totalSetsAll} sets</span>
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Progress</span>
+              <span className="text-[10px] text-red-400 font-black">{totalSetsCompleted}/{totalSetsAll} sets</span>
             </div>
             <div className="progress-bar h-2.5">
-              <div className="progress-fill bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500" style={{ width: `${completionPct}%` }} />
+              <div className="progress-fill bg-gradient-to-r from-red-500 via-orange-500 to-amber-400" style={{ width: `${completionPct}%` }} />
             </div>
           </div>
         </div>

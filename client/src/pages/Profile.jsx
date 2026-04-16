@@ -276,24 +276,27 @@ export default function Profile() {
     : 1;
 
   return (
-    <div className="page-container">
+    <div className="page-container relative" style={{ background: '#0a0e17' }}>
       {/* Mobile Sticky Header */}
-      <div className="sticky top-0 z-30 lg:hidden bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/40 px-4 py-3 overflow-hidden w-full">
+      <div className="sticky top-0 z-30 lg:hidden border-b border-slate-700/30 px-4 py-3 overflow-hidden w-full"
+        style={{ background: 'linear-gradient(180deg, rgba(10,14,23,0.97) 0%, rgba(10,14,23,0.95) 100%)', backdropFilter: 'blur(20px)' }}
+      >
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center font-bold text-white text-sm">
+            <div className="w-8 h-8 bg-gradient-to-br from-red-600 to-orange-500 rounded-lg flex items-center justify-center font-black text-white text-sm shadow-lg shadow-red-600/15">
               {user?.name?.[0]?.toUpperCase() || 'A'}
             </div>
             <div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Settings</div>
-              <div className="text-sm font-bold text-white leading-tight">{user?.name || 'Profile'}</div>
+              <div className="text-[9px] text-slate-600 uppercase tracking-[0.2em] font-black">Settings</div>
+              <div className="text-sm font-black text-white leading-tight">{user?.name || 'Profile'}</div>
             </div>
           </div>
           <button
             onClick={() => { logout(); }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold touch-manipulation"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/8 border border-red-500/15 text-red-400 text-[10px] font-black uppercase tracking-wider touch-manipulation"
           >
-            <LogOut size={13} /> Logout
+            <LogOut size={12} /> Logout
           </button>
         </div>
       </div>

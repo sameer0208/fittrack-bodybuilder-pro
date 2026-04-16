@@ -7,12 +7,13 @@ import ShareCard from '../components/ShareCard';
 import DailyChallenges from '../components/DailyChallenges';
 import WorkoutCalendar from '../components/WorkoutCalendar';
 import BuddyWidget from '../components/BuddyWidget';
+import GymAmbience from '../components/GymAmbience';
 import dayjs from 'dayjs';
 import axios from 'axios';
 import {
   CheckCircle2, ChevronRight, Clock, Flame, Zap,
   TrendingUp, UtensilsCrossed, Droplets, Dumbbell,
-  Trophy, Users, Share2, Ruler, Heart, BarChart3,
+  Trophy, Users, Share2, Ruler, Heart, BarChart3, BookOpen,
 } from 'lucide-react';
 
 const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
@@ -37,7 +38,6 @@ export default function Dashboard() {
     [weekSchedule, todayDayName]
   );
 
-  // Server-only state — starts empty, populated from backend
   const [serverWorkoutLogs, setServerWorkoutLogs] = useState({});
   const [serverNutrition, setServerNutrition] = useState(null);
   const lastFetchRef = useRef(0);
@@ -70,12 +70,10 @@ export default function Dashboard() {
     });
   }, [todaySessions, today, fetchWorkoutLog, fetchNutritionLog]);
 
-  // Fetch on mount
   useEffect(() => {
     refreshDashboardData();
   }, [refreshDashboardData]);
 
-  // Re-fetch when user returns to the app (tab focus / visibility change)
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible') refreshDashboardData();
@@ -114,7 +112,6 @@ export default function Dashboard() {
   const toGain = (user?.targetWeight || 0) - (startWeight || 0);
   const progressPct = toGain > 0 ? Math.min((gained / toGain) * 100, 100) : 0;
 
-  // Nutrition quick-view (uses server-synced data)
   const todayNutrition = serverNutrition;
   const totalCals = todayNutrition?.meals?.reduce(
     (a, m) => a + m.foods.reduce((s, f) => s + (f.calories || 0), 0), 0
@@ -126,45 +123,55 @@ export default function Dashboard() {
   const waterPct = Math.min((waterMl / waterGoal) * 100, 100);
 
   return (
-    <div className="page-container">
+    <div className="page-container relative">
+      <GymAmbience />
+
       {/* ── Mobile Top Header ───────────────────────── */}
-      <div className="sticky top-0 z-30 lg:hidden bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/40 px-4 py-3 overflow-hidden">
+      <div className="sticky top-0 z-30 lg:hidden border-b border-slate-700/30 px-4 py-3 overflow-hidden"
+        style={{ background: 'linear-gradient(180deg, rgba(10,14,23,0.97) 0%, rgba(10,14,23,0.95) 100%)', backdropFilter: 'blur(20px)' }}
+      >
+        {/* Red energy line */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/25 to-transparent" />
         <div className="flex items-center justify-between gap-2 w-full">
           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shrink-0">
-              <Zap size={16} className="text-white" />
+            <div className="w-8 h-8 bg-gradient-to-br from-red-600 to-orange-500 rounded-lg flex items-center justify-center shadow-lg shadow-red-600/15">
+              <Dumbbell size={15} className="text-white" strokeWidth={2.5} />
             </div>
             <div className="leading-tight min-w-0">
-              <div className="text-xs text-slate-500 truncate">{today.format('ddd, MMM D')}</div>
-              <div className="text-sm font-bold text-white truncate">
-                Hey, {user?.name?.split(' ')[0] || 'Athlete'}! 👋
+              <div className="text-[10px] text-slate-600 font-bold uppercase tracking-widest truncate">{today.format('ddd, MMM D')}</div>
+              <div className="text-sm font-black text-white truncate">
+                Hey, {user?.name?.split(' ')[0] || 'Athlete'}!
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 bg-orange-500/15 border border-orange-500/30 rounded-xl px-2.5 py-1.5 shrink-0">
-            <Flame size={13} className="text-orange-400 shrink-0" />
-            <span className="text-sm font-black text-orange-400 leading-none">{user?.streak || 0}</span>
-            <span className="text-[10px] text-slate-400 leading-none">d</span>
+          <div className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 shrink-0 border border-red-500/20"
+            style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(249,115,22,0.06) 100%)' }}
+          >
+            <Flame size={13} className="text-red-400 shrink-0" />
+            <span className="text-sm font-black text-red-400 leading-none">{user?.streak || 0}</span>
+            <span className="text-[9px] text-slate-500 leading-none font-bold">d</span>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 pt-4 lg:pt-8">
+      <div className="max-w-4xl mx-auto px-4 pt-4 lg:pt-8 relative z-10">
 
-        {/* ── Desktop Header (hidden on mobile) ──────── */}
+        {/* ── Desktop Header ────────────────────────── */}
         <div className="hidden lg:flex items-start justify-between mb-6">
           <div>
-            <div className="text-slate-400 text-sm">{today.format('dddd, MMMM D')}</div>
-            <h1 className="text-3xl font-black text-white mt-0.5">
-              Hey, {user?.name?.split(' ')[0] || 'Athlete'}! 👋
+            <div className="text-[10px] text-slate-600 font-black uppercase tracking-[0.2em]">{today.format('dddd, MMMM D')}</div>
+            <h1 className="text-3xl font-black text-white mt-1 tracking-tight">
+              Hey, {user?.name?.split(' ')[0] || 'Athlete'}!
             </h1>
-            <p className="text-slate-400 text-sm mt-1">Day {programDays} of your transformation</p>
+            <p className="text-slate-500 text-sm mt-1 font-medium">Day {programDays} of your transformation</p>
           </div>
-          <div className="flex items-center gap-2 bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/30 rounded-xl px-4 py-2.5">
-            <Flame size={20} className="text-orange-400" />
+          <div className="flex items-center gap-3 rounded-xl px-5 py-3 border border-red-500/15"
+            style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.06) 0%, rgba(249,115,22,0.04) 100%)' }}
+          >
+            <Flame size={22} className="text-red-400" />
             <div>
-              <div className="text-2xl font-black text-orange-400 leading-none">{user?.streak || 0}</div>
-              <div className="text-xs text-slate-400">streak</div>
+              <div className="text-3xl font-black text-red-400 leading-none">{user?.streak || 0}</div>
+              <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">streak</div>
             </div>
           </div>
         </div>
@@ -172,13 +179,13 @@ export default function Dashboard() {
         {/* ── Stats Row ──────────────────────────────── */}
         <div className="grid grid-cols-3 gap-2.5 mb-5">
           {[
-            { value: user?.totalWorkouts || 0,    label: 'Workouts',  color: 'text-indigo-400'  },
-            { value: `${user?.currentWeight || '--'}kg`, label: 'Current',   color: 'text-emerald-400' },
-            { value: user?.bmi || '--',            label: 'BMI',       color: 'text-amber-400'   },
-          ].map(({ value, label, color }) => (
-            <div key={label} className="card p-3.5 text-center active:scale-95 transition-transform overflow-hidden">
+            { value: user?.totalWorkouts || 0,    label: 'Workouts',  color: 'text-red-400', border: 'border-red-500/10' },
+            { value: `${user?.currentWeight || '--'}kg`, label: 'Current',   color: 'text-emerald-400', border: 'border-emerald-500/10' },
+            { value: user?.bmi || '--',            label: 'BMI',       color: 'text-amber-400', border: 'border-amber-500/10' },
+          ].map(({ value, label, color, border }) => (
+            <div key={label} className={`card p-3.5 text-center active:scale-95 transition-transform overflow-hidden ${border}`}>
               <div className={`text-xl font-black truncate ${color}`}>{value}</div>
-              <div className="text-[11px] text-slate-400 mt-0.5 truncate">{label}</div>
+              <div className="text-[10px] text-slate-500 mt-0.5 truncate font-bold uppercase tracking-wider">{label}</div>
             </div>
           ))}
         </div>
@@ -186,14 +193,12 @@ export default function Dashboard() {
         {/* ── Today's Sessions ───────────────────────── */}
         {todaySessions.length > 0 && (
           <div className="mb-5">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                <Zap size={11} className="text-indigo-400" />
-                Today's Session{todaySessions.length > 1 ? 's' : ''}
-              </h2>
+            <div className="gym-section-header">
+              <div className="gym-accent-dot" />
+              <h2>Today&apos;s Session{todaySessions.length > 1 ? 's' : ''}</h2>
               {completedToday > 0 && (
-                <span className="text-xs text-emerald-400 font-semibold">
-                  {completedToday}/{todaySessions.length} done ✓
+                <span className="ml-auto text-[10px] text-emerald-400 font-black uppercase tracking-wider">
+                  {completedToday}/{todaySessions.length} crushed
                 </span>
               )}
             </div>
@@ -204,39 +209,41 @@ export default function Dashboard() {
                 const done = serverWorkoutLogs[sessionKey]?.completed;
                 return (
                   <Link key={sessionKey} to={`/workout/${sessionKey}`}>
-                    <div className={`relative overflow-hidden rounded-2xl p-4 border transition-all duration-200 active:scale-[0.98] group ${
+                    <div className={`relative overflow-hidden rounded-2xl p-4 border transition-all duration-300 active:scale-[0.98] group ${
                       done
-                        ? 'border-emerald-500/40 bg-emerald-950/30'
-                        : 'border-slate-700/50 bg-gradient-to-br from-slate-800/80 to-slate-800/40'
+                        ? 'border-emerald-500/30 bg-emerald-950/20'
+                        : 'border-slate-700/30 bg-slate-800/30'
                     }`}>
-                      <div className={`absolute inset-0 bg-gradient-to-br opacity-10 ${plan.colorClass}`} />
+                      {/* Subtle accent line */}
+                      {!done && <div className={`absolute top-0 left-0 right-0 h-px bg-gradient-to-r ${plan.colorClass} opacity-30`} />}
+                      <div className={`absolute inset-0 bg-gradient-to-br opacity-5 ${plan.colorClass}`} />
                       <div className="relative flex items-center gap-4">
                         <div className={`w-14 h-14 bg-gradient-to-br ${plan.colorClass} rounded-2xl flex items-center justify-center text-2xl shadow-lg shrink-0`}>
                           {plan.muscleEmoji}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 mb-0.5">
-                            {done && <CheckCircle2 size={12} className="text-emerald-400 shrink-0" />}
-                            <span className="text-[11px] text-slate-400 font-medium">{plan.time}</span>
+                            {done && <CheckCircle2 size={11} className="text-emerald-400 shrink-0" />}
+                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{plan.time}</span>
                           </div>
                           <h3 className="font-black text-white text-base leading-tight truncate">{plan.name}</h3>
-                          <p className="text-xs text-slate-400 truncate">{plan.subtitle}</p>
+                          <p className="text-xs text-slate-500 truncate">{plan.subtitle}</p>
                           <div className="flex items-center gap-3 mt-1.5">
-                            <span className="flex items-center gap-1 text-xs text-slate-500">
-                              <Clock size={10} /> {plan.duration}
+                            <span className="flex items-center gap-1 text-[10px] text-slate-600 font-medium">
+                              <Clock size={9} /> {plan.duration}
                             </span>
-                            <span className="text-xs text-slate-500">{plan.exercises.length} exercises</span>
+                            <span className="text-[10px] text-slate-600 font-medium">{plan.exercises.length} exercises</span>
                           </div>
                         </div>
                         <div className="shrink-0">
                           {done ? (
-                            <div className="flex flex-col items-center gap-1 px-2 py-1.5 bg-emerald-500/15 border border-emerald-500/30 rounded-xl">
-                              <CheckCircle2 size={22} className="text-emerald-400" />
-                              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wide">Done</span>
+                            <div className="flex flex-col items-center gap-1 px-2.5 py-2 bg-emerald-500/10 border border-emerald-500/25 rounded-xl">
+                              <CheckCircle2 size={20} className="text-emerald-400" />
+                              <span className="text-[9px] font-black text-emerald-400 uppercase tracking-wider">Done</span>
                             </div>
                           ) : (
-                            <div className="w-9 h-9 bg-indigo-600/20 rounded-xl flex items-center justify-center border border-indigo-500/30">
-                              <ChevronRight size={18} className="text-indigo-400" />
+                            <div className="w-9 h-9 bg-red-500/10 rounded-xl flex items-center justify-center border border-red-500/20 group-hover:bg-red-500/15 transition-colors">
+                              <ChevronRight size={16} className="text-red-400" />
                             </div>
                           )}
                         </div>
@@ -254,20 +261,20 @@ export default function Dashboard() {
           <div className="card-hover p-4 mb-5 cursor-pointer overflow-hidden">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 bg-emerald-600/20 rounded-lg flex items-center justify-center">
-                  <UtensilsCrossed size={14} className="text-emerald-400" />
+                <div className="w-7 h-7 bg-emerald-500/10 rounded-lg flex items-center justify-center border border-emerald-500/15">
+                  <UtensilsCrossed size={13} className="text-emerald-400" />
                 </div>
-                <span className="text-sm font-bold text-white">Today's Nutrition</span>
+                <span className="text-sm font-black text-white">Today&apos;s Fuel</span>
               </div>
-              <ChevronRight size={15} className="text-slate-500" />
+              <ChevronRight size={14} className="text-slate-600" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="flex items-center justify-between mb-1.5 text-xs">
-                  <span className="text-slate-400 flex items-center gap-1">
-                    <Flame size={10} className="text-amber-400" /> Calories
+                  <span className="text-slate-500 flex items-center gap-1 font-medium">
+                    <Flame size={9} className="text-amber-400" /> Calories
                   </span>
-                  <span className="text-amber-400 font-bold">{Math.round(totalCals)}/{calGoal}</span>
+                  <span className="text-amber-400 font-black text-[11px]">{Math.round(totalCals)}/{calGoal}</span>
                 </div>
                 <div className="progress-bar h-2">
                   <div className="progress-fill bg-gradient-to-r from-amber-500 to-orange-500" style={{ width: `${calPct}%` }} />
@@ -275,13 +282,13 @@ export default function Dashboard() {
               </div>
               <div>
                 <div className="flex items-center justify-between mb-1.5 text-xs">
-                  <span className="text-slate-400 flex items-center gap-1">
-                    <Droplets size={10} className="text-blue-400" /> Water
+                  <span className="text-slate-500 flex items-center gap-1 font-medium">
+                    <Droplets size={9} className="text-cyan-400" /> Water
                   </span>
-                  <span className="text-blue-400 font-bold">{waterMl}ml</span>
+                  <span className="text-cyan-400 font-black text-[11px]">{waterMl}ml</span>
                 </div>
                 <div className="progress-bar h-2">
-                  <div className="progress-fill bg-gradient-to-r from-blue-500 to-cyan-500" style={{ width: `${waterPct}%` }} />
+                  <div className="progress-fill bg-gradient-to-r from-cyan-500 to-blue-500" style={{ width: `${waterPct}%` }} />
                 </div>
               </div>
             </div>
@@ -293,36 +300,37 @@ export default function Dashboard() {
           <DailyChallenges />
         </div>
 
-        {/* ── Bulk Progress ──────────────────────────── */}
-        <div className="card p-4 mb-5">
+        {/* ── Goal Progress ──────────────────────────── */}
+        <div className="card p-4 mb-5 relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 bg-emerald-600/20 rounded-xl flex items-center justify-center">
-              <TrendingUp size={16} className="text-emerald-400" />
+            <div className="w-8 h-8 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/15">
+              <TrendingUp size={15} className="text-emerald-400" />
             </div>
             <div>
-              <div className="font-bold text-white text-sm">Bulk Progress</div>
-              <div className="text-xs text-slate-400">Journey to {user?.targetWeight}kg</div>
+              <div className="font-black text-white text-sm">Goal Progress</div>
+              <div className="text-[10px] text-slate-500 font-medium">Journey to {user?.targetWeight}kg</div>
             </div>
             <div className="ml-auto text-right">
-              <div className="text-xl font-black text-indigo-400">{progressPct.toFixed(0)}%</div>
-              <div className="text-xs text-slate-500">achieved</div>
+              <div className="text-xl font-black text-gradient">{progressPct.toFixed(0)}%</div>
+              <div className="text-[9px] text-slate-600 font-bold uppercase tracking-wider">achieved</div>
             </div>
           </div>
           <div className="progress-bar h-3 mb-3">
             <div
-              className="progress-fill bg-gradient-to-r from-indigo-500 to-emerald-500"
+              className="progress-fill bg-gradient-to-r from-red-500 via-orange-500 to-amber-400"
               style={{ width: `${progressPct}%` }}
             />
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
             {[
               { label: 'Start', value: `${startWeight || '--'}kg`, color: 'text-slate-300' },
-              { label: `+${Math.abs(gained).toFixed(1)}kg`, value: gained >= 0 ? 'gained' : 'lost', color: gained >= 0 ? 'text-emerald-400' : 'text-red-400' },
+              { label: `${gained >= 0 ? '+' : ''}${Math.abs(gained).toFixed(1)}kg`, value: gained >= 0 ? 'gained' : 'lost', color: gained >= 0 ? 'text-emerald-400' : 'text-red-400' },
               { label: 'Goal', value: `${user?.targetWeight || '--'}kg`, color: 'text-amber-400' },
             ].map((s) => (
-              <div key={s.label} className="p-2 bg-slate-700/20 rounded-lg">
+              <div key={s.label} className="p-2 bg-white/[0.02] rounded-lg border border-slate-700/30">
                 <div className={`text-sm font-black ${s.color}`}>{s.label}</div>
-                <div className="text-xs text-slate-500">{s.value}</div>
+                <div className="text-[10px] text-slate-600 font-medium">{s.value}</div>
               </div>
             ))}
           </div>
@@ -334,12 +342,12 @@ export default function Dashboard() {
         </div>
 
         {/* ── Weekly Schedule ────────────────────────── */}
-        <div className="card p-4 mb-5 overflow-hidden">
-          <h2 className="font-bold text-white text-sm mb-3 flex items-center gap-2">
-            <Dumbbell size={14} className="text-indigo-400" />
-            This Week
-          </h2>
-          {/* Use auto-fit columns so they shrink proportionally on any screen width */}
+        <div className="card p-4 mb-5 overflow-hidden relative">
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/15 to-transparent" />
+          <div className="gym-section-header mb-3">
+            <div className="gym-accent-dot" />
+            <h2>This Week</h2>
+          </div>
           <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
             {weekSchedule.map((dayObj) => {
               const isToday = dayObj.key === todayDayName;
@@ -347,9 +355,9 @@ export default function Dashboard() {
 
               return (
                 <div key={dayObj.key} className={`relative flex flex-col items-center gap-1 py-2 rounded-xl overflow-hidden ${
-                  isToday ? 'bg-indigo-600/20 border border-indigo-500/40' : 'bg-slate-700/20'
+                  isToday ? 'bg-red-500/8 border border-red-500/20' : 'bg-white/[0.02]'
                 }`}>
-                  <span className={`text-[9px] font-bold truncate w-full text-center ${isToday ? 'text-indigo-400' : 'text-slate-500'}`}>
+                  <span className={`text-[9px] font-black truncate w-full text-center uppercase tracking-wider ${isToday ? 'text-red-400' : 'text-slate-600'}`}>
                     {dayObj.day}
                   </span>
                   <div className="flex flex-col gap-1 w-full px-1">
@@ -358,50 +366,50 @@ export default function Dashboard() {
                       return (
                         <Link key={sk} to={`/workout/${sk}`} className="block w-full">
                           <div className={`h-1.5 w-full rounded-full transition-all ${
-                            done ? 'bg-emerald-500' : isToday ? 'bg-indigo-500/60' : 'bg-slate-600/50'
+                            done ? 'bg-emerald-500' : isToday ? 'bg-red-500/40' : 'bg-slate-700/40'
                           }`} />
                         </Link>
                       );
                     })}
                   </div>
                   {isToday && (
-                    <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse" />
+                    <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />
                   )}
                 </div>
               );
             })}
           </div>
-          <div className="flex items-center gap-3 mt-3 text-[10px] text-slate-500 flex-wrap">
+          <div className="flex items-center gap-3 mt-3 text-[9px] text-slate-600 flex-wrap font-bold uppercase tracking-wider">
             <span className="flex items-center gap-1"><span className="w-2 h-1.5 rounded bg-emerald-500 inline-block shrink-0" /> Done</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-1.5 rounded bg-indigo-500/60 inline-block shrink-0" /> Today</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-1.5 rounded bg-slate-600/50 inline-block shrink-0" /> Upcoming</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-1.5 rounded bg-red-500/40 inline-block shrink-0" /> Today</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-1.5 rounded bg-slate-700/40 inline-block shrink-0" /> Upcoming</span>
           </div>
         </div>
 
         {/* ── Full Weekly Program Grid ────────────────── */}
         <div className="mb-5">
-          <h2 className="font-bold text-white text-sm mb-3 flex items-center gap-2">
-            <Zap size={13} className="text-indigo-400" />
-            Full Program
-          </h2>
+          <div className="gym-section-header mb-3">
+            <div className="gym-accent-dot" />
+            <h2>Full Program</h2>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {Object.values(workoutPlan).map((plan) => {
               const done = getSessionStatus(plan.sessionKey) === 'completed';
               return (
                 <Link key={plan.sessionKey} to={`/workout/${plan.sessionKey}`}>
-                  <div className={`card-hover p-4 cursor-pointer group flex items-center gap-3 ${done ? 'border-emerald-500/25' : ''}`}>
+                  <div className={`card-hover p-4 cursor-pointer group flex items-center gap-3 ${done ? 'border-emerald-500/20' : ''}`}>
                     <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${plan.colorClass} flex items-center justify-center text-xl shrink-0`}>
                       {plan.muscleEmoji}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[11px] text-slate-500 font-medium">{plan.dayLabel} · {plan.time}</div>
-                      <div className="font-bold text-white text-sm leading-tight truncate">{plan.name}</div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">{plan.exercises.length} ex · {plan.duration}</div>
+                      <div className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">{plan.dayLabel} · {plan.time}</div>
+                      <div className="font-black text-white text-sm leading-tight truncate">{plan.name}</div>
+                      <div className="text-[10px] text-slate-600 mt-0.5 font-medium">{plan.exercises.length} ex · {plan.duration}</div>
                     </div>
                     {done ? (
-                      <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />
+                      <CheckCircle2 size={17} className="text-emerald-400 shrink-0" />
                     ) : (
-                      <ChevronRight size={16} className="text-slate-600 group-active:text-white transition-colors shrink-0" />
+                      <ChevronRight size={14} className="text-slate-700 group-hover:text-red-400 transition-colors shrink-0" />
                     )}
                   </div>
                 </Link>
@@ -418,23 +426,24 @@ export default function Dashboard() {
         {/* ── Quick Access Cards ──────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
           {[
-            { to: '/body-tracker',    icon: Ruler,     label: 'Body Tracker',  color: 'from-cyan-500/20 to-teal-500/20 border-cyan-500/30', iconColor: 'text-cyan-400' },
-            { to: '/health-recovery', icon: Heart,     label: 'Health',        color: 'from-rose-500/20 to-pink-500/20 border-rose-500/30', iconColor: 'text-rose-400' },
-            { to: '/analytics',       icon: BarChart3, label: 'Analytics',     color: 'from-violet-500/20 to-purple-500/20 border-violet-500/30', iconColor: 'text-violet-400' },
-            { to: '/achievements',    icon: Trophy,    label: `Badges (${badgeCount})`, color: 'from-amber-500/20 to-yellow-500/20 border-amber-500/30', iconColor: 'text-amber-400' },
-            { to: '/leaderboard',     icon: Users,     label: 'Leaderboard',   color: 'from-indigo-500/20 to-blue-500/20 border-indigo-500/30', iconColor: 'text-indigo-400' },
+            { to: '/body-tracker',    icon: Ruler,     label: 'Body Tracker',  color: 'from-cyan-500/10 to-teal-500/10 border-cyan-500/15', iconColor: 'text-cyan-400' },
+            { to: '/health-recovery', icon: Heart,     label: 'Health',        color: 'from-rose-500/10 to-pink-500/10 border-rose-500/15', iconColor: 'text-rose-400' },
+            { to: '/analytics',       icon: BarChart3, label: 'Analytics',     color: 'from-violet-500/10 to-purple-500/10 border-violet-500/15', iconColor: 'text-violet-400' },
+            { to: '/achievements',    icon: Trophy,    label: `Badges (${badgeCount})`, color: 'from-amber-500/10 to-yellow-500/10 border-amber-500/15', iconColor: 'text-amber-400' },
+            { to: '/leaderboard',     icon: Users,     label: 'Leaderboard',   color: 'from-indigo-500/10 to-blue-500/10 border-indigo-500/15', iconColor: 'text-indigo-400' },
+            { to: '/guide',            icon: BookOpen,  label: 'Feature Guide', color: 'from-red-500/10 to-orange-500/10 border-red-500/15', iconColor: 'text-red-400' },
           ].map(({ to, icon: Icon, label, color, iconColor }) => (
             <Link key={to} to={to} className={`card-hover p-3 flex items-center gap-3 bg-gradient-to-br ${color} border`}>
-              <Icon size={18} className={iconColor} />
-              <span className="text-sm font-semibold text-white truncate">{label}</span>
+              <Icon size={17} className={iconColor} />
+              <span className="text-sm font-bold text-white truncate">{label}</span>
             </Link>
           ))}
           <button
             onClick={() => setShowShare(true)}
-            className="card-hover p-3 flex items-center gap-3 bg-gradient-to-br from-fuchsia-500/20 to-pink-500/20 border border-fuchsia-500/30"
+            className="card-hover p-3 flex items-center gap-3 bg-gradient-to-br from-fuchsia-500/10 to-pink-500/10 border border-fuchsia-500/15"
           >
-            <Share2 size={18} className="text-fuchsia-400" />
-            <span className="text-sm font-semibold text-white">Share</span>
+            <Share2 size={17} className="text-fuchsia-400" />
+            <span className="text-sm font-bold text-white">Share</span>
           </button>
         </div>
 
