@@ -82,8 +82,15 @@ export default function WorkoutDay() {
     [mergedIds]
   );
 
-  // ── Existing workout log loading (runs ONCE per session) ───────────────────
+  // ── Existing workout log loading (runs ONCE per sessionKey) ────────────────
   const initialLoadDone = useRef(false);
+  const prevSessionKey = useRef(sessionKey);
+
+  // Reset guard when sessionKey changes (navigating between workouts)
+  if (prevSessionKey.current !== sessionKey) {
+    prevSessionKey.current = sessionKey;
+    initialLoadDone.current = false;
+  }
 
   useEffect(() => {
     if (initialLoadDone.current) return;
@@ -92,7 +99,16 @@ export default function WorkoutDay() {
       if (cancelled || !existingLog || initialLoadDone.current) return;
       initialLoadDone.current = true;
       setCompleted(existingLog.completed || false);
-      setElapsed(existingLog.duration ? existingLog.duration * 60 : 0);
+
+      const restoredElapsed = existingLog.elapsedSeconds
+        ?? (existingLog.duration ? existingLog.duration * 60 : 0);
+      setElapsed(restoredElapsed);
+
+      // Auto-resume timer for in-progress (draft) workouts
+      if (!existingLog.completed && restoredElapsed > 0) {
+        setTimerRunning(true);
+      }
+
       setMood(existingLog.mood || 'good');
       setNotes(existingLog.notes || '');
 
@@ -185,6 +201,7 @@ export default function WorkoutDay() {
         exercises: buildExercises(),
         exerciseLogs,
         duration: Math.floor(elapsed / 60),
+        elapsedSeconds: elapsed,
         totalVolume,
         completed: true,
         mood, notes,
@@ -193,8 +210,7 @@ export default function WorkoutDay() {
       setCompleted(true);
       toast.success('Workout Complete! Saved to cloud!');
     } catch (err) {
-      setCompleted(true);
-      toast.error(`Saved locally — cloud sync failed.\n(${err?.response?.data?.message || err.message || 'Network error'})`, { duration: 6000 });
+      toast.error(`Could not save to cloud.\n(${err?.response?.data?.message || err.message || 'Network error'})`, { duration: 6000 });
     } finally { setSaving(false); }
   };
 
@@ -207,13 +223,14 @@ export default function WorkoutDay() {
         exercises: buildExercises(),
         exerciseLogs,
         duration: Math.floor(elapsed / 60),
+        elapsedSeconds: elapsed,
         totalVolume,
         completed: false,
         mood, notes,
       });
       toast.success('Progress saved!');
     } catch (err) {
-      toast.error(`Saved locally — cloud sync failed.\n(${err?.response?.data?.message || err.message || 'Network error'})`, { duration: 6000 });
+      toast.error(`Could not save to cloud.\n(${err?.response?.data?.message || err.message || 'Network error'})`, { duration: 6000 });
     } finally { setSaving(false); }
   };
 

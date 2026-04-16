@@ -38,13 +38,14 @@ export default function SmartAgent() {
   const [listening, setListening] = useState(false);
   const [pendingFood, setPendingFood] = useState(null);
   const [moreNavOpen, setMoreNavOpen] = useState(false);
+  const retryTimerRef = useRef(null);
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
       setMoreNavOpen(document.body.dataset.moreNav === '1');
     });
     observer.observe(document.body, { attributes: true, attributeFilter: ['data-more-nav'] });
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); clearTimeout(retryTimerRef.current); };
   }, []);
   const recognitionRef = useRef(null);
   const scrollRef = useRef(null);
@@ -164,7 +165,8 @@ export default function SmartAgent() {
       } else if (status === 503 && errData?.retryAfterSec) {
         setRetryMsg(msg);
         setError(`AI is busy — auto-retrying in ${errData.retryAfterSec}s...`);
-        setTimeout(() => {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = setTimeout(() => {
           setError(null);
           setRetryMsg(null);
           sendMessage(msg);
@@ -181,14 +183,16 @@ export default function SmartAgent() {
     if (!pendingFood) return;
     try {
       const today = new Date().toISOString().split('T')[0];
-      const existing = getNutritionLog(today) || { date: today, meals: {}, waterMl: 0 };
+      const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snacks', 'pre_workout', 'post_workout'];
+      const existing = getNutritionLog(today) || { date: today, meals: MEAL_TYPES.map((t) => ({ type: t, foods: [] })), waterMl: 0 };
       const mealKey = pendingFood.meal || 'snacks';
-      const currentFoods = existing.meals?.[mealKey] || [];
-      const newFoods = [...currentFoods, ...pendingFood.foods];
-      const updated = {
-        ...existing,
-        meals: { ...existing.meals, [mealKey]: newFoods },
-      };
+      const meals = Array.isArray(existing.meals) ? existing.meals : MEAL_TYPES.map((t) => ({ type: t, foods: [] }));
+      const updatedMeals = meals.map((m) =>
+        m.type === mealKey
+          ? { ...m, foods: [...(m.foods || []), ...pendingFood.foods.map((f) => ({ ...f, id: Date.now().toString() + Math.random() }))] }
+          : m
+      );
+      const updated = { ...existing, meals: updatedMeals };
       await saveNutritionLog(today, updated);
       toast.success(`Logged ${pendingFood.foods.length} item(s) to ${mealKey}!`);
       setPendingFood(null);
@@ -211,11 +215,17 @@ export default function SmartAgent() {
     }
   };
 
-  // Render markdown-lite: bold, bullet lists, line breaks
+  function sanitizeHtml(str) {
+    return str
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
   function formatContent(text) {
     if (!text) return null;
     return text.split('\n').map((line, i) => {
-      let processed = line
+      let safe = sanitizeHtml(line);
+      let processed = safe
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.+?)\*/g, '<em>$1</em>');
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import useWorkoutPlan from '../hooks/useWorkoutPlan';
@@ -28,10 +28,14 @@ export default function Dashboard() {
   const { user, fetchWorkoutLog, fetchNutritionLog } = useApp();
   const { workoutPlan, weekSchedule } = useWorkoutPlan();
   const ALL_WEEK_SESSIONS = weekSchedule.flatMap((d) => d.sessions);
-  const today = dayjs();
+  const todayStr = useMemo(() => dayjs().format('YYYY-MM-DD'), []);
+  const today = useMemo(() => dayjs(todayStr), [todayStr]);
   const todayDayName = DAY_NAMES[today.day()];
 
-  const todaySessions = weekSchedule.find((d) => d.key === todayDayName)?.sessions || [];
+  const todaySessions = useMemo(
+    () => weekSchedule.find((d) => d.key === todayDayName)?.sessions || [],
+    [weekSchedule, todayDayName]
+  );
 
   // Server-only state — starts empty, populated from backend
   const [serverWorkoutLogs, setServerWorkoutLogs] = useState({});

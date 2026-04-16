@@ -28,6 +28,7 @@ router.post('/log', auth, async (req, res) => {
       workoutName,
       exercises,
       duration,
+      elapsedSeconds,
       notes,
       completed,
       bodyWeight,
@@ -61,23 +62,25 @@ router.post('/log', auth, async (req, res) => {
     });
 
     if (log) {
-      log.exercises  = sanitisedExercises;
-      log.duration   = duration   != null ? Number(duration)   : log.duration;
-      log.notes      = notes      != null ? String(notes)      : log.notes;
-      log.completed  = completed  != null ? Boolean(completed) : log.completed;
-      log.bodyWeight = bodyWeight != null ? Number(bodyWeight) : log.bodyWeight;
-      log.mood       = mood       || log.mood;
+      log.exercises      = sanitisedExercises;
+      log.duration       = duration        != null ? Number(duration)        : log.duration;
+      log.elapsedSeconds = elapsedSeconds  != null ? Number(elapsedSeconds)  : log.elapsedSeconds;
+      log.notes          = notes           != null ? String(notes)           : log.notes;
+      log.completed      = completed       != null ? Boolean(completed)      : log.completed;
+      log.bodyWeight     = bodyWeight      != null ? Number(bodyWeight)      : log.bodyWeight;
+      log.mood           = mood            || log.mood;
     } else {
       log = new WorkoutLog({
         userId:    req.user.id,
         workoutDay,
-        workoutName: workoutName || '',
-        exercises:   sanitisedExercises,
-        duration:    duration   != null ? Number(duration)   : undefined,
-        notes:       notes      != null ? String(notes)      : '',
-        completed:   Boolean(completed),
-        bodyWeight:  bodyWeight != null ? Number(bodyWeight) : undefined,
-        mood:        mood       || 'good',
+        workoutName:    workoutName || '',
+        exercises:      sanitisedExercises,
+        duration:       duration        != null ? Number(duration)        : undefined,
+        elapsedSeconds: elapsedSeconds  != null ? Number(elapsedSeconds)  : undefined,
+        notes:          notes           != null ? String(notes)           : '',
+        completed:      Boolean(completed),
+        bodyWeight:     bodyWeight      != null ? Number(bodyWeight)      : undefined,
+        mood:           mood            || 'good',
       });
     }
 

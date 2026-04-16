@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useApp } from '../context/AppContext';
 import toast from 'react-hot-toast';
@@ -217,7 +217,7 @@ export default function Profile() {
   const [weekendDoubles, setWeekendDoubles] = useState(user?.weekendDoubles ?? true);
   const [sessionDuration, setSessionDuration] = useState(user?.sessionDuration || '75-90');
 
-  const { register, handleSubmit, formState: { errors, isDirty } } = useForm({
+  const { register, handleSubmit, formState: { errors, isDirty }, reset } = useForm({
     defaultValues: {
       name: user?.name || '',
       currentWeight: user?.currentWeight || '',
@@ -228,6 +228,28 @@ export default function Profile() {
       fitnessLevel: user?.fitnessLevel || 'intermediate',
     },
   });
+
+  const formSynced = useRef(false);
+  useEffect(() => {
+    if (user && !formSynced.current) {
+      formSynced.current = true;
+      reset({
+        name: user.name || '',
+        currentWeight: user.currentWeight || '',
+        height: user.height || '',
+        targetWeight: user.targetWeight || '',
+        age: user.age || '',
+        gender: user.gender || 'male',
+        fitnessLevel: user.fitnessLevel || 'intermediate',
+      });
+      setFitnessGoal(user.fitnessGoal || 'bulk');
+      setGymDays(user.gymDays || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
+      setPreferredSplit(user.preferredSplit || 'auto');
+      setWeekendDoubles(user.weekendDoubles ?? true);
+      setSessionDuration(user.sessionDuration || '75-90');
+      setLeaderboardOptIn(!!user.leaderboardOptIn);
+    }
+  }, [user, reset]);
 
   const handleSave = async (data) => {
     setLoading(true);
@@ -374,6 +396,7 @@ export default function Profile() {
                   type="number"
                   className="input-field text-center font-bold"
                 />
+                {errors.height && <p className="text-red-400 text-xs mt-1">Required (100–250)</p>}
               </div>
             </div>
 

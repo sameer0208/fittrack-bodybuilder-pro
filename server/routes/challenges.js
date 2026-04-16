@@ -129,10 +129,12 @@ router.post('/undo', auth, async (req, res) => {
 router.get('/xp', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('xp').lean();
+    if (!user) return res.json({ xp: 0, last7: [] });
+    const mongoose = require('mongoose');
     const last7 = await DailyChallenge.aggregate([
       {
         $match: {
-          userId: user._id,
+          userId: new mongoose.Types.ObjectId(req.user.id),
           completed: true,
           date: { $gte: dayjs().subtract(7, 'day').format('YYYY-MM-DD') },
         },
@@ -140,7 +142,7 @@ router.get('/xp', auth, async (req, res) => {
       { $group: { _id: '$date', totalXP: { $sum: '$xpAwarded' }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } },
     ]);
-    res.json({ xp: user?.xp || 0, last7 });
+    res.json({ xp: user.xp || 0, last7 });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

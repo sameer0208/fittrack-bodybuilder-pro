@@ -55,9 +55,8 @@ export default function DailyChallenges() {
         meals[meal.type] = foods;
         if (foods.length > 0) mealsLogged++;
         for (const item of foods) {
-          const qty = item.servingQty || 1;
-          totalCalories += (item.calories || 0) * qty;
-          totalProtein += (item.protein || 0) * qty;
+          totalCalories += item.calories || 0;
+          totalProtein += item.protein || 0;
           totalFoodItems++;
         }
       }
@@ -97,7 +96,7 @@ export default function DailyChallenges() {
       proteinGoal, calorieGoal, waterGoal,
       waterMl: nutrition?.waterMl || 0,
     };
-  }, [user, getWorkoutLog, getNutritionLog]);
+  }, [user, getWorkoutLog, getNutritionLog, weekSchedule, workoutPlan]);
 
   const checkChallenges = useCallback(async () => {
     setChecking(true);
@@ -129,8 +128,10 @@ export default function DailyChallenges() {
   }, [challenges, completedIds, buildContext]);
 
   // Auto-check once on mount
+  const autoCheckedRef = useRef(false);
   useEffect(() => {
-    if (challenges.length > 0) {
+    if (challenges.length > 0 && !autoCheckedRef.current) {
+      autoCheckedRef.current = true;
       const timer = setTimeout(() => {
         const ctx = buildContext();
         let found = false;
@@ -141,7 +142,7 @@ export default function DailyChallenges() {
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [challenges.length]);
+  }, [challenges, completedIds, buildContext, checkChallenges]);
 
   // Mark any challenge as done via confirmation dialog
   const markDone = async () => {

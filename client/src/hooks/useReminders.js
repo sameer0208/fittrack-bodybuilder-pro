@@ -44,12 +44,16 @@ export default function useReminders() {
       const today = todayStr();
 
       const nutrition = getNutritionLog(today);
-      const totalCalories = (nutrition?.meals
-        ? Object.values(nutrition.meals).flat().reduce((s, f) => s + (f.calories || 0), 0)
-        : 0);
-      const totalProtein = (nutrition?.meals
-        ? Object.values(nutrition.meals).flat().reduce((s, f) => s + (f.protein || 0), 0)
-        : 0);
+      let totalCalories = 0;
+      let totalProtein = 0;
+      if (Array.isArray(nutrition?.meals)) {
+        for (const meal of nutrition.meals) {
+          for (const f of (meal.foods || [])) {
+            totalCalories += f.calories || 0;
+            totalProtein += f.protein || 0;
+          }
+        }
+      }
       const waterMl = nutrition?.waterMl || 0;
       const waterGoal = nutrition?.waterGoalMl || WATER_GOAL_DEFAULT;
       const calorieGoal = user.dailyCalories || 2500;
@@ -124,5 +128,5 @@ export default function useReminders() {
       clearInterval(interval);
       window.removeEventListener('focus', onFocus);
     };
-  }, [user, getNutritionLog, getWorkoutLog, addNotification]);
+  }, [user, getNutritionLog, getWorkoutLog, addNotification, weekSchedule]);
 }

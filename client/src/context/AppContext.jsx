@@ -38,6 +38,8 @@ export const AppProvider = ({ children }) => {
   const workoutLogsRef = useRef(workoutLogs);
   workoutLogsRef.current = workoutLogs;
   const [nutritionLogs, setNutritionLogs] = useState({});
+  const nutritionLogsRef = useRef(nutritionLogs);
+  nutritionLogsRef.current = nutritionLogs;
   const [stats, setStats] = useState(null);
   const [notifications, setNotifications] = useState([]);
 
@@ -240,8 +242,8 @@ export const AppProvider = ({ children }) => {
         }
       } catch { /* server unreachable */ }
     }
-    return nutritionLogs[date] || null;
-  }, [token, nutritionLogs]);
+    return nutritionLogsRef.current[date] || null;
+  }, [token]);
 
   const saveNutritionLog = useCallback(async (date, logData) => {
     if (token) {

@@ -20,13 +20,21 @@ function getFirstDayOffset(y, m) {
 }
 
 export default function WorkoutCalendar() {
-  const now = new Date();
+  const [now, setNow] = useState(() => new Date());
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [completedDays, setCompletedDays] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [selectedDay, setSelectedDay] = useState(null);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') setNow(new Date());
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
 
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
   const todayDate = now.getDate();

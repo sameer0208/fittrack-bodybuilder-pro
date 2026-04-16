@@ -56,9 +56,18 @@ function Stepper({ value, onChange, step = 1, min = 0, highlight = false }) {
 // ── Rest Timer ──────────────────────────────────────────────────────────────
 const REST_OPTIONS = [30, 60, 90, 120, 180];
 
+let _audioCtx = null;
+function getAudioCtx() {
+  if (!_audioCtx || _audioCtx.state === 'closed') {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+
 function playBeep() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = getAudioCtx();
     const now = ctx.currentTime;
     const notes = [
       { freq: 880,  start: 0,    end: 0.15 },

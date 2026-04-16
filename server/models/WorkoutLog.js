@@ -27,7 +27,8 @@ const workoutLogSchema = new mongoose.Schema(
     workoutName: { type: String, default: '' },
     date: { type: Date, default: Date.now },
     exercises: [exerciseLogSchema],
-    duration: { type: Number }, // in minutes
+    duration: { type: Number }, // in minutes (display)
+    elapsedSeconds: { type: Number }, // precise timer value
     totalVolume: { type: Number, default: 0 }, // total kg lifted
     notes: { type: String },
     completed: { type: Boolean, default: false },

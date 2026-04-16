@@ -509,7 +509,7 @@ export default function Nutrition() {
             <div className="card p-5">
               <h3 className="font-bold text-white mb-4">Recent Days</h3>
               <div className="space-y-2">
-                {last7Days.reverse().map((d) => {
+                {[...last7Days].reverse().map((d) => {
                   const pct = Math.min((d.calories / calorieGoal) * 100, 100);
                   return (
                     <button

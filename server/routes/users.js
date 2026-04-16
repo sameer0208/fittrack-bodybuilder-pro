@@ -20,6 +20,7 @@ function userPayload(user) {
     proteinTarget: user.proteinTarget, streak: user.streak,
     totalWorkouts: user.totalWorkouts, programStartDate: user.programStartDate,
     weightHistory: user.weightHistory,
+    leaderboardOptIn: user.leaderboardOptIn, xp: user.xp,
   };
 }
 
@@ -111,6 +112,7 @@ router.put('/update', authMiddleware, async (req, res) => {
     const {
       currentWeight, targetWeight, height, age, gender, fitnessLevel, name,
       fitnessGoal, gymDaysPerWeek, gymDays, preferredSplit, weekendDoubles, sessionDuration, activityLevel,
+      leaderboardOptIn,
     } = req.body;
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -128,6 +130,7 @@ router.put('/update', authMiddleware, async (req, res) => {
     if (weekendDoubles != null) user.weekendDoubles = weekendDoubles;
     if (sessionDuration) user.sessionDuration = sessionDuration;
     if (activityLevel != null) user.activityLevel = activityLevel;
+    if (leaderboardOptIn != null) user.leaderboardOptIn = leaderboardOptIn;
     if (currentWeight && currentWeight !== user.currentWeight) {
       user.currentWeight = currentWeight;
       user.weightHistory.push({ weight: currentWeight, date: new Date() });
