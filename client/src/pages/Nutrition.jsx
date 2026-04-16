@@ -53,6 +53,17 @@ export default function Nutrition() {
 
   const isToday = date === dayjs().format('YYYY-MM-DD');
 
+  // Pre-fetch last 7 days so history tab and chart have real data
+  const historyFetched = useRef(false);
+  useEffect(() => {
+    if (historyFetched.current) return;
+    historyFetched.current = true;
+    for (let i = 1; i <= 6; i++) {
+      const d = dayjs().subtract(i, 'day').format('YYYY-MM-DD');
+      fetchNutritionLog(d);
+    }
+  }, [fetchNutritionLog]);
+
   // Load log for selected date — fetch from server first so all devices stay in sync
   useEffect(() => {
     let cancelled = false;
