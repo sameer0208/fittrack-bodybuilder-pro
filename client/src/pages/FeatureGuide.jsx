@@ -256,6 +256,19 @@ const FEATURES = [
     link: '/health-insights',
   },
   {
+    id: 'biometrics',
+    icon: HeartPulse,
+    title: 'Biometric Scanner & Dashboard',
+    tagline: 'One scan. Five vital metrics. Complete health picture.',
+    description: 'Place your finger on the camera for 30 seconds to measure Heart Rate, HRV (RMSSD/SDNN/pNN50), Blood Oxygen (SpO2), Respiratory Rate, and Stress Level. View trends, a wellness radar chart, AI-generated insights, and correlations with your sleep and mood data.',
+    highlights: ['HRV analysis (RMSSD, SDNN, pNN50, LF/HF)', 'SpO2 blood oxygen estimation', 'Respiratory rate from PPG waveform', 'Stress index with autonomic scoring', 'Wellness radar & trend charts', '7-day / 30-day comparative reports'],
+    color: 'from-rose-600 to-red-500',
+    glow: 'shadow-rose-500/20',
+    accent: 'text-rose-400',
+    ring: 'ring-rose-500/30',
+    link: '/biometrics',
+  },
+  {
     id: 'achievements',
     icon: Trophy,
     title: 'Achievements & Badges',
@@ -702,7 +715,7 @@ export default function FeatureGuide() {
             animate={heroReady ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 1.5 }}
           >
-            <PowerStat icon={Sparkles} value="21" suffix="+" label="Features" delay={1.6} color="from-red-600 to-orange-500" />
+            <PowerStat icon={Sparkles} value="22" suffix="+" label="Features" delay={1.6} color="from-red-600 to-orange-500" />
             <PowerStat icon={Dumbbell} value="100" suffix="+" label="Exercises" delay={1.7} color="from-orange-500 to-amber-500" />
             <PowerStat icon={UtensilsCrossed} value="500" suffix="+" label="Foods" delay={1.8} color="from-emerald-500 to-green-400" />
             <PowerStat icon={Bot} value="24" suffix="/7" label="AI Coach" delay={1.9} color="from-purple-500 to-fuchsia-500" />
@@ -778,7 +791,7 @@ export default function FeatureGuide() {
             <span className="bg-gradient-to-r from-red-500 to-orange-400 bg-clip-text text-transparent">You Need</span>
           </h2>
           <p className="text-slate-500 text-sm max-w-md mx-auto font-medium">
-            21 battle-tested features. One unstoppable app. Built for warriors who take their gains seriously.
+            22 battle-tested features. One unstoppable app. Built for warriors who take their gains seriously.
           </p>
         </motion.div>
       </div>

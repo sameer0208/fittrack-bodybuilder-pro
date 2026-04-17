@@ -396,8 +396,18 @@ function VitalsTab() {
     dia: l.diastolic,
   })).reverse();
 
-  const handleScanResult = async (measuredBpm) => {
-    setForm((f) => ({ ...f, restingHR: String(measuredBpm) }));
+  const handleScanResult = async (biometricsOrBpm) => {
+    const measuredBpm = typeof biometricsOrBpm === 'object' ? biometricsOrBpm.heartRate : biometricsOrBpm;
+    setForm((f) => ({ ...f, restingHR: String(measuredBpm || '') }));
+
+    // Save to biometrics collection if full scan data
+    if (typeof biometricsOrBpm === 'object') {
+      try {
+        await API.post('/biometrics', { date: today(), ...biometricsOrBpm });
+      } catch {}
+    }
+
+    if (!measuredBpm) return;
     try {
       const payload = { date: today(), restingHR: measuredBpm, systolic: form.systolic ? Number(form.systolic) : null, diastolic: form.diastolic ? Number(form.diastolic) : null, notes: 'Camera PPG measurement' };
       const { data } = await API.post('/vitals', payload);
@@ -405,7 +415,7 @@ function VitalsTab() {
         const filtered = prev.filter((l) => l.date !== data.date);
         return [data, ...filtered];
       });
-      toast.success(`Saved ${measuredBpm} BPM`);
+      toast.success(`Saved ${measuredBpm} BPM + biometrics`);
     } catch {
       toast.error('Failed to save — you can save it manually');
     }
