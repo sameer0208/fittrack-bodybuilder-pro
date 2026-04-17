@@ -50,6 +50,7 @@ const supplementRoutes = require('./routes/supplements');
 const postureRoutes = require('./routes/posture');
 const healthInsightRoutes = require('./routes/healthInsights');
 const biometricRoutes = require('./routes/biometrics');
+const stepRoutes = require('./routes/steps');
 
 app.use('/api/users', userRoutes);
 app.use('/api/workouts', workoutRoutes);
@@ -69,6 +70,7 @@ app.use('/api/supplements', supplementRoutes);
 app.use('/api/posture', postureRoutes);
 app.use('/api/health-insights', healthInsightRoutes);
 app.use('/api/biometrics', biometricRoutes);
+app.use('/api/steps', stepRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'FitTrack API is running' });

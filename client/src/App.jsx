@@ -22,6 +22,7 @@ import DietPlan from './pages/DietPlan';
 import FeatureGuide from './pages/FeatureGuide';
 import HealthInsights from './pages/HealthInsights';
 import BiometricsDashboard from './pages/BiometricsDashboard';
+import StepCounter from './pages/StepCounter';
 import FeatureTour from './components/guide/FeatureTour';
 import ContextualTip from './components/guide/ContextualTip';
 import useReminders from './hooks/useReminders';
@@ -45,6 +46,7 @@ function AuthenticatedLayout() {
           <Route path="/health-recovery" element={<HealthRecovery />} />
           <Route path="/health-insights" element={<HealthInsights />} />
           <Route path="/biometrics" element={<BiometricsDashboard />} />
+          <Route path="/steps" element={<StepCounter />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/achievements" element={<Achievements />} />

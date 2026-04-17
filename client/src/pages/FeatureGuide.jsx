@@ -5,7 +5,7 @@ import {
   Dumbbell, UtensilsCrossed, Droplets, Users, Trophy,
   Calendar, BarChart3, Camera, Heart, Zap, Target, Flame,
   ChevronRight, ArrowLeft, Sparkles, Star, BookOpen,
-  Ruler, TrendingUp, Bot, Clock, Crown,
+  Ruler, TrendingUp, Bot, Clock, Crown, Footprints,
   ChevronDown, Rocket, Activity, Wind, Shield, HeartPulse, Pill,
 } from 'lucide-react';
 
@@ -267,6 +267,19 @@ const FEATURES = [
     accent: 'text-rose-400',
     ring: 'ring-rose-500/30',
     link: '/biometrics',
+  },
+  {
+    id: 'steps',
+    icon: Footprints,
+    title: 'Step Counter',
+    tagline: 'Every step counts — literally.',
+    description: 'Real-time step tracking using your device accelerometer with a stunning 3D animated progress ring. Auto-detects steps while walking, calculates distance and calories based on your height/weight, and logs hourly activity. Includes weekly/monthly stats, history trends, and manual entry for when sensors aren\'t available.',
+    highlights: ['Real-time accelerometer step detection', '3D animated progress ring with glow effects', 'Auto distance & calorie calculation', 'Hourly activity breakdown chart', 'Weekly & monthly stats dashboard', 'Manual step entry fallback'],
+    color: 'from-orange-600 to-amber-500',
+    glow: 'shadow-orange-500/20',
+    accent: 'text-orange-400',
+    ring: 'ring-orange-500/30',
+    link: '/steps',
   },
   {
     id: 'achievements',
