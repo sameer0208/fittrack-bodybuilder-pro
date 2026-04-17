@@ -40,8 +40,7 @@
   }
 
   main {
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
+    isolation: isolate;
   }
 
   input:-webkit-autofill,

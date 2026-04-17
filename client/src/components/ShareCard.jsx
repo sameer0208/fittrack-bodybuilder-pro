@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import dayjs from 'dayjs';
 import {
   Copy,
@@ -280,7 +281,7 @@ export default function ShareCard({ stats, onClose }) {
     },
   ];
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
       role="dialog"
@@ -367,6 +368,7 @@ export default function ShareCard({ stats, onClose }) {
           <p className="mt-3 text-center text-sm text-slate-300">{feedback}</p>
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

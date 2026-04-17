@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Heart, X, Camera, Loader2, Save, RotateCcw, Fingerprint, Activity, Wind, Brain, Droplets } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -464,7 +465,7 @@ export default function HeartRateMonitor({ onResult, onClose }) {
   const stressLabel = (v) => v <= 25 ? 'Low' : v <= 50 ? 'Moderate' : v <= 75 ? 'High' : 'Very High';
   const stressColor = (v) => v <= 25 ? 'text-emerald-400' : v <= 50 ? 'text-yellow-400' : v <= 75 ? 'text-orange-400' : 'text-red-400';
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[99999] flex items-center justify-center overflow-y-auto" style={{ background: 'rgba(0,0,0,0.97)' }}>
       <video ref={videoRef} playsInline muted style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }} />
       <canvas ref={canvasRef} style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }} />
@@ -773,6 +774,7 @@ export default function HeartRateMonitor({ onResult, onClose }) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

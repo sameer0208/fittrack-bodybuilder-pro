@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import toast from 'react-hot-toast';
@@ -816,7 +817,7 @@ export default function BodyTracker() {
       </div>
 
       {/* ═══ LIGHTBOX MODAL ═══ */}
-      {modalPhoto && (
+      {modalPhoto && createPortal(
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md"
           role="dialog"
@@ -903,7 +904,8 @@ export default function BodyTracker() {
               </span>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ═══ CAMERA OVERLAY ═══ */}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Search, Plus, Star } from 'lucide-react';
 import { foods, foodCategories, searchFoods, getSuggestedFoods, mealSuggestions } from '../data/foods';
 
@@ -50,7 +51,7 @@ export default function FoodSearchModal({ meal, onAdd, onClose }) {
     snacks: '🍎 Snacks', pre_workout: '⚡ Pre-Workout', post_workout: '💪 Post-Workout',
   }[meal] || meal;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && onClose()}
@@ -185,6 +186,7 @@ export default function FoodSearchModal({ meal, onAdd, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

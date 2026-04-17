@@ -1,5 +1,6 @@
 import { X, ExternalLink, Play, RefreshCw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export default function VideoModal({ exercise, onClose }) {
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
@@ -75,7 +76,7 @@ export default function VideoModal({ exercise, onClose }) {
     return () => window.removeEventListener('keydown', handle);
   }, [onClose]);
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
       onClick={(e) => e.target === e.currentTarget && onClose()}
@@ -180,7 +181,8 @@ export default function VideoModal({ exercise, onClose }) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

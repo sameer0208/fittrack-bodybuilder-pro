@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import toast from 'react-hot-toast';
@@ -239,7 +240,7 @@ function StretchTimer({ routine, open, onClose }) {
 
   if (!open || !routine) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex flex-col bg-slate-950 text-white">
       {phase === 'complete' ? (
         <div className="flex-1 flex flex-col items-center justify-center px-6 relative overflow-hidden">
@@ -368,7 +369,8 @@ function StretchTimer({ routine, open, onClose }) {
           </div>
         </>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
 
