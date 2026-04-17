@@ -1,0 +1,65 @@
+export const breathingExercises = [
+  {
+    key: 'box',
+    name: 'Box Breathing',
+    description: 'Navy SEAL technique for calm focus. Equal inhale, hold, exhale, hold phases.',
+    benefit: 'Reduces stress & anxiety, improves focus before heavy lifts',
+    phases: [
+      { label: 'Inhale', duration: 4 },
+      { label: 'Hold', duration: 4 },
+      { label: 'Exhale', duration: 4 },
+      { label: 'Hold', duration: 4 },
+    ],
+    rounds: 6,
+    color: '#3b82f6',
+  },
+  {
+    key: '478',
+    name: '4-7-8 Relaxation',
+    description: 'Dr. Andrew Weil\'s technique. Deep relaxation to lower heart rate and prepare for sleep.',
+    benefit: 'Ideal for post-workout cooldown or before bed',
+    phases: [
+      { label: 'Inhale', duration: 4 },
+      { label: 'Hold', duration: 7 },
+      { label: 'Exhale', duration: 8 },
+    ],
+    rounds: 4,
+    color: '#8b5cf6',
+  },
+  {
+    key: 'power',
+    name: 'Power Breathing',
+    description: 'Short, intense nasal breaths to activate the sympathetic nervous system before a big set.',
+    benefit: 'Pre-set activation — increases alertness and power output',
+    phases: [
+      { label: 'Sharp Inhale', duration: 1 },
+      { label: 'Sharp Exhale', duration: 1 },
+    ],
+    rounds: 20,
+    color: '#ef4444',
+  },
+  {
+    key: 'calm',
+    name: 'Extended Exhale',
+    description: 'Longer exhale than inhale activates the vagus nerve and parasympathetic system.',
+    benefit: 'Calms the nervous system between sets or after cardio',
+    phases: [
+      { label: 'Inhale', duration: 4 },
+      { label: 'Exhale', duration: 8 },
+    ],
+    rounds: 8,
+    color: '#10b981',
+  },
+  {
+    key: 'wim',
+    name: 'Wim Hof Method',
+    description: '30 deep breaths followed by a retention hold. Boosts adrenaline and cold tolerance.',
+    benefit: 'Energy boost, improved recovery, mental toughness training',
+    phases: [
+      { label: 'Deep Inhale', duration: 2 },
+      { label: 'Exhale', duration: 2 },
+    ],
+    rounds: 30,
+    color: '#06b6d4',
+  },
+];

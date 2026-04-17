@@ -6,7 +6,7 @@ import {
   Calendar, BarChart3, Camera, Heart, Zap, Target, Flame,
   ChevronRight, ArrowLeft, Sparkles, Star, BookOpen,
   Ruler, TrendingUp, Bot, Clock, Crown,
-  ChevronDown, Rocket,
+  ChevronDown, Rocket, Activity, Wind, Shield, HeartPulse, Pill,
 } from 'lucide-react';
 
 /* ─────────────────────── Motivational Quotes ─────────────────────── */
@@ -189,6 +189,71 @@ const FEATURES = [
     accent: 'text-rose-400',
     ring: 'ring-rose-500/30',
     link: '/health-recovery',
+  },
+  {
+    id: 'insights',
+    icon: Activity,
+    title: 'Health Insights',
+    tagline: 'Your body\'s intelligence dashboard',
+    description: 'Recovery readiness score, overtraining detection, body composition analysis, vitals tracking, injury management, breathing exercises, meal timing, posture assessment, and supplement tracking — all powered by your existing data.',
+    highlights: ['Recovery Readiness Score (0-100)', 'Overtraining detection with ACWR', 'Body fat %, FFMI & composition', 'Heart rate & BP tracking'],
+    color: 'from-emerald-500 to-teal-400',
+    glow: 'shadow-emerald-500/20',
+    accent: 'text-emerald-400',
+    ring: 'ring-emerald-500/30',
+    link: '/health-insights',
+  },
+  {
+    id: 'injury',
+    icon: Shield,
+    title: 'Injury & Pain Tracker',
+    tagline: 'Stay safe, train smart',
+    description: 'Log injuries by body part, track severity and pain type, monitor recovery status. Get alerts when exercises might aggravate your injuries.',
+    highlights: ['Track any body part injury', 'Severity & pain type logging', 'Recovery status management', 'Historical injury trends'],
+    color: 'from-orange-500 to-amber-500',
+    glow: 'shadow-orange-500/20',
+    accent: 'text-orange-400',
+    ring: 'ring-orange-500/30',
+    link: '/health-insights',
+  },
+  {
+    id: 'breathing',
+    icon: Wind,
+    title: 'Breathing Exercises',
+    tagline: 'Breathe your way to better performance',
+    description: 'Guided breathing techniques including Box Breathing, 4-7-8 Relaxation, Power Breathing, and Wim Hof Method. Animated visual guide with round tracking.',
+    highlights: ['5 scientifically-backed techniques', 'Animated breathing circle guide', 'Pre-workout & recovery modes', 'Round counter & pause controls'],
+    color: 'from-cyan-500 to-blue-500',
+    glow: 'shadow-cyan-500/20',
+    accent: 'text-cyan-400',
+    ring: 'ring-cyan-500/30',
+    link: '/health-insights',
+  },
+  {
+    id: 'vitals',
+    icon: HeartPulse,
+    title: 'Camera Heart Rate + Vitals',
+    tagline: 'Measure your pulse — no wearable needed',
+    description: 'Place your finger on the camera to measure your heart rate using photoplethysmography (PPG). Live ECG waveform, real-time BPM, and automatic anomaly detection. Plus daily blood pressure logging.',
+    highlights: ['Camera-based heart rate scanning', 'Live ECG waveform visualization', 'Automatic anomaly alerts', 'Blood pressure tracking & trends'],
+    color: 'from-rose-600 to-red-500',
+    glow: 'shadow-rose-500/20',
+    accent: 'text-rose-400',
+    ring: 'ring-rose-500/30',
+    link: '/health-insights',
+  },
+  {
+    id: 'supplements',
+    icon: Pill,
+    title: 'Supplement Tracker',
+    tagline: 'Never miss a dose again',
+    description: 'Daily supplement checklist with compliance tracking. Pre-loaded with common gym supplements. Add custom supplements and track your consistency over time.',
+    highlights: ['One-tap daily checklist', 'Custom supplement support', 'Weekly compliance charts', 'Pre-loaded gym essentials'],
+    color: 'from-violet-500 to-purple-500',
+    glow: 'shadow-violet-500/20',
+    accent: 'text-violet-400',
+    ring: 'ring-violet-500/30',
+    link: '/health-insights',
   },
   {
     id: 'achievements',
@@ -637,7 +702,7 @@ export default function FeatureGuide() {
             animate={heroReady ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 1.5 }}
           >
-            <PowerStat icon={Sparkles} value="15" suffix="+" label="Features" delay={1.6} color="from-red-600 to-orange-500" />
+            <PowerStat icon={Sparkles} value="21" suffix="+" label="Features" delay={1.6} color="from-red-600 to-orange-500" />
             <PowerStat icon={Dumbbell} value="100" suffix="+" label="Exercises" delay={1.7} color="from-orange-500 to-amber-500" />
             <PowerStat icon={UtensilsCrossed} value="500" suffix="+" label="Foods" delay={1.8} color="from-emerald-500 to-green-400" />
             <PowerStat icon={Bot} value="24" suffix="/7" label="AI Coach" delay={1.9} color="from-purple-500 to-fuchsia-500" />
@@ -713,7 +778,7 @@ export default function FeatureGuide() {
             <span className="bg-gradient-to-r from-red-500 to-orange-400 bg-clip-text text-transparent">You Need</span>
           </h2>
           <p className="text-slate-500 text-sm max-w-md mx-auto font-medium">
-            15 battle-tested features. One unstoppable app. Built for warriors who take their gains seriously.
+            21 battle-tested features. One unstoppable app. Built for warriors who take their gains seriously.
           </p>
         </motion.div>
       </div>
