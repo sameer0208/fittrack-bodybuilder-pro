@@ -41,7 +41,21 @@ export const AppProvider = ({ children }) => {
   const nutritionLogsRef = useRef(nutritionLogs);
   nutritionLogsRef.current = nutritionLogs;
   const [stats, setStats] = useState(null);
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const stored = localStorage.getItem('ft_notifications');
+      if (!stored) return [];
+      const { date, items } = JSON.parse(stored);
+      const today = new Date().toISOString().split('T')[0];
+      if (date !== today) {
+        localStorage.removeItem('ft_notifications');
+        return [];
+      }
+      return items || [];
+    } catch {
+      return [];
+    }
+  });
 
   // ── Health check ──────────────────────────────────────────────────────────
   const checkHealth = useCallback(() => {
@@ -88,6 +102,7 @@ export const AppProvider = ({ children }) => {
       setNutritionLogs({});
       setNotifications([]);
       setStats(null);
+      try { localStorage.removeItem('ft_notifications'); localStorage.removeItem('ft_reminder_fired'); } catch {}
     }
   }, [user]);
 
@@ -256,7 +271,17 @@ export const AppProvider = ({ children }) => {
     return data;
   }, [token]);
 
-  // ── Notifications (in-memory only) ────────────────────────────────────────
+  // ── Notifications (persisted to localStorage per day) ───────────────────
+  useEffect(() => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      localStorage.setItem('ft_notifications', JSON.stringify({
+        date: today,
+        items: notifications.slice(0, 50),
+      }));
+    } catch {}
+  }, [notifications]);
+
   const addNotification = useCallback((type, message) => {
     const entry = {
       id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
@@ -264,12 +289,20 @@ export const AppProvider = ({ children }) => {
       timestamp: new Date().toISOString(),
       read: false,
     };
-    setNotifications((prev) => [entry, ...prev].slice(0, 100));
+    setNotifications((prev) => [entry, ...prev].slice(0, 50));
     sendBrowserNotification('SamAI Reminder', message);
   }, []);
 
   const markAllRead = useCallback(() => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  }, []);
+
+  const markRead = useCallback((id) => {
+    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+  }, []);
+
+  const dismissNotification = useCallback((id) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
   const clearNotifications = useCallback(() => setNotifications([]), []);
@@ -288,7 +321,7 @@ export const AppProvider = ({ children }) => {
     saveWorkoutLog, getWorkoutLog, fetchWorkoutLog,
     getNutritionLog, fetchNutritionLog, saveNutritionLog,
     stats, fetchStats,
-    notifications, addNotification, markAllRead, clearNotifications, unreadCount,
+    notifications, addNotification, markAllRead, markRead, dismissNotification, clearNotifications, unreadCount,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
