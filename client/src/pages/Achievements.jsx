@@ -23,6 +23,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { BADGE_DEFS, TIER_COLORS } from '../data/achievements';
+import Tilt3DCard from '../components/Tilt3DCard';
 
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -262,13 +263,16 @@ export default function Achievements() {
               const IconComponent = ICON_MAP[def.icon] || DefaultIcon;
 
               return (
-                <div
+                <Tilt3DCard
                   key={def.key}
                   className={`relative overflow-hidden flex flex-col bg-slate-800 border rounded-2xl p-4 min-h-[148px] transition-all ${
                     unlocked
                       ? `${tierStyle.border} ${tierStyle.bg} shadow-sm`
                       : 'border-slate-700 opacity-40'
                   }`}
+                  maxTilt={unlocked ? 15 : 5}
+                  scale={unlocked ? 1.04 : 1}
+                  glareOpacity={unlocked ? 0.18 : 0.05}
                 >
                   {!unlocked && (
                     <div
@@ -317,7 +321,7 @@ export default function Achievements() {
                       Unlocked {dayjs(unlockedAt).format('MMM D, YYYY')}
                     </div>
                   )}
-                </div>
+                </Tilt3DCard>
               );
             })}
           </div>

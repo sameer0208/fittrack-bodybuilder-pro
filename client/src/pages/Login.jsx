@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Dumbbell, Mail, Lock, LogIn, UserPlus, Flame } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
+import Tilt3DCard from '../components/Tilt3DCard';
 
 export default function Login() {
   const { login, loginLocal, backendOnline } = useApp();
@@ -56,8 +57,9 @@ export default function Login() {
 
       <div className="w-full max-w-md relative z-10">
         {/* Gym Logo */}
-        <div className="flex items-center gap-3 justify-center mb-8">
-          <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-red-600/20">
+        <div className="flex items-center gap-3 justify-center mb-8" style={{ perspective: '600px' }}>
+          <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-red-600/20 animate-float-3d"
+            style={{ boxShadow: '0 8px 32px rgba(239,68,68,0.3), inset 0 1px 0 rgba(255,255,255,0.15)' }}>
             <Dumbbell size={24} className="text-white" strokeWidth={2.5} />
           </div>
           <div>
@@ -66,7 +68,7 @@ export default function Login() {
           </div>
         </div>
 
-        <div className="card p-8 animate-slide-up relative overflow-hidden">
+        <Tilt3DCard className="card p-8 animate-entrance-3d relative overflow-hidden" maxTilt={6} scale={1.01} glareOpacity={0.08}>
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/25 to-transparent" />
           <h1 className="text-2xl font-black text-white mb-1">Welcome Back</h1>
           <p className="text-slate-500 text-sm mb-6 flex items-center gap-1.5">
@@ -165,7 +167,7 @@ export default function Login() {
               </Link>
             </p>
           </div>
-        </div>
+        </Tilt3DCard>
       </div>
     </div>
   );

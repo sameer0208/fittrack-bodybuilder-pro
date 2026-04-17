@@ -279,7 +279,7 @@ export default function Onboarding() {
           </div>
         )}
 
-        <div className="card p-8 animate-slide-up relative overflow-hidden">
+        <div className="card p-8 animate-entrance-3d relative overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/25 to-transparent" />
           {/* ── Step 0: Welcome ── */}
           {step === 0 && (

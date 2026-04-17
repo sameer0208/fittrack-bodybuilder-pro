@@ -57,21 +57,51 @@ function GymClickEffect() {
       );
     };
 
+    let lastCard = null;
+
     const moveHandler = (e) => {
       const card = e.target.closest('.card-hover');
+
+      if (lastCard && lastCard !== card) {
+        lastCard.style.setProperty('--mouse-x', '50%');
+        lastCard.style.setProperty('--mouse-y', '50%');
+        lastCard.style.transform = '';
+        lastCard = null;
+      }
+
       if (!card) return;
+      lastCard = card;
       const rect = card.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-      card.style.setProperty('--mouse-x', `${x}%`);
-      card.style.setProperty('--mouse-y', `${y}%`);
+      const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+      const yPct = ((e.clientY - rect.top) / rect.height) * 100;
+      card.style.setProperty('--mouse-x', `${xPct}%`);
+      card.style.setProperty('--mouse-y', `${yPct}%`);
+
+      const xNorm = (e.clientX - rect.left) / rect.width - 0.5;
+      const yNorm = (e.clientY - rect.top) / rect.height - 0.5;
+      const tiltX = (-yNorm * 4).toFixed(2);
+      const tiltY = (xNorm * 4).toFixed(2);
+      card.style.transform = `perspective(600px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) translateY(-2px) scale(1.005)`;
+    };
+
+    const leaveHandler = (e) => {
+      const card = e.target.closest('.card-hover');
+      if (card) {
+        card.style.transform = '';
+      }
+      if (lastCard) {
+        lastCard.style.transform = '';
+        lastCard = null;
+      }
     };
 
     document.addEventListener('click', clickHandler, { passive: true });
     document.addEventListener('mousemove', moveHandler, { passive: true });
+    document.addEventListener('mouseleave', leaveHandler, { passive: true, capture: true });
     return () => {
       document.removeEventListener('click', clickHandler);
       document.removeEventListener('mousemove', moveHandler);
+      document.removeEventListener('mouseleave', leaveHandler, { capture: true });
     };
   }, []);
 

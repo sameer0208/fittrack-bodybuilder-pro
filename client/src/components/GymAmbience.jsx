@@ -1,14 +1,14 @@
 import { memo, useEffect, useRef } from 'react';
 
 const ITEMS = [
-  { x: 5,  y: 10, size: 64, speed: 40, delay: 0,   rot: 15,  type: 'dumbbell', op: 0.18 },
-  { x: 82, y: 22, size: 52, speed: 50, delay: -8,  rot: -10, type: 'flame',    op: 0.14 },
-  { x: 12, y: 55, size: 48, speed: 45, delay: -15, rot: 5,   type: 'target',   op: 0.14 },
-  { x: 72, y: 65, size: 68, speed: 55, delay: -20, rot: 20,  type: 'dumbbell', op: 0.16 },
-  { x: 40, y: 80, size: 44, speed: 42, delay: -5,  rot: -20, type: 'trophy',   op: 0.12 },
-  { x: 28, y: 16, size: 40, speed: 48, delay: -12, rot: 8,   type: 'heart',    op: 0.12 },
-  { x: 90, y: 45, size: 42, speed: 52, delay: -25, rot: -15, type: 'bolt',     op: 0.14 },
-  { x: 55, y: 6,  size: 58, speed: 58, delay: -30, rot: 12,  type: 'dumbbell', op: 0.16 },
+  { x: 5,  y: 10, size: 64, speed: 40, delay: 0,   rot: 15,  type: 'dumbbell', op: 0.18, z: 0.6 },
+  { x: 82, y: 22, size: 52, speed: 50, delay: -8,  rot: -10, type: 'flame',    op: 0.14, z: 0.3 },
+  { x: 12, y: 55, size: 48, speed: 45, delay: -15, rot: 5,   type: 'target',   op: 0.14, z: 0.8 },
+  { x: 72, y: 65, size: 68, speed: 55, delay: -20, rot: 20,  type: 'dumbbell', op: 0.16, z: 0.5 },
+  { x: 40, y: 80, size: 44, speed: 42, delay: -5,  rot: -20, type: 'trophy',   op: 0.12, z: 0.7 },
+  { x: 28, y: 16, size: 40, speed: 48, delay: -12, rot: 8,   type: 'heart',    op: 0.12, z: 0.4 },
+  { x: 90, y: 45, size: 42, speed: 52, delay: -25, rot: -15, type: 'bolt',     op: 0.14, z: 0.9 },
+  { x: 55, y: 6,  size: 58, speed: 58, delay: -30, rot: 12,  type: 'dumbbell', op: 0.16, z: 0.2 },
 ];
 
 const SW = '2.5';
@@ -64,7 +64,11 @@ function GymAmbience() {
         const phase = t / item.speed + item.delay;
         const yOff = Math.sin(phase * Math.PI * 2) * 18;
         const xOff = Math.cos(phase * Math.PI * 2 * 0.7) * 8;
-        child.style.transform = `translate(${xOff}px, ${yOff}px)`;
+        const zOff = Math.sin(phase * Math.PI * 1.3) * 30;
+        const rotX = Math.sin(phase * Math.PI * 1.5) * 8;
+        const rotY = Math.cos(phase * Math.PI * 1.1) * 12;
+        const scaleZ = 1 + Math.sin(phase * Math.PI) * 0.06;
+        child.style.transform = `translate3d(${xOff}px, ${yOff}px, ${zOff}px) rotateX(${rotX}deg) rotateY(${rotY}deg) scale(${scaleZ})`;
       });
       raf = requestAnimationFrame(animate);
     };
@@ -82,6 +86,8 @@ function GymAmbience() {
         zIndex: 0,
         pointerEvents: 'none',
         overflow: 'hidden',
+        perspective: '1200px',
+        perspectiveOrigin: '50% 50%',
       }}
       aria-hidden="true"
     >
@@ -93,17 +99,19 @@ function GymAmbience() {
             left: `${item.x}%`,
             top: `${item.y}%`,
             opacity: item.op,
-            transform: `rotate(${item.rot}deg)`,
+            transform: `rotate(${item.rot}deg) translateZ(${item.z * 60}px)`,
+            transformStyle: 'preserve-3d',
             color: '#ef4444',
+            filter: `blur(${(1 - item.z) * 1.5}px)`,
           }}
         >
-          <div className="gym-eq">
+          <div className="gym-eq" style={{ transformStyle: 'preserve-3d' }}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width={item.size}
               height={item.size}
               viewBox="0 0 24 24"
-              style={{ display: 'block' }}
+              style={{ display: 'block', filter: `drop-shadow(0 2px ${4 + item.z * 6}px rgba(239,68,68,0.15))` }}
             >
               {SVGS[item.type]}
             </svg>

@@ -14,6 +14,7 @@ import {
   TrendingUp, UtensilsCrossed, Droplets, Dumbbell,
   Trophy, Users, Share2, Ruler, Heart, BarChart3, BookOpen,
 } from 'lucide-react';
+import Tilt3DCard from '../components/Tilt3DCard';
 
 const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
 API.interceptors.request.use((cfg) => {
@@ -163,15 +164,16 @@ export default function Dashboard() {
             </h1>
             <p className="text-slate-500 text-sm mt-1 font-medium">Day {programDays} of your transformation</p>
           </div>
-          <div className="flex items-center gap-3 rounded-xl px-5 py-3 border border-red-500/15"
+          <Tilt3DCard className="flex items-center gap-3 rounded-xl px-5 py-3 border border-red-500/15 relative"
             style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.06) 0%, rgba(249,115,22,0.04) 100%)' }}
+            maxTilt={15} scale={1.06}
           >
             <Flame size={22} className="text-red-400" />
             <div>
               <div className="text-3xl font-black text-red-400 leading-none">{user?.streak || 0}</div>
               <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">streak</div>
             </div>
-          </div>
+          </Tilt3DCard>
         </div>
 
         {/* ── Stats Row ──────────────────────────────── */}
@@ -181,10 +183,10 @@ export default function Dashboard() {
             { value: `${user?.currentWeight || '--'}kg`, label: 'Current',   color: 'text-emerald-400', border: 'border-emerald-500/10' },
             { value: user?.bmi || '--',            label: 'BMI',       color: 'text-amber-400', border: 'border-amber-500/10' },
           ].map(({ value, label, color, border }) => (
-            <div key={label} className={`card p-3.5 text-center active:scale-95 transition-transform overflow-hidden ${border}`}>
+            <Tilt3DCard key={label} className={`card p-3.5 text-center overflow-hidden relative ${border}`} maxTilt={12} scale={1.04} glareOpacity={0.15}>
               <div className={`text-xl font-black truncate ${color}`}>{value}</div>
               <div className="text-[10px] text-slate-500 mt-0.5 truncate font-bold uppercase tracking-wider">{label}</div>
-            </div>
+            </Tilt3DCard>
           ))}
         </div>
 

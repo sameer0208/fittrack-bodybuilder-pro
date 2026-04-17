@@ -381,7 +381,8 @@ export default function WorkoutDay() {
               { label: 'Sets', value: `${totalSetsCompleted}/${totalSetsAll}` },
               { label: 'Volume', value: `${totalVolume.toFixed(0)}kg` },
             ].map(({ label, value }) => (
-              <div key={label} className="bg-white/5 backdrop-blur-sm rounded-xl py-2.5 px-1 text-center border border-white/5">
+              <div key={label} className="bg-white/5 rounded-xl py-2.5 px-1 text-center border border-white/5 transition-all duration-200 hover:bg-white/10 hover:-translate-y-0.5"
+                style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
                 <div className="text-white font-black text-sm leading-tight">{value}</div>
                 <div className="text-white/30 text-[9px] mt-0.5 font-bold uppercase tracking-wider">{label}</div>
               </div>
