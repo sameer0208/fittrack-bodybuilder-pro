@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo, useReducer } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { breathingExercises } from '../data/breathingExercises';
-import HeartRateMonitor from '../components/HeartRateMonitor';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import toast from 'react-hot-toast';
@@ -24,7 +24,7 @@ API.interceptors.request.use((cfg) => {
 const TABS = [
   { key: 'overview', label: 'Overview', icon: Activity },
   { key: 'composition', label: 'Body Comp', icon: Ruler },
-  { key: 'vitals', label: 'Vitals', icon: HeartPulse },
+  { key: 'vitals', label: 'Blood Pressure', icon: HeartPulse },
   { key: 'injury', label: 'Injuries', icon: Shield },
   { key: 'supplements', label: 'Supplements', icon: Pill },
   { key: 'breathing', label: 'Breathing', icon: Wind },
@@ -346,28 +346,31 @@ function CompositionTab() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  VITALS TAB — Heart Rate & Blood Pressure
+//  VITALS TAB — Blood Pressure Logging + Link to Biometrics
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function VitalsTab() {
+  const navigate = useNavigate();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ date: today(), restingHR: '', systolic: '', diastolic: '', notes: '' });
+  const [form, setForm] = useState({ date: today(), systolic: '', diastolic: '', notes: '' });
   const [saving, setSaving] = useState(false);
-  const [showScanner, setShowScanner] = useState(false);
 
   useEffect(() => {
     API.get('/vitals').then((r) => setLogs(r.data)).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   const handleSave = async () => {
+    if (!form.systolic || !form.diastolic) {
+      toast.error('Enter both systolic and diastolic values');
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
         date: form.date,
-        restingHR: form.restingHR ? Number(form.restingHR) : null,
-        systolic: form.systolic ? Number(form.systolic) : null,
-        diastolic: form.diastolic ? Number(form.diastolic) : null,
+        systolic: Number(form.systolic),
+        diastolic: Number(form.diastolic),
         notes: form.notes,
       };
       const { data } = await API.post('/vitals', payload);
@@ -375,139 +378,128 @@ function VitalsTab() {
         const filtered = prev.filter((l) => l.date !== data.date);
         return [data, ...filtered];
       });
-      toast.success('Vitals saved');
-      setForm({ date: today(), restingHR: '', systolic: '', diastolic: '', notes: '' });
+      toast.success('Blood pressure saved');
+      setForm({ date: today(), systolic: '', diastolic: '', notes: '' });
     } catch {
       toast.error('Failed to save');
     }
     setSaving(false);
   };
 
-  // Detect RHR anomaly
-  const hrValues = logs.filter((l) => l.restingHR).map((l) => l.restingHR);
-  const avgHR = hrValues.length > 3 ? Math.round(hrValues.reduce((s, v) => s + v, 0) / hrValues.length) : null;
-  const latestHR = logs[0]?.restingHR;
-  const hrAlert = avgHR && latestHR && latestHR > avgHR + 8;
+  const bpLogs = logs.filter((l) => l.systolic && l.diastolic);
+  const latestBP = bpLogs[0];
+  const bpCategory = (sys, dia) => {
+    if (sys < 120 && dia < 80) return { label: 'Normal', color: 'text-emerald-400' };
+    if (sys < 130 && dia < 80) return { label: 'Elevated', color: 'text-yellow-400' };
+    if (sys < 140 || dia < 90) return { label: 'High Stage 1', color: 'text-orange-400' };
+    return { label: 'High Stage 2', color: 'text-red-400' };
+  };
 
-  const chartData = logs.slice(0, 14).map((l) => ({
+  const chartData = bpLogs.slice(0, 14).map((l) => ({
     date: dayjs(l.date).format('M/D'),
-    hr: l.restingHR,
     sys: l.systolic,
     dia: l.diastolic,
   })).reverse();
-
-  const handleScanResult = async (biometricsOrBpm) => {
-    const measuredBpm = typeof biometricsOrBpm === 'object' ? biometricsOrBpm.heartRate : biometricsOrBpm;
-    setForm((f) => ({ ...f, restingHR: String(measuredBpm || '') }));
-
-    // Save to biometrics collection if full scan data
-    if (typeof biometricsOrBpm === 'object') {
-      try {
-        await API.post('/biometrics', { date: today(), ...biometricsOrBpm });
-      } catch {}
-    }
-
-    if (!measuredBpm) return;
-    try {
-      const payload = { date: today(), restingHR: measuredBpm, systolic: form.systolic ? Number(form.systolic) : null, diastolic: form.diastolic ? Number(form.diastolic) : null, notes: 'Camera PPG measurement' };
-      const { data } = await API.post('/vitals', payload);
-      setLogs((prev) => {
-        const filtered = prev.filter((l) => l.date !== data.date);
-        return [data, ...filtered];
-      });
-      toast.success(`Saved ${measuredBpm} BPM + biometrics`);
-    } catch {
-      toast.error('Failed to save — you can save it manually');
-    }
-  };
 
   if (loading) return <LoadingState />;
 
   return (
     <div className="space-y-4">
-      {showScanner && (
-        <HeartRateMonitor
-          onResult={handleScanResult}
-          onClose={() => setShowScanner(false)}
-        />
-      )}
-
-      {/* Camera HR Scanner Card */}
-      <div className="card overflow-hidden relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-red-600/10 via-transparent to-rose-600/5" />
+      {/* Biometrics Scanner CTA */}
+      <div className="card overflow-hidden relative cursor-pointer group" onClick={() => navigate('/biometrics')}>
+        <div className="absolute inset-0 bg-gradient-to-br from-red-600/10 via-transparent to-purple-600/5 group-hover:from-red-600/15 transition-colors" />
         <div className="relative p-5">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-600 to-rose-500 flex items-center justify-center shadow-lg shadow-red-600/20 shrink-0">
               <Heart size={24} className="text-white" fill="currentColor" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-black text-white text-sm mb-0.5">Camera Heart Rate</h3>
+              <h3 className="font-black text-white text-sm mb-0.5">Biometric Scanner</h3>
               <p className="text-[10px] text-slate-400 leading-relaxed">
-                Measure your pulse using your phone camera — no wearable needed
+                Measure heart rate, HRV, SpO2, respiratory rate &amp; stress — all from your camera in 30 seconds
               </p>
             </div>
+            <ChevronRight size={18} className="text-slate-500 group-hover:text-red-400 transition-colors shrink-0" />
           </div>
-          <button onClick={() => setShowScanner(true)}
-            className="w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-red-600/20 to-rose-600/20 border border-red-500/25 text-red-400 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 active:from-red-600/30 active:to-rose-600/30 touch-manipulation">
-            <HeartPulse size={16} /> Measure Heart Rate
-          </button>
         </div>
       </div>
 
-      {hrAlert && (
-        <div className="card p-4 border-l-4 border-l-red-500">
-          <div className="flex items-start gap-2">
-            <AlertTriangle size={16} className="text-red-400 shrink-0 mt-0.5" />
-            <div className="text-xs text-red-300">
-              <strong>Elevated RHR Alert:</strong> Your resting heart rate ({latestHR} bpm) is {latestHR - avgHR} bpm above your baseline ({avgHR} bpm).
-              This may indicate overtraining, stress, or an oncoming illness.
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* Blood Pressure Log */}
       <div className="card p-5">
-        <h3 className="font-bold text-white text-sm mb-4 flex items-center gap-2">
-          <HeartPulse size={16} className="text-rose-400" />
-          Log Today's Vitals
+        <h3 className="font-bold text-white text-sm mb-1 flex items-center gap-2">
+          <HeartPulse size={16} className="text-indigo-400" />
+          Blood Pressure Log
         </h3>
-        <div className="grid grid-cols-3 gap-3 mb-3">
-          <div>
-            <label className="text-[10px] text-slate-500 font-bold block mb-1">Resting HR</label>
-            <input type="number" placeholder="bpm" value={form.restingHR}
-              onChange={(e) => setForm((f) => ({ ...f, restingHR: e.target.value }))}
-              className="w-full bg-slate-800/50 border border-slate-700/40 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:border-rose-500/50 focus:outline-none" />
+        <p className="text-[10px] text-slate-500 mb-4">
+          Log readings from your BP cuff. Camera cannot measure blood pressure.
+        </p>
+
+        {latestBP && (
+          <div className="flex items-center gap-3 p-3 bg-indigo-500/5 border border-indigo-500/15 rounded-xl mb-4">
+            <div>
+              <span className="text-lg font-black text-white">{latestBP.systolic}/{latestBP.diastolic}</span>
+              <span className="text-[10px] text-slate-500 ml-1.5">mmHg</span>
+            </div>
+            <div className={`text-[10px] font-bold ${bpCategory(latestBP.systolic, latestBP.diastolic).color}`}>
+              {bpCategory(latestBP.systolic, latestBP.diastolic).label}
+            </div>
+            <span className="text-[10px] text-slate-600 ml-auto">{dayjs(latestBP.date).format('MMM D')}</span>
           </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-3 mb-3">
           <div>
-            <label className="text-[10px] text-slate-500 font-bold block mb-1">Systolic</label>
-            <input type="number" placeholder="mmHg" value={form.systolic}
+            <label className="text-[10px] text-slate-500 font-bold block mb-1">Systolic (top)</label>
+            <input type="number" placeholder="e.g. 120" value={form.systolic}
               onChange={(e) => setForm((f) => ({ ...f, systolic: e.target.value }))}
-              className="w-full bg-slate-800/50 border border-slate-700/40 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:border-rose-500/50 focus:outline-none" />
+              className="w-full bg-slate-800/50 border border-slate-700/40 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none" />
           </div>
           <div>
-            <label className="text-[10px] text-slate-500 font-bold block mb-1">Diastolic</label>
-            <input type="number" placeholder="mmHg" value={form.diastolic}
+            <label className="text-[10px] text-slate-500 font-bold block mb-1">Diastolic (bottom)</label>
+            <input type="number" placeholder="e.g. 80" value={form.diastolic}
               onChange={(e) => setForm((f) => ({ ...f, diastolic: e.target.value }))}
-              className="w-full bg-slate-800/50 border border-slate-700/40 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:border-rose-500/50 focus:outline-none" />
+              className="w-full bg-slate-800/50 border border-slate-700/40 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none" />
           </div>
         </div>
+        <input type="text" placeholder="Notes (optional)" value={form.notes}
+          onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+          className="w-full bg-slate-800/50 border border-slate-700/40 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none mb-3" />
         <button onClick={handleSave} disabled={saving}
-          className="w-full py-2.5 rounded-xl bg-rose-600/15 border border-rose-500/25 text-rose-400 text-xs font-bold flex items-center justify-center gap-2 active:bg-rose-600/25 disabled:opacity-50 touch-manipulation">
-          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Vitals
+          className="w-full py-2.5 rounded-xl bg-indigo-600/15 border border-indigo-500/25 text-indigo-400 text-xs font-bold flex items-center justify-center gap-2 active:bg-indigo-600/25 disabled:opacity-50 touch-manipulation">
+          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Blood Pressure
         </button>
       </div>
 
+      {/* BP Reference */}
+      <div className="card p-4">
+        <div className="text-[10px] text-slate-500 font-bold uppercase mb-2">BP Reference Ranges</div>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { label: 'Normal', range: '< 120/80', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+            { label: 'Elevated', range: '120-129/< 80', color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+            { label: 'High Stage 1', range: '130-139/80-89', color: 'text-orange-400', bg: 'bg-orange-500/10' },
+            { label: 'High Stage 2', range: '≥ 140/≥ 90', color: 'text-red-400', bg: 'bg-red-500/10' },
+          ].map((r) => (
+            <div key={r.label} className={`${r.bg} rounded-lg p-2`}>
+              <div className={`text-[10px] font-bold ${r.color}`}>{r.label}</div>
+              <div className="text-[10px] text-slate-400">{r.range} mmHg</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* BP Trend Chart */}
       {chartData.length > 1 && (
         <div className="card p-5">
-          <h3 className="font-bold text-white text-sm mb-3">Heart Rate Trend</h3>
+          <h3 className="font-bold text-white text-sm mb-3">Blood Pressure Trend</h3>
           <div className="h-36">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                 <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
-                <Line type="monotone" dataKey="hr" stroke="#f43f5e" strokeWidth={2} dot={{ r: 3, fill: '#f43f5e' }} name="HR" connectNulls />
-                <Line type="monotone" dataKey="sys" stroke="#818cf8" strokeWidth={1.5} dot={{ r: 2, fill: '#818cf8' }} name="Systolic" connectNulls hide={!chartData.some((d) => d.sys)} />
+                <YAxis tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
+                <Line type="monotone" dataKey="sys" stroke="#818cf8" strokeWidth={2} dot={{ r: 3, fill: '#818cf8' }} name="Systolic" connectNulls />
+                <Line type="monotone" dataKey="dia" stroke="#a78bfa" strokeWidth={2} dot={{ r: 3, fill: '#a78bfa' }} name="Diastolic" connectNulls />
                 <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 12, fontSize: 12 }} />
               </LineChart>
             </ResponsiveContainer>
@@ -515,19 +507,23 @@ function VitalsTab() {
         </div>
       )}
 
-      {logs.length > 0 && (
+      {/* BP History */}
+      {bpLogs.length > 0 && (
         <div className="card p-5">
-          <h3 className="font-bold text-white text-sm mb-3">Recent Logs</h3>
+          <h3 className="font-bold text-white text-sm mb-3">Recent Readings</h3>
           <div className="space-y-2 max-h-60 overflow-y-auto">
-            {logs.slice(0, 10).map((l) => (
-              <div key={l._id || l.date} className="flex items-center justify-between p-2.5 bg-slate-800/30 rounded-xl">
-                <span className="text-xs text-slate-400">{dayjs(l.date).format('MMM D')}</span>
-                <div className="flex items-center gap-4 text-xs">
-                  {l.restingHR && <span className="text-rose-400 font-bold">{l.restingHR} bpm</span>}
-                  {l.systolic && l.diastolic && <span className="text-indigo-400 font-bold">{l.systolic}/{l.diastolic}</span>}
+            {bpLogs.slice(0, 10).map((l) => {
+              const cat = bpCategory(l.systolic, l.diastolic);
+              return (
+                <div key={l._id || l.date} className="flex items-center justify-between p-2.5 bg-slate-800/30 rounded-xl">
+                  <span className="text-xs text-slate-400">{dayjs(l.date).format('MMM D')}</span>
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="text-indigo-400 font-bold">{l.systolic}/{l.diastolic}</span>
+                    <span className={`text-[10px] font-bold ${cat.color}`}>{cat.label}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
