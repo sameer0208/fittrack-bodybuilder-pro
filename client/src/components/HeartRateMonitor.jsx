@@ -2,18 +2,22 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Heart, X, Camera, Loader2, Save, RotateCcw, Fingerprint } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const SAMPLE_RATE = 30;
-const MEASUREMENT_SECONDS = 30;
+const MEASUREMENT_SECONDS = 25;
 const MIN_VALID_BPM = 40;
 const MAX_VALID_BPM = 200;
-const WARMUP_SECONDS = 3;
-const WAVEFORM_POINTS = 200;
+const WARMUP_FRAMES = 60;
+const WAVEFORM_POINTS = 150;
+const TARGET_FPS = 30;
+const FRAME_INTERVAL = 1000 / TARGET_FPS;
 
-function peakDetect(signal, minDistance = 8) {
+function peakDetect(signal, minDist) {
   const peaks = [];
-  if (signal.length < 3) return peaks;
+  if (signal.length < 5) return peaks;
+
   const mean = signal.reduce((s, v) => s + v, 0) / signal.length;
-  const threshold = mean * 1.02;
+  const stdDev = Math.sqrt(signal.reduce((s, v) => s + (v - mean) ** 2, 0) / signal.length);
+  const threshold = mean + stdDev * 0.4;
+
   for (let i = 2; i < signal.length - 2; i++) {
     if (
       signal[i] > threshold &&
@@ -22,7 +26,7 @@ function peakDetect(signal, minDistance = 8) {
       signal[i] >= signal[i + 1] &&
       signal[i] >= signal[i + 2]
     ) {
-      if (peaks.length === 0 || i - peaks[peaks.length - 1] >= minDistance) {
+      if (peaks.length === 0 || i - peaks[peaks.length - 1] >= minDist) {
         peaks.push(i);
       }
     }
@@ -30,41 +34,48 @@ function peakDetect(signal, minDistance = 8) {
   return peaks;
 }
 
-function calcBPM(peaks, sampleRate) {
-  if (peaks.length < 2) return 0;
+function calcBPM(peaks, fps) {
+  if (peaks.length < 3) return 0;
   const intervals = [];
   for (let i = 1; i < peaks.length; i++) {
     intervals.push(peaks[i] - peaks[i - 1]);
   }
   intervals.sort((a, b) => a - b);
-  const trimmed = intervals.slice(
-    Math.floor(intervals.length * 0.1),
-    Math.ceil(intervals.length * 0.9)
-  );
-  if (trimmed.length === 0) return 0;
-  const avgInterval = trimmed.reduce((s, v) => s + v, 0) / trimmed.length;
-  const bpm = Math.round((sampleRate * 60) / avgInterval);
+  const trim = Math.max(1, Math.floor(intervals.length * 0.15));
+  const trimmed = intervals.slice(trim, intervals.length - trim);
+  if (!trimmed.length) return 0;
+  const avg = trimmed.reduce((s, v) => s + v, 0) / trimmed.length;
+  const bpm = Math.round((fps * 60) / avg);
   return bpm >= MIN_VALID_BPM && bpm <= MAX_VALID_BPM ? bpm : 0;
 }
 
-function smoothSignal(signal, windowSize = 5) {
-  const result = [];
-  for (let i = 0; i < signal.length; i++) {
-    let sum = 0, count = 0;
-    for (let j = Math.max(0, i - windowSize); j <= Math.min(signal.length - 1, i + windowSize); j++) {
-      sum += signal[j];
-      count++;
+function movingAvg(arr, w) {
+  const out = [];
+  for (let i = 0; i < arr.length; i++) {
+    let s = 0, c = 0;
+    for (let j = Math.max(0, i - w); j <= Math.min(arr.length - 1, i + w); j++) {
+      s += arr[j]; c++;
     }
-    result.push(sum / count);
+    out.push(s / c);
   }
-  return result;
+  return out;
 }
 
-function bandpass(signal) {
-  if (signal.length < 5) return signal;
-  const mean = signal.reduce((s, v) => s + v, 0) / signal.length;
-  const detrended = signal.map((v) => v - mean);
-  return smoothSignal(detrended, 3);
+function detrend(signal) {
+  if (signal.length < 2) return signal;
+  const n = signal.length;
+  let sx = 0, sy = 0, sxy = 0, sxx = 0;
+  for (let i = 0; i < n; i++) {
+    sx += i; sy += signal[i]; sxy += i * signal[i]; sxx += i * i;
+  }
+  const slope = (n * sxy - sx * sy) / (n * sxx - sx * sx);
+  const intercept = (sy - slope * sx) / n;
+  return signal.map((v, i) => v - (slope * i + intercept));
+}
+
+function processSignal(raw) {
+  const dt = detrend(raw);
+  return movingAvg(dt, 2);
 }
 
 export default function HeartRateMonitor({ onResult, onClose }) {
@@ -76,22 +87,31 @@ export default function HeartRateMonitor({ onResult, onClose }) {
   const [signalQuality, setSignalQuality] = useState(0);
   const [beatPulse, setBeatPulse] = useState(false);
   const [waveform, setWaveform] = useState([]);
+  const [debugInfo, setDebugInfo] = useState('');
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
-  const animRef = useRef(null);
+  const timerRef = useRef(null);
   const bufferRef = useRef([]);
-  const startTimeRef = useRef(0);
+  const rawFrameCount = useRef(0);
+  const measureStartRef = useRef(0);
   const lastBeatRef = useRef(0);
-  const frameCountRef = useRef(0);
+  const actualFpsRef = useRef(TARGET_FPS);
+  const fpsFrames = useRef([]);
+  const phaseRef = useRef('idle');
 
   const stopCamera = useCallback(() => {
-    if (animRef.current) cancelAnimationFrame(animRef.current);
-    animRef.current = null;
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
   }, []);
 
@@ -101,6 +121,7 @@ export default function HeartRateMonitor({ onResult, onClose }) {
   }, []);
 
   const startMeasurement = useCallback(async () => {
+    phaseRef.current = 'starting';
     setPhase('starting');
     setBpm(0);
     setLiveBpm(0);
@@ -108,165 +129,216 @@ export default function HeartRateMonitor({ onResult, onClose }) {
     setFingerDetected(false);
     setSignalQuality(0);
     setWaveform([]);
+    setDebugInfo('Requesting camera...');
     bufferRef.current = [];
-    frameCountRef.current = 0;
+    rawFrameCount.current = 0;
+    fpsFrames.current = [];
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: 'environment',
-          width: { ideal: 128 },
-          height: { ideal: 128 },
-          frameRate: { ideal: SAMPLE_RATE },
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 160, max: 320 },
+          height: { ideal: 160, max: 320 },
         },
       });
       streamRef.current = stream;
 
       const track = stream.getVideoTracks()[0];
+      let torchOn = false;
       try {
         await track.applyConstraints({ advanced: [{ torch: true }] });
+        torchOn = true;
       } catch {
-        // Torch not supported — continue without it
+        try {
+          const caps = track.getCapabilities?.();
+          if (caps?.torch) {
+            await track.applyConstraints({ advanced: [{ torch: true }] });
+            torchOn = true;
+          }
+        } catch {}
       }
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
+      const video = videoRef.current;
+      if (!video) { stopCamera(); setPhase('idle'); return; }
 
-      startTimeRef.current = performance.now();
-      setPhase('measuring');
+      video.srcObject = stream;
+      video.setAttribute('playsinline', '');
+      video.muted = true;
+
+      await new Promise((resolve, reject) => {
+        video.onloadedmetadata = () => { video.play().then(resolve).catch(reject); };
+        setTimeout(reject, 5000);
+      });
+
+      await new Promise((r) => setTimeout(r, 500));
 
       const canvas = canvasRef.current;
-      const ctx = canvas?.getContext('2d', { willReadFrequently: true });
-      if (!canvas || !ctx) return;
-
+      if (!canvas) { stopCamera(); setPhase('idle'); return; }
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
       canvas.width = 64;
       canvas.height = 64;
 
-      const processFrame = () => {
-        if (!streamRef.current) return;
+      setDebugInfo(torchOn ? 'Torch ON — place finger' : 'No torch — press finger firmly');
+      phaseRef.current = 'measuring';
+      setPhase('measuring');
+      measureStartRef.current = performance.now();
+
+      timerRef.current = setInterval(() => {
+        if (phaseRef.current !== 'measuring' || !streamRef.current) return;
 
         const now = performance.now();
-        const elapsed = (now - startTimeRef.current) / 1000;
-        frameCountRef.current++;
 
-        if (videoRef.current && ctx) {
-          ctx.drawImage(videoRef.current, 0, 0, 64, 64);
-          const imageData = ctx.getImageData(16, 16, 32, 32).data;
-
-          let redSum = 0, greenSum = 0, count = 0;
-          for (let i = 0; i < imageData.length; i += 4) {
-            redSum += imageData[i];
-            greenSum += imageData[i + 1];
-            count++;
-          }
-          const avgRed = redSum / count;
-          const avgGreen = greenSum / count;
-
-          const isFinger = avgRed > 100 && avgRed > avgGreen * 1.4;
-          setFingerDetected(isFinger);
-
-          if (isFinger && elapsed > WARMUP_SECONDS) {
-            bufferRef.current.push(avgRed);
-
-            const buffer = bufferRef.current;
-            const recentWindow = buffer.slice(-SAMPLE_RATE * 8);
-
-            if (recentWindow.length > SAMPLE_RATE * 3) {
-              const filtered = bandpass(recentWindow);
-              const peaks = peakDetect(filtered, Math.floor(SAMPLE_RATE * 0.35));
-              const currentBpm = calcBPM(peaks, SAMPLE_RATE);
-
-              if (currentBpm > 0) {
-                setLiveBpm(currentBpm);
-
-                const variance = filtered.reduce((s, v) => s + v * v, 0) / filtered.length;
-                const quality = Math.min(100, Math.round(Math.sqrt(variance) * 50));
-                setSignalQuality(quality);
-
-                if (peaks.length >= 2) {
-                  const lastInterval = peaks[peaks.length - 1] - peaks[peaks.length - 2];
-                  const beatInterval = (lastInterval / SAMPLE_RATE) * 1000;
-                  if (now - lastBeatRef.current > beatInterval * 0.8) {
-                    lastBeatRef.current = now;
-                    triggerBeatPulse();
-                  }
-                }
-              }
-            }
-
-            const waveSlice = buffer.slice(-WAVEFORM_POINTS);
-            if (waveSlice.length > 10) {
-              const min = Math.min(...waveSlice);
-              const max = Math.max(...waveSlice);
-              const range = max - min || 1;
-              setWaveform(waveSlice.map((v) => (v - min) / range));
-            }
-          }
+        fpsFrames.current.push(now);
+        fpsFrames.current = fpsFrames.current.filter((t) => now - t < 2000);
+        if (fpsFrames.current.length > 2) {
+          actualFpsRef.current = fpsFrames.current.length / 2;
         }
 
-        const measuringElapsed = Math.max(0, elapsed - WARMUP_SECONDS);
-        const prog = Math.min(100, (measuringElapsed / MEASUREMENT_SECONDS) * 100);
-        setProgress(prog);
+        rawFrameCount.current++;
+        const elapsed = (now - measureStartRef.current) / 1000;
 
-        if (elapsed >= MEASUREMENT_SECONDS + WARMUP_SECONDS) {
-          const buffer = bufferRef.current;
-          if (buffer.length > SAMPLE_RATE * 5) {
-            const filtered = bandpass(buffer);
-            const peaks = peakDetect(filtered, Math.floor(SAMPLE_RATE * 0.35));
-            const finalBpm = calcBPM(peaks, SAMPLE_RATE);
-            setBpm(finalBpm || liveBpm);
-          } else {
-            setBpm(liveBpm);
-          }
-          stopCamera();
-          setPhase('done');
+        try {
+          ctx.drawImage(video, 0, 0, 64, 64);
+        } catch { return; }
+
+        const data = ctx.getImageData(8, 8, 48, 48).data;
+        let rSum = 0, gSum = 0, bSum = 0, px = 0;
+        for (let i = 0; i < data.length; i += 16) {
+          rSum += data[i];
+          gSum += data[i + 1];
+          bSum += data[i + 2];
+          px++;
+        }
+        const avgR = rSum / px;
+        const avgG = gSum / px;
+        const avgB = bSum / px;
+
+        const isFinger = avgR > 80 && (avgR > avgG * 1.2) && (avgR > avgB * 1.3);
+        setFingerDetected(isFinger);
+
+        if (rawFrameCount.current <= WARMUP_FRAMES) {
+          setDebugInfo(`Stabilizing... ${WARMUP_FRAMES - rawFrameCount.current} frames`);
+          if (isFinger) bufferRef.current.push(avgR);
+          const prog = Math.min(5, (rawFrameCount.current / WARMUP_FRAMES) * 5);
+          setProgress(prog);
           return;
         }
 
-        animRef.current = requestAnimationFrame(processFrame);
-      };
+        if (isFinger) {
+          bufferRef.current.push(avgR);
+        }
 
-      animRef.current = requestAnimationFrame(processFrame);
+        const buffer = bufferRef.current;
+        const fps = actualFpsRef.current;
+        const minSamples = Math.floor(fps * 4);
+
+        if (buffer.length > minSamples) {
+          const window = buffer.slice(-Math.floor(fps * 10));
+          const filtered = processSignal(window);
+          const minDist = Math.max(5, Math.floor(fps * 0.33));
+          const peaks = peakDetect(filtered, minDist);
+          const currentBpm = calcBPM(peaks, fps);
+
+          if (currentBpm > 0) {
+            setLiveBpm(currentBpm);
+
+            const variance = filtered.reduce((s, v) => s + v * v, 0) / filtered.length;
+            const q = Math.min(100, Math.round(Math.sqrt(variance) * 80));
+            setSignalQuality(Math.max(q, 15));
+
+            if (peaks.length >= 2) {
+              const lastGap = peaks[peaks.length - 1] - peaks[peaks.length - 2];
+              const interval = (lastGap / fps) * 1000;
+              if (now - lastBeatRef.current > interval * 0.7) {
+                lastBeatRef.current = now;
+                triggerBeatPulse();
+              }
+            }
+          }
+
+          setDebugInfo(`Samples: ${buffer.length} | FPS: ${Math.round(fps)} | Peaks: ${peaks.length} | R: ${Math.round(avgR)}`);
+        }
+
+        if (buffer.length > 5) {
+          const slice = buffer.slice(-WAVEFORM_POINTS);
+          const min = Math.min(...slice);
+          const max = Math.max(...slice);
+          const range = max - min || 1;
+          setWaveform(slice.map((v) => (v - min) / range));
+        }
+
+        const warmupSec = WARMUP_FRAMES / TARGET_FPS;
+        const measuringTime = Math.max(0, elapsed - warmupSec);
+        const prog = Math.min(100, (measuringTime / MEASUREMENT_SECONDS) * 100);
+        setProgress(prog);
+
+        if (measuringTime >= MEASUREMENT_SECONDS) {
+          phaseRef.current = 'done';
+
+          let finalBpm = 0;
+          if (buffer.length > fps * 5) {
+            const filtered = processSignal(buffer);
+            const minDist = Math.max(5, Math.floor(fps * 0.33));
+            const peaks = peakDetect(filtered, minDist);
+            finalBpm = calcBPM(peaks, fps);
+          }
+          setBpm(finalBpm || liveBpm || 0);
+          stopCamera();
+          setPhase('done');
+        }
+      }, FRAME_INTERVAL);
+
     } catch (err) {
       console.error('Camera error:', err);
-      toast.error('Camera access denied or not available');
+      toast.error(err.name === 'NotAllowedError'
+        ? 'Camera permission denied — please allow camera access'
+        : 'Could not access camera');
+      phaseRef.current = 'idle';
       setPhase('idle');
     }
   }, [stopCamera, triggerBeatPulse, liveBpm]);
 
   useEffect(() => {
-    return () => stopCamera();
+    return () => {
+      phaseRef.current = 'idle';
+      stopCamera();
+    };
   }, [stopCamera]);
 
   const handleSave = () => {
-    if (bpm > 0 && onResult) {
-      onResult(bpm);
-    }
+    if (bpm > 0 && onResult) onResult(bpm);
     onClose();
   };
 
   const handleRetry = () => {
+    phaseRef.current = 'idle';
     stopCamera();
     setPhase('idle');
     setBpm(0);
     setLiveBpm(0);
+    setWaveform([]);
   };
 
-  // Animated waveform path
   const waveformPath = useMemo(() => {
     if (waveform.length < 2) return '';
     const step = 100 / (waveform.length - 1);
     return waveform.map((v, i) => {
       const x = i * step;
-      const y = 80 - v * 60;
+      const y = 85 - v * 70;
       return i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`;
     }).join(' ');
   }, [waveform]);
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.95)' }}>
+      {/* Always-mounted hidden video & canvas so refs are available */}
+      <video ref={videoRef} playsInline muted
+        style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }} />
+      <canvas ref={canvasRef}
+        style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }} />
+
+      {/* Background glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-20"
           style={{ background: 'radial-gradient(circle, rgba(239,68,68,0.3) 0%, transparent 70%)' }} />
@@ -276,14 +348,15 @@ export default function HeartRateMonitor({ onResult, onClose }) {
         )}
       </div>
 
-      <button onClick={() => { stopCamera(); onClose(); }}
+      {/* Close button */}
+      <button onClick={() => { phaseRef.current = 'idle'; stopCamera(); onClose(); }}
         className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white touch-manipulation">
         <X size={20} />
       </button>
 
       <div className="relative w-full max-w-sm mx-4">
 
-        {/* ── IDLE STATE ── */}
+        {/* ── IDLE ── */}
         {phase === 'idle' && (
           <div className="text-center space-y-6">
             <div className="relative w-32 h-32 mx-auto">
@@ -293,19 +366,17 @@ export default function HeartRateMonitor({ onResult, onClose }) {
                 <Heart size={40} className="text-white" fill="currentColor" />
               </div>
             </div>
-
             <div>
               <h2 className="text-2xl font-black text-white mb-2">Heart Rate Scanner</h2>
               <p className="text-sm text-slate-400 max-w-xs mx-auto leading-relaxed">
-                Place your <strong className="text-red-400">fingertip</strong> gently over the <strong className="text-red-400">rear camera</strong> and hold still for 30 seconds.
+                Place your <strong className="text-red-400">fingertip</strong> gently over the <strong className="text-red-400">rear camera</strong> and hold still for 25 seconds.
               </p>
             </div>
-
             <div className="space-y-3 text-left max-w-xs mx-auto">
               {[
-                { icon: Fingerprint, text: 'Cover the camera lens completely with your finger' },
-                { icon: Camera, text: 'The flashlight will turn on automatically' },
-                { icon: Heart, text: 'Stay still — movement affects accuracy' },
+                { icon: Fingerprint, text: 'Cover the camera lens completely — apply light pressure' },
+                { icon: Camera, text: 'The flashlight will turn on automatically if supported' },
+                { icon: Heart, text: 'Stay very still — even tiny movements affect the reading' },
               ].map(({ icon: Icon, text }, i) => (
                 <div key={i} className="flex items-start gap-3 p-3 bg-white/[0.03] border border-white/5 rounded-xl">
                   <Icon size={16} className="text-red-400 shrink-0 mt-0.5" />
@@ -313,44 +384,37 @@ export default function HeartRateMonitor({ onResult, onClose }) {
                 </div>
               ))}
             </div>
-
             <button onClick={startMeasurement}
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-600 to-rose-500 text-white font-black text-sm uppercase tracking-wider shadow-xl shadow-red-600/25 active:shadow-red-600/40 active:scale-[0.98] transition-all touch-manipulation flex items-center justify-center gap-2">
               <Heart size={18} /> Start Measurement
             </button>
-
             <p className="text-[10px] text-slate-600 leading-relaxed">
               For informational purposes only. Not a medical device.
             </p>
           </div>
         )}
 
-        {/* ── STARTING STATE ── */}
+        {/* ── STARTING ── */}
         {phase === 'starting' && (
           <div className="text-center space-y-4">
             <Loader2 size={48} className="text-red-400 animate-spin mx-auto" />
             <p className="text-sm text-slate-300 font-bold">Accessing camera...</p>
+            <p className="text-[10px] text-slate-500">Place your finger on the camera now</p>
           </div>
         )}
 
-        {/* ── MEASURING STATE ── */}
+        {/* ── MEASURING ── */}
         {phase === 'measuring' && (
           <div className="space-y-5">
-            {/* Hidden video & canvas */}
-            <video ref={videoRef} playsInline muted className="hidden" />
-            <canvas ref={canvasRef} className="hidden" />
-
             {/* Heart Animation */}
             <div className="text-center">
               <div className="relative w-28 h-28 mx-auto mb-4">
-                {/* Pulse rings */}
                 {beatPulse && (
                   <>
                     <div className="absolute inset-0 rounded-full border-2 border-red-500/40 animate-ping" />
                     <div className="absolute -inset-3 rounded-full border border-red-500/20 animate-ping" style={{ animationDelay: '0.1s' }} />
                   </>
                 )}
-                {/* Glow */}
                 <div className="absolute inset-0 rounded-full transition-all duration-200"
                   style={{
                     background: beatPulse
@@ -358,7 +422,6 @@ export default function HeartRateMonitor({ onResult, onClose }) {
                       : 'radial-gradient(circle, rgba(239,68,68,0.15) 0%, transparent 70%)',
                     transform: beatPulse ? 'scale(1.15)' : 'scale(1)',
                   }} />
-                {/* Heart icon */}
                 <div className="absolute inset-0 flex items-center justify-center transition-transform duration-150"
                   style={{ transform: beatPulse ? 'scale(1.2)' : 'scale(1)' }}>
                   <Heart size={52} className="text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.5)]"
@@ -366,7 +429,6 @@ export default function HeartRateMonitor({ onResult, onClose }) {
                 </div>
               </div>
 
-              {/* Live BPM */}
               <div className="mb-1">
                 <span className="text-5xl font-black text-white tabular-nums tracking-tight transition-all duration-300"
                   style={{ textShadow: beatPulse ? '0 0 30px rgba(239,68,68,0.6)' : 'none' }}>
@@ -375,7 +437,6 @@ export default function HeartRateMonitor({ onResult, onClose }) {
                 <span className="text-lg text-red-400 font-bold ml-2">BPM</span>
               </div>
 
-              {/* Finger detection status */}
               <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold transition-all ${
                 fingerDetected
                   ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
@@ -388,51 +449,42 @@ export default function HeartRateMonitor({ onResult, onClose }) {
 
             {/* Live Waveform */}
             <div className="relative h-24 bg-black/40 rounded-2xl border border-red-500/10 overflow-hidden p-2">
-              <div className="absolute top-2 left-3 text-[9px] text-red-400/60 font-bold uppercase tracking-wider">ECG Waveform</div>
-              {/* Grid lines */}
+              <div className="absolute top-2 left-3 text-[9px] text-red-400/60 font-bold uppercase tracking-wider">PPG Waveform</div>
               <svg className="absolute inset-0 w-full h-full opacity-10" preserveAspectRatio="none">
                 {[20, 40, 60, 80].map((y) => (
                   <line key={y} x1="0" y1={`${y}%`} x2="100%" y2={`${y}%`} stroke="#ef4444" strokeWidth="0.5" />
                 ))}
                 {Array.from({ length: 20 }, (_, i) => (
-                  <line key={i} x1={`${i * 5}%`} y1="0" x2={`${i * 5}%`} y2="100%" stroke="#ef4444" strokeWidth="0.5" />
+                  <line key={`v${i}`} x1={`${i * 5}%`} y1="0" x2={`${i * 5}%`} y2="100%" stroke="#ef4444" strokeWidth="0.5" />
                 ))}
               </svg>
-              {/* Waveform line */}
               <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full relative z-10">
+                <defs>
+                  <linearGradient id="waveGrad" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#ef4444" stopOpacity="0.1" />
+                    <stop offset="50%" stopColor="#ef4444" stopOpacity="0.8" />
+                    <stop offset="100%" stopColor="#ef4444" stopOpacity="1" />
+                  </linearGradient>
+                  <linearGradient id="waveFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ef4444" stopOpacity="0.15" />
+                    <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+                  </linearGradient>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="2" result="blur" />
+                    <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                  </filter>
+                </defs>
                 {waveformPath && (
                   <>
-                    <defs>
-                      <linearGradient id="waveGrad" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#ef4444" stopOpacity="0.1" />
-                        <stop offset="50%" stopColor="#ef4444" stopOpacity="0.8" />
-                        <stop offset="100%" stopColor="#ef4444" stopOpacity="1" />
-                      </linearGradient>
-                      <linearGradient id="waveFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#ef4444" stopOpacity="0.15" />
-                        <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
-                      </linearGradient>
-                    </defs>
                     <path d={waveformPath + ' L 100 100 L 0 100 Z'} fill="url(#waveFill)" />
                     <path d={waveformPath} fill="none" stroke="url(#waveGrad)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    {/* Glowing dot at the end */}
                     {waveform.length > 0 && (
-                      <circle cx="100" cy={80 - waveform[waveform.length - 1] * 60} r="2.5"
-                        fill="#ef4444" filter="url(#glow)">
-                      </circle>
+                      <circle cx="100" cy={85 - waveform[waveform.length - 1] * 70} r="2.5"
+                        fill="#ef4444" filter="url(#glow)" />
                     )}
-                    <defs>
-                      <filter id="glow">
-                        <feGaussianBlur stdDeviation="2" result="blur" />
-                        <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                      </filter>
-                    </defs>
                   </>
                 )}
               </svg>
-              {/* Scan line */}
-              <div className="absolute top-0 bottom-0 w-px bg-red-400/50 transition-all duration-100"
-                style={{ left: `${progress}%` }} />
             </div>
 
             {/* Signal Quality */}
@@ -448,47 +500,39 @@ export default function HeartRateMonitor({ onResult, onClose }) {
               <span className="text-[10px] text-slate-400 w-10 text-right">{signalQuality}%</span>
             </div>
 
-            {/* Progress Bar */}
+            {/* Progress */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[10px] text-slate-500 font-bold">MEASURING</span>
                 <span className="text-[10px] text-slate-400 tabular-nums">{Math.round(progress)}%</span>
               </div>
-              <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden relative">
-                <div className="h-full rounded-full transition-all duration-300 relative overflow-hidden"
-                  style={{
-                    width: `${progress}%`,
-                    background: 'linear-gradient(90deg, #dc2626, #ef4444, #f87171)',
-                  }}>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shimmer_1.5s_infinite]"
-                    style={{ animation: 'shimmer 1.5s infinite linear', backgroundSize: '200% 100%' }} />
-                </div>
+              <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-300"
+                  style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #dc2626, #ef4444, #f87171)' }} />
               </div>
             </div>
 
-            <button onClick={() => { stopCamera(); setPhase('idle'); }}
+            {/* Debug info */}
+            <div className="text-[9px] text-slate-600 text-center font-mono">{debugInfo}</div>
+
+            <button onClick={() => { phaseRef.current = 'idle'; stopCamera(); setPhase('idle'); }}
               className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-slate-400 text-xs font-bold touch-manipulation">
               Cancel
             </button>
           </div>
         )}
 
-        {/* ── DONE STATE ── */}
+        {/* ── DONE ── */}
         {phase === 'done' && (
           <div className="text-center space-y-6">
-            <video ref={videoRef} className="hidden" />
-            <canvas ref={canvasRef} className="hidden" />
-
-            {/* Result heart */}
             <div className="relative w-36 h-36 mx-auto">
-              <div className="absolute inset-0 rounded-full bg-red-500/10" style={{ animation: 'pulse 2s infinite' }} />
-              <div className="absolute inset-3 rounded-full bg-red-500/15" style={{ animation: 'pulse 2s infinite 0.3s' }} />
+              <div className="absolute inset-0 rounded-full bg-red-500/10 animate-pulse" />
+              <div className="absolute inset-3 rounded-full bg-red-500/15 animate-pulse" style={{ animationDelay: '0.3s' }} />
               <div className="absolute inset-6 rounded-full bg-gradient-to-br from-red-600 to-rose-500 flex items-center justify-center shadow-2xl shadow-red-600/40">
                 <Heart size={44} className="text-white" fill="currentColor" />
               </div>
             </div>
 
-            {/* BPM Result */}
             <div>
               {bpm > 0 ? (
                 <>
@@ -512,13 +556,12 @@ export default function HeartRateMonitor({ onResult, onClose }) {
                 <>
                   <div className="text-xl font-bold text-slate-400 mb-2">Could not detect heart rate</div>
                   <p className="text-xs text-slate-500 max-w-xs mx-auto">
-                    Make sure your finger fully covers the camera lens and hold very still. Try again in a well-lit room.
+                    Press your finger firmly on the rear camera lens. Make sure you cover the entire lens and hold very still. The flashlight should be shining through your fingertip.
                   </p>
                 </>
               )}
             </div>
 
-            {/* Actions */}
             <div className="space-y-2">
               {bpm > 0 && (
                 <button onClick={handleSave}
