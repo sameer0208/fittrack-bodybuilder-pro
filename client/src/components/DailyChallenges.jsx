@@ -18,7 +18,7 @@ API.interceptors.request.use((cfg) => {
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 export default function DailyChallenges() {
-  const { user, getWorkoutLog, getNutritionLog } = useApp();
+  const { user, getWorkoutLog, getNutritionLog, fetchWorkoutLog, fetchNutritionLog } = useApp();
   const { workoutPlan, weekSchedule } = useWorkoutPlan();
   const [challenges, setChallenges] = useState([]);
   const [completedIds, setCompletedIds] = useState(new Set());
@@ -41,11 +41,16 @@ export default function DailyChallenges() {
     }).catch(() => {});
   }, []);
 
-  const buildContext = useCallback(() => {
+  const buildContext = useCallback(async () => {
     const todayKey = dayjs().format('YYYY-MM-DD');
-    const nutrition = getNutritionLog(todayKey);
     const todayDayName = DAY_NAMES[dayjs().day()];
     const sessions = weekSchedule.find((d) => d.key === todayDayName)?.sessions || [];
+
+    // Fetch fresh data from server instead of reading stale cache
+    const [nutrition, ...workoutLogs] = await Promise.all([
+      fetchNutritionLog(todayKey).catch(() => getNutritionLog(todayKey)),
+      ...sessions.map((sk) => fetchWorkoutLog(sk).catch(() => getWorkoutLog(sk))),
+    ]);
 
     let totalCalories = 0, totalProtein = 0, totalFoodItems = 0, mealsLogged = 0;
     const meals = {};
@@ -65,8 +70,8 @@ export default function DailyChallenges() {
     let workoutCompleted = false;
     let totalVolume = 0;
     let allSetsCompleted = true;
-    for (const sessionKey of sessions) {
-      const log = getWorkoutLog(sessionKey);
+    sessions.forEach((sessionKey, i) => {
+      const log = workoutLogs[i];
       if (log?.completed) workoutCompleted = true;
       if (log?.totalVolume) totalVolume += log.totalVolume;
       const plan = workoutPlan[sessionKey];
@@ -84,7 +89,7 @@ export default function DailyChallenges() {
       } else if (plan) {
         allSetsCompleted = false;
       }
-    }
+    });
 
     const proteinGoal = user?.proteinTarget || Math.round((user?.currentWeight || 70) * 2.2);
     const calorieGoal = user?.dailyCalories || 3000;
@@ -96,11 +101,11 @@ export default function DailyChallenges() {
       proteinGoal, calorieGoal, waterGoal,
       waterMl: nutrition?.waterMl || 0,
     };
-  }, [user, getWorkoutLog, getNutritionLog, weekSchedule, workoutPlan]);
+  }, [user, getWorkoutLog, getNutritionLog, fetchWorkoutLog, fetchNutritionLog, weekSchedule, workoutPlan]);
 
   const checkChallenges = useCallback(async () => {
     setChecking(true);
-    const ctx = buildContext();
+    const ctx = await buildContext();
     let newCompletions = 0;
 
     for (const ch of challenges) {
@@ -127,19 +132,21 @@ export default function DailyChallenges() {
     setChecking(false);
   }, [challenges, completedIds, buildContext]);
 
-  // Auto-check once on mount
+  // Auto-check once on mount — fetch fresh server data before evaluating
   const autoCheckedRef = useRef(false);
   useEffect(() => {
     if (challenges.length > 0 && !autoCheckedRef.current) {
       autoCheckedRef.current = true;
-      const timer = setTimeout(() => {
-        const ctx = buildContext();
-        let found = false;
-        for (const ch of challenges) {
-          if (!completedIds.has(ch.id) && ch.check(ctx)) { found = true; break; }
-        }
-        if (found) checkChallenges();
-      }, 1000);
+      const timer = setTimeout(async () => {
+        try {
+          const ctx = await buildContext();
+          let found = false;
+          for (const ch of challenges) {
+            if (!completedIds.has(ch.id) && ch.check(ctx)) { found = true; break; }
+          }
+          if (found) checkChallenges();
+        } catch {}
+      }, 1500);
       return () => clearTimeout(timer);
     }
   }, [challenges, completedIds, buildContext, checkChallenges]);
