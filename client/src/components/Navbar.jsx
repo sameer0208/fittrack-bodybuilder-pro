@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, TrendingUp, User, LogOut, Dumbbell, UtensilsCrossed, Salad, BarChart3, Ruler, Heart, Trophy, Users, MoreHorizontal, X, BookOpen, Flame, Activity, HeartPulse, Footprints } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, User, LogOut, Dumbbell, UtensilsCrossed, Salad, BarChart3, Ruler, Heart, Trophy, Users, MoreHorizontal, X, BookOpen, Flame, Activity, HeartPulse, Footprints, Headphones } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import NotificationCenter from './NotificationCenter';
 import ConfirmDialog from './ConfirmDialog';
@@ -28,6 +28,7 @@ const secondaryNav = [
   { to: '/health-insights', icon: Activity, label: 'Insights' },
   { to: '/biometrics',      icon: HeartPulse, label: 'Biometrics' },
   { to: '/steps',            icon: Footprints, label: 'Steps' },
+  { to: '/music',            icon: Headphones, label: 'Music' },
   { to: '/achievements',    icon: Trophy,   label: 'Achievements' },
   { to: '/leaderboard',     icon: Users,    label: 'Leaderboard' },
   { to: '/guide',            icon: BookOpen, label: 'Feature Guide' },

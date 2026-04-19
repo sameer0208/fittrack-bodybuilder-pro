@@ -5,7 +5,7 @@ import {
   Dumbbell, UtensilsCrossed, Droplets, Users, Trophy,
   Calendar, BarChart3, Camera, Heart, Zap, Target, Flame,
   ChevronRight, ArrowLeft, Sparkles, Star, BookOpen,
-  Ruler, TrendingUp, Bot, Clock, Crown, Footprints,
+  Ruler, TrendingUp, Bot, Clock, Crown, Footprints, Headphones,
   ChevronDown, Rocket, Activity, Wind, Shield, HeartPulse, Pill,
 } from 'lucide-react';
 
@@ -280,6 +280,19 @@ const FEATURES = [
     accent: 'text-orange-400',
     ring: 'ring-orange-500/30',
     link: '/steps',
+  },
+  {
+    id: 'music',
+    icon: Headphones,
+    title: 'Music Player',
+    tagline: 'Fuel your workout with the perfect beats.',
+    description: 'Built-in music player powered by JioSaavn with a massive library of songs. Browse curated workout categories like Gym Motivation, Hip Hop, EDM, Bollywood Beats, and more. Search any song, build your queue, and control playback from anywhere in the app via the mini player. Features a cinematic full-screen player with real-time audio visualizer, shuffle, repeat, and lock screen controls.',
+    highlights: ['Millions of songs via JioSaavn', 'Curated workout music categories', 'Real-time audio frequency visualizer', 'Mini player always accessible', 'Queue management & shuffle/repeat', 'Lock screen & media controls'],
+    color: 'from-red-600 to-orange-500',
+    glow: 'shadow-red-500/20',
+    accent: 'text-red-400',
+    ring: 'ring-red-500/30',
+    link: '/music',
   },
   {
     id: 'achievements',
