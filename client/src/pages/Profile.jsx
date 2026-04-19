@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useApp } from '../context/AppContext';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import API from '../utils/api';
 import {
   User, Scale, Ruler, Target, Save, LogOut,
   Server, Wifi, WifiOff, ChevronDown, ChevronUp,
@@ -13,13 +13,6 @@ import dayjs from 'dayjs';
 import ConfirmDialog from '../components/ConfirmDialog';
 import useWorkoutPlan from '../hooks/useWorkoutPlan';
 import { subscribeToPush, unsubscribeFromPush } from '../utils/pushSubscription';
-
-const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
-API.interceptors.request.use((cfg) => {
-  const t = localStorage.getItem('ft_token');
-  if (t) cfg.headers.Authorization = `Bearer ${t}`;
-  return cfg;
-});
 
 const GOAL_LABELS = { bulk: 'Bulking — Muscle Mass', cut: 'Cutting — Fat Loss', maintain: 'Maintenance — Stay Fit', strength: 'Strength — Max Power', endurance: 'Endurance — Stamina' };
 const SPLIT_LABELS = { push_pull_legs: 'Push / Pull / Legs', upper_lower: 'Upper / Lower', full_body: 'Full Body', bro_split: 'Bro Split', auto: 'Auto (Optimized)' };

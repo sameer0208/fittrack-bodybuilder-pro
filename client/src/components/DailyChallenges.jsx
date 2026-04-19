@@ -3,17 +3,10 @@ import { useApp } from '../context/AppContext';
 import { getTodayChallenges, getLevelFromXP, CATEGORY_COLORS, CATEGORY_ICONS } from '../data/dailyChallenges';
 import useWorkoutPlan from '../hooks/useWorkoutPlan';
 import { exercises as exerciseDb } from '../data/exercises';
-import axios from 'axios';
+import API from '../utils/api';
 import dayjs from 'dayjs';
 import toast from 'react-hot-toast';
 import { Zap, CheckCircle2, Circle, Star, ChevronDown, ChevronUp, Sparkles, Undo2 } from 'lucide-react';
-
-const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
-API.interceptors.request.use((cfg) => {
-  const t = localStorage.getItem('ft_token');
-  if (t) cfg.headers.Authorization = `Bearer ${t}`;
-  return cfg;
-});
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 

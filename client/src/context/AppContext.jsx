@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import axios from 'axios';
+import API from '../utils/api';
 import { sendBrowserNotification } from '../utils/notifications';
 
 /**
@@ -14,16 +14,6 @@ import { sendBrowserNotification } from '../utils/notifications';
  *
  * This eliminates cross-user data leakage on shared browsers.
  */
-
-const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
-});
-
-API.interceptors.request.use((config) => {
-  const t = localStorage.getItem('ft_token');
-  if (t) config.headers.Authorization = `Bearer ${t}`;
-  return config;
-});
 
 const AppContext = createContext(null);
 

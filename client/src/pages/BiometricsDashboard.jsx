@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeartRateMonitor from '../components/HeartRateMonitor';
 import ConfirmDialog from '../components/ConfirmDialog';
-import axios from 'axios';
+import API from '../utils/api';
 import dayjs from 'dayjs';
 import toast from 'react-hot-toast';
 import {
@@ -15,13 +15,6 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, RadarChart,
   Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from 'recharts';
-
-const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
-API.interceptors.request.use((cfg) => {
-  const t = localStorage.getItem('ft_token');
-  if (t) cfg.headers.Authorization = `Bearer ${t}`;
-  return cfg;
-});
 
 const today = () => dayjs().format('YYYY-MM-DD');
 

@@ -9,21 +9,13 @@ import ExerciseCard from '../components/ExerciseCard';
 import ExercisePickerModal from '../components/ExercisePickerModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import API from '../utils/api';
 import {
   ArrowLeft, CheckCircle2, Play, Pause, RotateCcw,
   Clock, Flame, Dumbbell, ChevronRight, Trophy,
   Pencil, Plus, X, RotateCcw as ResetIcon, Check, Type,
   Zap, ChevronDown,
 } from 'lucide-react';
-
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
-const API = axios.create({ baseURL: API_BASE });
-API.interceptors.request.use((cfg) => {
-  const t = localStorage.getItem('ft_token');
-  if (t) cfg.headers.Authorization = `Bearer ${t}`;
-  return cfg;
-});
 
 const fullDb = buildFullExerciseDb(exerciseDb);
 

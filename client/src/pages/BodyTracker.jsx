@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import axios from 'axios';
+import API from '../utils/api';
 import dayjs from 'dayjs';
 import toast from 'react-hot-toast';
 import {
@@ -37,12 +37,6 @@ import CameraCapture from '../components/CameraCapture';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
-const API = axios.create({ baseURL: API_BASE });
-API.interceptors.request.use((cfg) => {
-  const t = localStorage.getItem('ft_token');
-  if (t) cfg.headers.Authorization = `Bearer ${t}`;
-  return cfg;
-});
 
 function normalizePhotoUrl(url) {
   if (!url) return url;

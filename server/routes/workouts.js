@@ -18,6 +18,12 @@ const auth = (req, res, next) => {
   }
 };
 
+// Extract the client's local date from the X-Client-Date header (YYYY-MM-DD).
+// Falls back to query param ?clientDate or body.clientDate, then server time.
+function getClientDate(req) {
+  return req.headers['x-client-date'] || req.query.clientDate || req.body?.clientDate || null;
+}
+
 // Save / update workout log
 router.post('/log', auth, async (req, res) => {
   try {
@@ -53,7 +59,7 @@ router.post('/log', auth, async (req, res) => {
         }))
       : [];
 
-    const { weekStart, weekEnd } = getCurrentWeekRange();
+    const { weekStart, weekEnd } = getCurrentWeekRange(getClientDate(req));
 
     let log = await WorkoutLog.findOne({
       userId: req.user.id,
@@ -146,7 +152,7 @@ router.get('/logs', auth, async (req, res) => {
 // Get this week's workout log for a given session
 router.get('/today/:workoutDay', auth, async (req, res) => {
   try {
-    const { weekStart, weekEnd } = getCurrentWeekRange();
+    const { weekStart, weekEnd } = getCurrentWeekRange(getClientDate(req));
 
     const log = await WorkoutLog.findOne({
       userId: req.user.id,

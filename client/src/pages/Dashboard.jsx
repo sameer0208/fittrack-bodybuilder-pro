@@ -8,20 +8,13 @@ import DailyChallenges from '../components/DailyChallenges';
 import WorkoutCalendar from '../components/WorkoutCalendar';
 import BuddyWidget from '../components/BuddyWidget';
 import dayjs from 'dayjs';
-import axios from 'axios';
+import API from '../utils/api';
 import {
   CheckCircle2, ChevronLeft, ChevronRight, Clock, Flame, Zap,
   TrendingUp, UtensilsCrossed, Droplets, Dumbbell,
   Trophy, Users, Share2, Ruler, Heart, BarChart3, BookOpen, CalendarDays,
 } from 'lucide-react';
 import Tilt3DCard from '../components/Tilt3DCard';
-
-const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
-API.interceptors.request.use((cfg) => {
-  const t = localStorage.getItem('ft_token');
-  if (t) cfg.headers.Authorization = `Bearer ${t}`;
-  return cfg;
-});
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 

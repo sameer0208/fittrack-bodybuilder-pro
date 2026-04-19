@@ -1,14 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import axios from 'axios';
+import API from '../utils/api';
 import toast from 'react-hot-toast';
 import { Trophy, Medal } from 'lucide-react';
-
-const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
-API.interceptors.request.use((cfg) => {
-  const t = localStorage.getItem('ft_token');
-  if (t) cfg.headers.Authorization = `Bearer ${t}`;
-  return cfg;
-});
 
 const TABS = [
   { id: 'streak', label: 'Streak' },

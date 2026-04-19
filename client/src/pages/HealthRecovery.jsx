@@ -8,7 +8,7 @@ import {
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
-import axios from 'axios';
+import API from '../utils/api';
 import dayjs from 'dayjs';
 import toast from 'react-hot-toast';
 import {
@@ -37,13 +37,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { routines } from '../data/stretches';
-
-const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
-API.interceptors.request.use((cfg) => {
-  const t = localStorage.getItem('ft_token');
-  if (t) cfg.headers.Authorization = `Bearer ${t}`;
-  return cfg;
-});
 
 const MOOD_EMOJIS = ['😫', '😟', '😐', '😊', '😁'];
 const SORENESS_DOT_CLASS = [

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import axios from 'axios';
+import API from '../utils/api';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import toast from 'react-hot-toast';
@@ -11,13 +11,6 @@ import {
 } from 'lucide-react';
 
 dayjs.extend(relativeTime);
-
-const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
-API.interceptors.request.use((cfg) => {
-  const t = localStorage.getItem('ft_token');
-  if (t) cfg.headers.Authorization = `Bearer ${t}`;
-  return cfg;
-});
 
 const NUDGE_TYPES = [
   { type: 'workout', emoji: '💪', label: 'Hit the gym!' },

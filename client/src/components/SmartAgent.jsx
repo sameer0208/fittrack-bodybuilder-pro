@@ -1,20 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Send, Trash2, Loader2, Bot, UserCircle, Mic, MicOff, UtensilsCrossed, Check } from 'lucide-react';
-import axios from 'axios';
+import API from '../utils/api';
 import dayjs from 'dayjs';
 import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
 import ConfirmDialog from './ConfirmDialog';
-
-const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
-});
-API.interceptors.request.use((cfg) => {
-  const t = localStorage.getItem('ft_token');
-  if (t) cfg.headers.Authorization = `Bearer ${t}`;
-  return cfg;
-});
 
 const QUICK_CHIPS = [
   'Suggest a high-protein meal',

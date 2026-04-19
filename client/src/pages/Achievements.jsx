@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
+import API from '../utils/api';
 import dayjs from 'dayjs';
 import toast from 'react-hot-toast';
 import {
@@ -24,16 +24,6 @@ import {
 } from 'lucide-react';
 import { BADGE_DEFS, TIER_COLORS } from '../data/achievements';
 import Tilt3DCard from '../components/Tilt3DCard';
-
-const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
-});
-
-API.interceptors.request.use((cfg) => {
-  const t = localStorage.getItem('ft_token');
-  if (t) cfg.headers.Authorization = `Bearer ${t}`;
-  return cfg;
-});
 
 const ICON_MAP = {
   Dumbbell,
