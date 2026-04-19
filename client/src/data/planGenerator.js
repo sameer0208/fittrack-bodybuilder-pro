@@ -150,11 +150,13 @@ const CARDIO_CORE = {
 };
 
 // ── Split rotations ────────────────────────────────────────────────────────
+// Each rotation is used for AM / main sessions. PM sessions use fixed templates
+// (ARMS_CORE, CARDIO_CORE, or MOBILITY) and do NOT advance the rotation index.
 const SPLIT_ROTATIONS = {
-  push_pull_legs: [PUSH_A, PULL_A, LEGS_A, PUSH_B, PULL_B, LEGS_B, ARMS_CORE],
-  upper_lower: [UPPER_A, LOWER_A, UPPER_B, LOWER_B, FULL_BODY_A, UPPER_A, LOWER_B],
+  push_pull_legs: [PULL_A, PUSH_A, LEGS_A, PULL_B, PUSH_B, LEGS_B, FULL_BODY_POWER],
+  upper_lower: [UPPER_A, LOWER_A, UPPER_B, LOWER_B, FULL_BODY_A, SHOULDERS_ARMS, LOWER_B],
   full_body: [FULL_BODY_A, FULL_BODY_B, FULL_BODY_C, FULL_BODY_A, FULL_BODY_B, FULL_BODY_C, MOBILITY],
-  bro_split: [CHEST_BACK, LEGS_A, SHOULDERS_ARMS, PULL_A, LEGS_B, PUSH_A, ARMS_CORE],
+  bro_split: [CHEST_BACK, LEGS_A, SHOULDERS_ARMS, PULL_A, LEGS_B, FULL_BODY_POWER, ARMS_CORE],
 };
 
 // ── Duration adjustments ───────────────────────────────────────────────────
@@ -237,10 +239,16 @@ export function generatePlan(userProfile) {
 
       if (isWeekend && weekendDoubles) {
         const pmKey = `${day}_pm`;
-        const pmTemplate = (fitnessGoal === 'cut' || fitnessGoal === 'endurance')
-          ? CARDIO_CORE
-          : (rotIdx < rotation.length ? rotation[rotIdx % rotation.length] : MOBILITY);
-        if (pmTemplate !== CARDIO_CORE) rotIdx++;
+        // PM sessions use fixed templates — never advance the main rotation
+        const isSunday = day === 'sunday';
+        let pmTemplate;
+        if (fitnessGoal === 'cut' || fitnessGoal === 'endurance') {
+          pmTemplate = CARDIO_CORE;
+        } else if (isSunday) {
+          pmTemplate = MOBILITY;
+        } else {
+          pmTemplate = ARMS_CORE;
+        }
 
         const pmExercises = trimForDuration([...pmTemplate.exercises], sessionDuration);
         plan[pmKey] = {

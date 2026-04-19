@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { exercises as exerciseDb } from '../data/exercises';
 import { buildFullExerciseDb } from '../data/exerciseLibrary';
+import { getPumpUpExercises } from '../data/pumpUpExercises';
 import { useApp } from '../context/AppContext';
 import useWorkoutPlan from '../hooks/useWorkoutPlan';
 import ExerciseCard from '../components/ExerciseCard';
@@ -13,6 +14,7 @@ import {
   ArrowLeft, CheckCircle2, Play, Pause, RotateCcw,
   Clock, Flame, Dumbbell, ChevronRight, Trophy,
   Pencil, Plus, X, RotateCcw as ResetIcon, Check, Type,
+  Zap, ChevronDown,
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
@@ -83,6 +85,24 @@ export default function WorkoutDay() {
     () => mergedIds.map((id) => fullDb[id]).filter(Boolean),
     [mergedIds]
   );
+
+  // ── Pump-Up exercises: derived from actual target muscles (custom-aware) ──
+  const [pumpUpOpen, setPumpUpOpen] = useState(false);
+  const [pumpUpDone, setPumpUpDone] = useState({});
+
+  const targetMuscles = useMemo(() => {
+    const muscles = new Set(plan?.focus || []);
+    exerciseList.forEach((ex) => {
+      (ex.primaryMuscles || []).forEach((m) => muscles.add(m));
+      (ex.secondaryMuscles || []).forEach((m) => muscles.add(m));
+    });
+    return [...muscles];
+  }, [plan, exerciseList]);
+
+  const pumpUpList = useMemo(() => getPumpUpExercises(targetMuscles, 5), [targetMuscles]);
+  const pumpUpProgress = pumpUpList.length > 0
+    ? Math.round((Object.values(pumpUpDone).filter(Boolean).length / pumpUpList.length) * 100)
+    : 0;
 
   // ── Existing workout log loading (runs ONCE per sessionKey) ────────────────
   const initialLoadDone = useRef(false);
@@ -472,6 +492,83 @@ export default function WorkoutDay() {
             <span className="text-[10px] text-amber-400/70 font-medium">Customized</span>
           )}
         </div>
+
+        {/* ── Pump Up Section ── */}
+        {pumpUpList.length > 0 && !completed && (
+          <div className="mb-5 rounded-2xl overflow-hidden border border-amber-500/20"
+            style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.06) 0%, rgba(251,146,60,0.04) 100%)' }}>
+            <button
+              type="button"
+              onClick={() => setPumpUpOpen((v) => !v)}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-amber-500/5"
+            >
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/20 flex items-center justify-center shrink-0">
+                <Zap size={18} className="text-amber-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-black text-white">Pump Up</span>
+                  <span className="text-[9px] font-bold text-amber-400/70 uppercase tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-full">Pre-Workout</span>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">Activate your muscles before lifting — {pumpUpList.length} exercises</p>
+              </div>
+              {pumpUpProgress > 0 && (
+                <div className="flex flex-col items-center gap-0.5 mr-1">
+                  <span className="text-[10px] font-black text-amber-400">{pumpUpProgress}%</span>
+                  <div className="w-8 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                    <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-400 transition-all" style={{ width: `${pumpUpProgress}%` }} />
+                  </div>
+                </div>
+              )}
+              <ChevronDown size={16} className={`text-slate-500 transition-transform ${pumpUpOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {pumpUpOpen && (
+              <div className="px-4 pb-4 space-y-2">
+                <div className="h-px bg-gradient-to-r from-transparent via-amber-500/15 to-transparent mb-3" />
+                {pumpUpList.map((ex) => (
+                  <button
+                    key={ex.id}
+                    type="button"
+                    onClick={() => setPumpUpDone((prev) => ({ ...prev, [ex.id]: !prev[ex.id] }))}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left ${
+                      pumpUpDone[ex.id]
+                        ? 'bg-emerald-500/10 border border-emerald-500/20'
+                        : 'bg-white/[0.03] border border-slate-700/30 hover:border-amber-500/30'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0 transition-all ${
+                      pumpUpDone[ex.id]
+                        ? 'bg-emerald-500/20 border border-emerald-500/30'
+                        : 'bg-amber-500/10 border border-amber-500/20'
+                    }`}>
+                      {pumpUpDone[ex.id] ? <CheckCircle2 size={16} className="text-emerald-400" /> : <span>{ex.icon}</span>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs font-bold transition-colors ${pumpUpDone[ex.id] ? 'text-emerald-300 line-through opacity-70' : 'text-white'}`}>
+                        {ex.name}
+                      </div>
+                      <div className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-2 flex-wrap">
+                        <span>{ex.reps}</span>
+                        <span className="w-0.5 h-0.5 rounded-full bg-slate-600" />
+                        <span>{ex.equipment}</span>
+                        <span className="w-0.5 h-0.5 rounded-full bg-slate-600" />
+                        <span>{ex.tempo}</span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+                {pumpUpList.length > 0 && (
+                  <p className="text-[10px] text-slate-600 text-center mt-2 italic">
+                    {pumpUpProgress === 100
+                      ? '🔥 You\'re pumped! Ready to crush it!'
+                      : 'Tap each exercise when done — light weight, feel the muscle'}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Exercise Cards ── */}
         <div className="space-y-4">
