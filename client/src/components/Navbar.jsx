@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, TrendingUp, User, LogOut, Dumbbell, UtensilsCrossed, Salad, BarChart3, Ruler, Heart, Trophy, Users, MoreHorizontal, X, BookOpen, Flame, Activity, HeartPulse, Footprints } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import NotificationCenter from './NotificationCenter';
+import ConfirmDialog from './ConfirmDialog';
 
 const TOUR_KEYS = {
   '/dashboard': 'nav-home',
@@ -43,6 +44,8 @@ export default function Navbar() {
   useEffect(() => {
     document.body.dataset.moreNav = moreOpen ? '1' : '';
   }, [moreOpen]);
+
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -126,7 +129,7 @@ export default function Navbar() {
         </div>
 
         <button
-          onClick={handleLogout}
+          onClick={() => setShowLogoutConfirm(true)}
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/5 font-medium text-sm transition-all duration-200 w-full"
         >
           <LogOut size={17} />
@@ -237,6 +240,17 @@ export default function Navbar() {
           </div>
         </div>
       </nav>
+
+      <ConfirmDialog
+        open={showLogoutConfirm}
+        variant="logout"
+        title="Sign Out?"
+        message="You'll need to log back in to access your workout data and progress."
+        confirmText="Sign Out"
+        cancelText="Stay"
+        onConfirm={() => { setShowLogoutConfirm(false); handleLogout(); }}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
     </>
   );
 }

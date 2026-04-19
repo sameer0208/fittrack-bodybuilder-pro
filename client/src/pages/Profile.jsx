@@ -10,6 +10,7 @@ import {
   Users, Copy, Bell, BellOff, Trophy
 } from 'lucide-react';
 import dayjs from 'dayjs';
+import ConfirmDialog from '../components/ConfirmDialog';
 import useWorkoutPlan from '../hooks/useWorkoutPlan';
 import { subscribeToPush, unsubscribeFromPush } from '../utils/pushSubscription';
 
@@ -116,6 +117,8 @@ export default function Profile() {
   const [buddyInput, setBuddyInput] = useState('');
   const [buddyList, setBuddyList] = useState([]);
   const [pushEnabled, setPushEnabled] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [buddyToRemove, setBuddyToRemove] = useState(null);
 
   const fetchBuddies = () => {
     API.get('/social/buddy').then(({ data }) => {
@@ -293,7 +296,7 @@ export default function Profile() {
             </div>
           </div>
           <button
-            onClick={() => { logout(); }}
+            onClick={() => setConfirmAction('logout')}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/8 border border-red-500/15 text-red-400 text-[10px] font-black uppercase tracking-wider touch-manipulation"
           >
             <LogOut size={12} /> Logout
@@ -655,7 +658,7 @@ export default function Profile() {
                       </div>
                       <div className="text-right shrink-0">
                         <div className="text-[10px] text-slate-500">{b.totalWorkouts} workouts</div>
-                        <button onClick={() => removeBuddy(b.pairId)} className="text-[10px] text-red-400 hover:text-red-300 mt-0.5">Remove</button>
+                        <button onClick={() => setBuddyToRemove(b.pairId)} className="text-[10px] text-red-400 hover:text-red-300 mt-0.5">Remove</button>
                       </div>
                     </div>
                     {b.lastWorkout && (
@@ -797,13 +800,34 @@ export default function Profile() {
 
         {/* Logout */}
         <button
-          onClick={logout}
+          onClick={() => setConfirmAction('logout')}
           className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 font-semibold text-sm transition-all"
         >
           <LogOut size={16} />
           Sign Out
         </button>
       </div>
+
+      <ConfirmDialog
+        open={confirmAction === 'logout'}
+        variant="logout"
+        title="Sign Out?"
+        message="You'll need to log back in to access your workout data and progress."
+        confirmText="Sign Out"
+        cancelText="Stay"
+        onConfirm={() => { setConfirmAction(null); logout(); }}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ConfirmDialog
+        open={!!buddyToRemove}
+        variant="danger"
+        title="Remove Buddy?"
+        message="This will remove the buddy pairing. You can always re-pair later with a new code."
+        confirmText="Remove"
+        cancelText="Keep Buddy"
+        onConfirm={() => { const id = buddyToRemove; setBuddyToRemove(null); removeBuddy(id); }}
+        onCancel={() => setBuddyToRemove(null)}
+      />
     </div>
   );
 }

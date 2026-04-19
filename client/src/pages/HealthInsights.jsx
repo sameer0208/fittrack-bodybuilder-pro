@@ -13,6 +13,7 @@ import {
   BarChart, Bar, LineChart, Line,
   ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Cell,
 } from 'recharts';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
 API.interceptors.request.use((cfg) => {
@@ -685,6 +686,7 @@ function InjuryTab() {
 }
 
 function InjuryCard({ injury, onStatusChange, onDelete }) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const sevColor = injury.severity >= 7 ? 'text-red-400' : injury.severity >= 4 ? 'text-amber-400' : 'text-emerald-400';
   const statusColor = {
     new: 'bg-red-500/15 text-red-400',
@@ -726,11 +728,21 @@ function InjuryCard({ injury, onStatusChange, onDelete }) {
             </button>
           </>
         )}
-        <button onClick={() => onDelete(injury._id)}
+        <button onClick={() => setShowDeleteConfirm(true)}
           className="text-[10px] px-2 py-1 rounded-lg bg-red-500/10 text-red-400 font-bold ml-auto touch-manipulation">
           <Trash2 size={10} />
         </button>
       </div>
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        variant="danger"
+        title="Delete Injury Log?"
+        message={`Remove "${injury.name || 'this injury'}" from your records? This cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={() => { setShowDeleteConfirm(false); onDelete(injury._id); }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   );
 }

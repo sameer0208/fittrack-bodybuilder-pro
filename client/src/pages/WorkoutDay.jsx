@@ -6,6 +6,7 @@ import { useApp } from '../context/AppContext';
 import useWorkoutPlan from '../hooks/useWorkoutPlan';
 import ExerciseCard from '../components/ExerciseCard';
 import ExercisePickerModal from '../components/ExercisePickerModal';
+import ConfirmDialog from '../components/ConfirmDialog';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import {
@@ -48,6 +49,7 @@ export default function WorkoutDay() {
   const [showPicker, setShowPicker] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState('');
+  const [confirmAction, setConfirmAction] = useState(null);
   const nameInputRef = useRef(null);
 
   const originalIds = useMemo(() => plan?.exercises || [], [plan]);
@@ -409,7 +411,7 @@ export default function WorkoutDay() {
             >
               {timerRunning ? <><Pause size={15} /> Pause</> : <><Play size={15} /> Start</>}
             </button>
-            <button onClick={() => { setElapsed(0); setTimerRunning(false); }}
+            <button onClick={() => setConfirmAction('resetTimer')}
               className="btn-icon bg-white/5 text-slate-500 active:text-white border border-slate-700/30 min-w-[44px] min-h-[44px]">
               <RotateCcw size={15} />
             </button>
@@ -457,7 +459,7 @@ export default function WorkoutDay() {
                 <Type size={13} /> Rename
               </button>
               {hasCustomizations && (
-                <button type="button" onClick={handleResetToDefault}
+                <button type="button" onClick={() => setConfirmAction('resetPlan')}
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 border border-slate-700 text-slate-400 hover:text-white transition-all active:scale-95">
                   <ResetIcon size={13} /> Reset All
                 </button>
@@ -535,7 +537,7 @@ export default function WorkoutDay() {
         <div className="mt-6 space-y-3">
           {!completed ? (
             <>
-              <button onClick={handleFinishWorkout} disabled={saving}
+              <button onClick={() => setConfirmAction('finish')} disabled={saving}
                 className="w-full btn-success flex items-center justify-center gap-3 text-base py-4 disabled:opacity-60 disabled:cursor-not-allowed">
                 {saving ? (
                   <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving to Cloud…</>
@@ -583,6 +585,36 @@ export default function WorkoutDay() {
           onClose={() => setShowPicker(false)}
         />
       )}
+      <ConfirmDialog
+        open={confirmAction === 'finish'}
+        variant="success"
+        title="Complete Workout?"
+        message={`This will save your session as completed with ${totalSetsCompleted} sets and ${totalVolume.toFixed(0)}kg volume. This action updates your streak and stats.`}
+        confirmText="Complete Workout"
+        cancelText="Keep Going"
+        onConfirm={() => { setConfirmAction(null); handleFinishWorkout(); }}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ConfirmDialog
+        open={confirmAction === 'resetPlan'}
+        variant="reset"
+        title="Reset to Default?"
+        message="This will remove all added exercises, undo removals, and reset the workout name to the original plan."
+        confirmText="Reset All"
+        cancelText="Keep Changes"
+        onConfirm={() => { setConfirmAction(null); handleResetToDefault(); }}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ConfirmDialog
+        open={confirmAction === 'resetTimer'}
+        variant="warning"
+        title="Reset Timer?"
+        message="This will reset the workout timer back to 00:00. Your exercise progress will not be affected."
+        confirmText="Reset Timer"
+        cancelText="Keep Running"
+        onConfirm={() => { setConfirmAction(null); setElapsed(0); setTimerRunning(false); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

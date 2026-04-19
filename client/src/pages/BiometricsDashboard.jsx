@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeartRateMonitor from '../components/HeartRateMonitor';
+import ConfirmDialog from '../components/ConfirmDialog';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import toast from 'react-hot-toast';
@@ -99,6 +100,7 @@ export default function BiometricsDashboard() {
   const [loading, setLoading] = useState(true);
   const [showScanner, setShowScanner] = useState(false);
   const [activeChart, setActiveChart] = useState('hr');
+  const [scanToDelete, setScanToDelete] = useState(null);
 
   const fetchData = useCallback(() => {
     setLoading(true);
@@ -403,7 +405,7 @@ export default function BiometricsDashboard() {
                       {scan.respiratoryRate != null && <span>RR: {scan.respiratoryRate}</span>}
                     </div>
                   </div>
-                  <button onClick={() => handleDelete(scan._id)}
+                  <button onClick={() => setScanToDelete(scan._id)}
                     className="w-8 h-8 rounded-lg hover:bg-red-500/10 flex items-center justify-center text-slate-600 hover:text-red-400 transition-colors touch-manipulation shrink-0">
                     <Trash2 size={14} />
                   </button>
@@ -421,6 +423,17 @@ export default function BiometricsDashboard() {
           </button>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!scanToDelete}
+        variant="danger"
+        title="Delete Biometric Scan?"
+        message="This scan record and all its measurements (HR, HRV, SpO2, etc.) will be permanently deleted."
+        confirmText="Delete Scan"
+        cancelText="Keep It"
+        onConfirm={() => { const id = scanToDelete; setScanToDelete(null); handleDelete(id); }}
+        onCancel={() => setScanToDelete(null)}
+      />
     </div>
   );
 }

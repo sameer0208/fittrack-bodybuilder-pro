@@ -6,6 +6,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { Plus, Trash2, ChevronLeft, ChevronRight, UtensilsCrossed, Flame, Beef, Wheat, Droplets, TrendingUp } from 'lucide-react';
 import dayjs from 'dayjs';
 import toast from 'react-hot-toast';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const MEALS = [
   { key: 'breakfast',    label: 'Breakfast',    icon: '🌅', color: '#f59e0b' },
@@ -50,6 +51,7 @@ export default function Nutrition() {
   const [activeTab, setActiveTab] = useState('today');
   const [syncStatus, setSyncStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
   const saveTimer = useRef(null); // debounce timer for auto-save
+  const [foodToRemove, setFoodToRemove] = useState(null);
 
   const isToday = date === dayjs().format('YYYY-MM-DD');
 
@@ -420,7 +422,7 @@ export default function Nutrition() {
                             </div>
                             {/* Always-visible delete on mobile */}
                             <button
-                              onClick={() => removeFood(meal.key, idx)}
+                              onClick={() => setFoodToRemove({ mealKey: meal.key, idx, name: food.name })}
                               className="p-2 rounded-xl text-slate-600 active:text-red-400 active:bg-red-500/10 hover:text-red-400 hover:bg-red-500/10 transition-all min-w-[36px] min-h-[36px] flex items-center justify-center shrink-0"
                             >
                               <Trash2 size={15} />
@@ -569,6 +571,17 @@ export default function Nutrition() {
           onClose={() => setAddingTo(null)}
         />
       )}
+
+      <ConfirmDialog
+        open={!!foodToRemove}
+        variant="danger"
+        title="Remove Food?"
+        message={foodToRemove ? `Remove "${foodToRemove.name}" from this meal?` : ''}
+        confirmText="Remove"
+        cancelText="Keep It"
+        onConfirm={() => { const { mealKey, idx } = foodToRemove; setFoodToRemove(null); removeFood(mealKey, idx); }}
+        onCancel={() => setFoodToRemove(null)}
+      />
     </div>
   );
 }

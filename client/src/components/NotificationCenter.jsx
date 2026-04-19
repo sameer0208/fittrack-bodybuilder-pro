@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Bell, Droplets, Flame, Dumbbell, Beef, X, CheckCheck, Trash2, Info } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import ConfirmDialog from './ConfirmDialog';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 
@@ -17,6 +18,7 @@ const TYPE_META = {
 export default function NotificationCenter({ variant = 'desktop' }) {
   const { notifications, unreadCount, markAllRead, markRead, dismissNotification, clearNotifications } = useApp();
   const [open, setOpen] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const panelRef = useRef(null);
 
   useEffect(() => {
@@ -83,7 +85,7 @@ export default function NotificationCenter({ variant = 'desktop' }) {
             </button>
           )}
           {notifications.length > 0 && (
-            <button onClick={clearNotifications} className="p-1.5 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-red-400 transition-colors" title="Clear all">
+            <button onClick={() => setShowClearConfirm(true)} className="p-1.5 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-red-400 transition-colors" title="Clear all">
               <Trash2 size={14} />
             </button>
           )}
@@ -142,6 +144,16 @@ export default function NotificationCenter({ variant = 'desktop' }) {
     <div className="relative">
       {bellBtn}
       {panel}
+      <ConfirmDialog
+        open={showClearConfirm}
+        variant="warning"
+        title="Clear All Notifications?"
+        message="All notifications will be permanently removed."
+        confirmText="Clear All"
+        cancelText="Cancel"
+        onConfirm={() => { setShowClearConfirm(false); clearNotifications(); }}
+        onCancel={() => setShowClearConfirm(false)}
+      />
     </div>
   );
 }

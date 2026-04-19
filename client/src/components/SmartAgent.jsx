@@ -5,6 +5,7 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
+import ConfirmDialog from './ConfirmDialog';
 
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -38,6 +39,7 @@ export default function SmartAgent() {
   const [listening, setListening] = useState(false);
   const [pendingFood, setPendingFood] = useState(null);
   const [moreNavOpen, setMoreNavOpen] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const retryTimerRef = useRef(null);
 
   useEffect(() => {
@@ -280,7 +282,7 @@ export default function SmartAgent() {
               </div>
               <div className="flex items-center gap-1.5">
                 {messages.length > 0 && (
-                  <button onClick={clearHistory} className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition-colors" title="Clear chat">
+                  <button onClick={() => setShowClearConfirm(true)} className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition-colors" title="Clear chat">
                     <Trash2 size={15} />
                   </button>
                 )}
@@ -458,6 +460,17 @@ export default function SmartAgent() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={showClearConfirm}
+        variant="danger"
+        title="Clear Chat History?"
+        message="All conversation history with SamAI will be permanently deleted. This cannot be undone."
+        confirmText="Clear History"
+        cancelText="Keep Chat"
+        onConfirm={() => { setShowClearConfirm(false); clearHistory(); }}
+        onCancel={() => setShowClearConfirm(false)}
+      />
     </>,
     document.body
   );

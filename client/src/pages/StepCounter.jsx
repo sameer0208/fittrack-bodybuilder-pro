@@ -12,6 +12,7 @@ import {
   BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid,
   AreaChart, Area, Cell,
 } from 'recharts';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
 API.interceptors.request.use((cfg) => {
@@ -341,6 +342,7 @@ export default function StepCounter() {
   const [activeTab, setActiveTab] = useState('today');
   const [motionSupported, setMotionSupported] = useState(true);
   const [activeMinutes, setActiveMinutes] = useState(0);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   // Refs for accelerometer step detection
   const accelRef = useRef({ lastMag: 0, lastTime: 0, stepBuffer: 0 });
@@ -752,7 +754,7 @@ export default function StepCounter() {
             </div>
 
             {/* Reset */}
-            <button onClick={resetToday}
+            <button onClick={() => setShowResetConfirm(true)}
               className="w-full py-2.5 rounded-xl bg-slate-800/30 border border-slate-700/20 text-slate-500 text-xs font-bold flex items-center justify-center gap-2 touch-manipulation hover:text-slate-300 transition-colors">
               <RotateCcw size={13} /> Reset Today's Steps
             </button>
@@ -904,6 +906,17 @@ export default function StepCounter() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={showResetConfirm}
+        variant="reset"
+        title="Reset Today's Steps?"
+        message="This will reset your step count, active minutes, and all hourly data for today back to zero."
+        confirmText="Reset Steps"
+        cancelText="Keep Data"
+        onConfirm={() => { setShowResetConfirm(false); resetToday(); }}
+        onCancel={() => setShowResetConfirm(false)}
+      />
     </div>
   );
 }

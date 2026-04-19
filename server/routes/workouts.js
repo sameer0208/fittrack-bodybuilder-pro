@@ -159,26 +159,50 @@ router.get('/today/:workoutDay', auth, async (req, res) => {
   }
 });
 
-// Batch: get completion status for ALL sessions this week
+// Batch: get completion status for ALL sessions in a week
+// ?weekOf=YYYY-MM-DD to query a specific week (defaults to current week)
 router.get('/week-status', auth, async (req, res) => {
   try {
-    const { weekStart, weekEnd } = getCurrentWeekRange();
+    const { weekStart, weekEnd } = getCurrentWeekRange(req.query.weekOf);
 
     const logs = await WorkoutLog.find({
       userId: req.user.id,
       date: { $gte: weekStart, $lt: weekEnd },
     }).lean();
 
-    const status = {};
+    const sessions = {};
     for (const log of logs) {
-      status[log.workoutDay] = {
+      sessions[log.workoutDay] = {
         completed: log.completed,
         duration: log.duration,
+        elapsedSeconds: log.elapsedSeconds,
         totalVolume: log.totalVolume,
         date: log.date,
+        mood: log.mood,
+        notes: log.notes,
+        workoutName: log.workoutName,
+        exercises: log.exercises,
       };
     }
-    res.json(status);
+    res.json({
+      weekStart: weekStart.toISOString(),
+      weekEnd: weekEnd.toISOString(),
+      totalLogs: logs.length,
+      sessions,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Earliest workout date (used to bound backward navigation)
+router.get('/earliest', auth, async (req, res) => {
+  try {
+    const earliest = await WorkoutLog.findOne({ userId: req.user.id })
+      .sort({ date: 1 })
+      .select('date')
+      .lean();
+    res.json({ earliestDate: earliest?.date || null });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -270,14 +294,23 @@ router.get('/stats', auth, async (req, res) => {
   }
 });
 
-// Returns { weekStart (Monday 00:00), weekEnd (next Monday 00:00) } for the current week
-function getCurrentWeekRange() {
-  const now = new Date();
-  const day = now.getDay(); // 0=Sun .. 6=Sat
+// Returns { weekStart (Monday 00:00 local), weekEnd (next Monday 00:00 local) }
+// Optional: pass a YYYY-MM-DD string to get that date's week instead of the current one.
+function getCurrentWeekRange(ofDate) {
+  let d;
+  if (ofDate && typeof ofDate === 'string') {
+    // Parse YYYY-MM-DD as LOCAL date (not UTC) by using the Date(y,m,d) constructor.
+    // new Date('YYYY-MM-DD') creates UTC midnight which shifts getDay() in non-UTC zones.
+    const parts = ofDate.split('-');
+    d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), 12, 0, 0);
+    if (isNaN(d.getTime())) d = new Date();
+  } else {
+    d = new Date();
+  }
+
+  const day = d.getDay(); // 0=Sun .. 6=Sat
   const diffToMonday = day === 0 ? -6 : 1 - day;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + diffToMonday);
-  monday.setHours(0, 0, 0, 0);
+  const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() + diffToMonday, 0, 0, 0, 0);
   const nextMonday = new Date(monday);
   nextMonday.setDate(monday.getDate() + 7);
   return { weekStart: monday, weekEnd: nextMonday };

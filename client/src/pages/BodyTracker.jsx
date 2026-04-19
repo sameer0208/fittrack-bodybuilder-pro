@@ -34,6 +34,7 @@ import {
   Aperture,
 } from 'lucide-react';
 import CameraCapture from '../components/CameraCapture';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 const API = axios.create({ baseURL: API_BASE });
@@ -157,6 +158,7 @@ export default function BodyTracker() {
 
   const [modalPhoto, setModalPhoto] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [photoToDelete, setPhotoToDelete] = useState(null);
 
   const [compareLeftId, setCompareLeftId] = useState('');
   const [compareRightId, setCompareRightId] = useState('');
@@ -193,6 +195,18 @@ export default function BodyTracker() {
       setPhotos([]);
     } finally { setLoadingPhotos(false); }
   }, []);
+
+  // Non-destructive broken photo detection — only warns, never auto-deletes
+  const brokenCheckDone = useRef(false);
+  useEffect(() => {
+    if (brokenCheckDone.current) return;
+    brokenCheckDone.current = true;
+    API.get('/body/photos/health').then(({ data }) => {
+      if (data?.broken > 0) {
+        console.warn('[BodyTracker] Broken photos detected:', data);
+      }
+    }).catch(() => {});
+  }, [fetchPhotos]);
 
   useEffect(() => { fetchMeasurements(); }, [fetchMeasurements]);
   useEffect(() => { fetchPhotos(); }, [fetchPhotos]);
@@ -285,14 +299,21 @@ export default function BodyTracker() {
     setUploading(true);
     try {
       const image = await compressImageToJpeg(previewFile);
-      await API.post('/body/photos', { image, pose, notes: photoNotes.trim() || undefined, weekNumber: Number(weekNumber) || 1 });
+      const sizeKB = Math.round((image.length * 3) / 4 / 1024);
+      console.log('[BodyTracker] Upload: base64 size ~', sizeKB, 'KB, starts with:', image.substring(0, 40));
+      const { data: savedPhoto } = await API.post('/body/photos', { image, pose, notes: photoNotes.trim() || undefined, weekNumber: Number(weekNumber) || 1 });
+      console.log('[BodyTracker] Upload response:', {
+        url: savedPhoto?.cloudinaryUrl?.substring(0, 80),
+        publicId: savedPhoto?.cloudinaryPublicId?.substring(0, 40),
+        isCloudinary: savedPhoto?.cloudinaryUrl?.includes('cloudinary'),
+      });
       toast.success('Photo uploaded successfully!');
       setPhotoNotes('');
       clearPreview();
       setShowUploadForm(false);
       await fetchPhotos();
     } catch (err) {
-      console.error(err);
+      console.error('[BodyTracker] Upload error:', err?.response?.data || err.message);
       toast.error(err.response?.data?.message || 'Upload failed');
     } finally { setUploading(false); }
   };
@@ -888,7 +909,7 @@ export default function BodyTracker() {
               </div>
               <button
                 type="button"
-                onClick={() => handleDeletePhoto(modalPhoto._id || modalPhoto.id)}
+                onClick={() => setPhotoToDelete(modalPhoto._id || modalPhoto.id)}
                 disabled={deletingId}
                 className="inline-flex items-center gap-1.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 hover:text-red-200 rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50 transition-colors"
               >
@@ -915,6 +936,17 @@ export default function BodyTracker() {
           onClose={() => setShowCamera(false)}
         />
       )}
+
+      <ConfirmDialog
+        open={!!photoToDelete}
+        variant="danger"
+        title="Delete Photo?"
+        message="This progress photo will be permanently removed. This action cannot be undone."
+        confirmText="Delete Photo"
+        cancelText="Keep It"
+        onConfirm={() => { const id = photoToDelete; setPhotoToDelete(null); handleDeletePhoto(id); }}
+        onCancel={() => setPhotoToDelete(null)}
+      />
     </div>
   );
 }

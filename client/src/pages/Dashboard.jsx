@@ -10,9 +10,9 @@ import BuddyWidget from '../components/BuddyWidget';
 import dayjs from 'dayjs';
 import axios from 'axios';
 import {
-  CheckCircle2, ChevronRight, Clock, Flame, Zap,
+  CheckCircle2, ChevronLeft, ChevronRight, Clock, Flame, Zap,
   TrendingUp, UtensilsCrossed, Droplets, Dumbbell,
-  Trophy, Users, Share2, Ruler, Heart, BarChart3, BookOpen,
+  Trophy, Users, Share2, Ruler, Heart, BarChart3, BookOpen, CalendarDays,
 } from 'lucide-react';
 import Tilt3DCard from '../components/Tilt3DCard';
 
@@ -42,35 +42,87 @@ export default function Dashboard() {
   const [serverNutrition, setServerNutrition] = useState(null);
   const lastFetchRef = useRef(0);
 
-  const refreshDashboardData = useCallback(() => {
-    const now = Date.now();
-    if (now - lastFetchRef.current < 5000) return;
-    lastFetchRef.current = now;
-
-    API.get('/workouts/week-status')
-      .then(({ data }) => {
-        setServerWorkoutLogs((prev) => {
-          const updated = { ...prev };
-          for (const [sessionKey, status] of Object.entries(data)) {
-            updated[sessionKey] = { ...updated[sessionKey], ...status };
-          }
-          return updated;
-        });
-      })
-      .catch(() => {});
-
-    todaySessions.forEach((sessionKey) => {
-      fetchWorkoutLog(sessionKey).then((log) => {
-        if (log) setServerWorkoutLogs((prev) => ({ ...prev, [sessionKey]: log }));
-      });
-    });
-
-    fetchNutritionLog(today.format('YYYY-MM-DD')).then((log) => {
-      if (log) setServerNutrition(log);
-    });
-  }, [todaySessions, today, fetchWorkoutLog, fetchNutritionLog]);
+  // Week navigation: 0 = current week, -1 = last week, -2 = two weeks ago, etc.
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [earliestDate, setEarliestDate] = useState(null);
+  const [weekLoading, setWeekLoading] = useState(false);
+  const [serverWeekRange, setServerWeekRange] = useState(null);
+  const isCurrentWeek = weekOffset === 0;
 
   useEffect(() => {
+    API.get('/workouts/earliest').then(({ data }) => {
+      if (data?.earliestDate) setEarliestDate(dayjs(data.earliestDate));
+    }).catch(() => {});
+  }, []);
+
+  const getMondayStr = useCallback((offset) => {
+    const d = dayjs();
+    const jsDay = d.day();
+    const diffToMon = jsDay === 0 ? -6 : 1 - jsDay;
+    return d.add(diffToMon, 'day').add(offset, 'week').format('YYYY-MM-DD');
+  }, []);
+
+  const weekMondayStr = useMemo(() => getMondayStr(weekOffset), [weekOffset, getMondayStr]);
+
+  const minWeekOffset = useMemo(() => {
+    if (!earliestDate) return -52;
+    const d = dayjs();
+    const jsDay = d.day();
+    const diffToMon = jsDay === 0 ? -6 : 1 - jsDay;
+    const currentMonday = d.add(diffToMon, 'day').startOf('day');
+    return Math.floor(earliestDate.diff(currentMonday, 'week', true));
+  }, [earliestDate]);
+
+  const weekLabel = useMemo(() => {
+    if (serverWeekRange) {
+      const mon = dayjs(serverWeekRange.weekStart);
+      const sun = dayjs(serverWeekRange.weekEnd).subtract(1, 'day');
+      if (isCurrentWeek) return `This Week · ${mon.format('MMM D')} – ${sun.format('MMM D')}`;
+      return `${mon.format('MMM D')} – ${sun.format('MMM D, YYYY')}`;
+    }
+    const mon = dayjs(weekMondayStr);
+    const sun = mon.add(6, 'day');
+    if (isCurrentWeek) return `This Week · ${mon.format('MMM D')} – ${sun.format('MMM D')}`;
+    return `${mon.format('MMM D')} – ${sun.format('MMM D, YYYY')}`;
+  }, [weekMondayStr, isCurrentWeek, serverWeekRange]);
+
+  const refreshDashboardData = useCallback(() => {
+    const now = Date.now();
+    if (now - lastFetchRef.current < 2000) return;
+    lastFetchRef.current = now;
+
+    setWeekLoading(true);
+    const weekParam = `?weekOf=${weekMondayStr}`;
+    API.get(`/workouts/week-status${weekParam}`)
+      .then(({ data }) => {
+        setServerWorkoutLogs(data?.sessions || {});
+        setServerWeekRange({ weekStart: data?.weekStart, weekEnd: data?.weekEnd, totalLogs: data?.totalLogs || 0 });
+      })
+      .catch((err) => {
+        console.error('[week-status] fetch failed:', err?.response?.status, err?.message);
+        setServerWorkoutLogs({});
+        setServerWeekRange(null);
+      })
+      .finally(() => setWeekLoading(false));
+
+    if (isCurrentWeek) {
+      todaySessions.forEach((sessionKey) => {
+        fetchWorkoutLog(sessionKey).then((log) => {
+          if (log) {
+            setServerWorkoutLogs((prev) => ({ ...prev, [sessionKey]: log }));
+          }
+        });
+      });
+
+      fetchNutritionLog(today.format('YYYY-MM-DD')).then((log) => {
+        if (log) setServerNutrition(log);
+      });
+    }
+  }, [todaySessions, today, fetchWorkoutLog, fetchNutritionLog, isCurrentWeek, weekMondayStr]);
+
+  useEffect(() => {
+    lastFetchRef.current = 0;
+    setServerWorkoutLogs({});
     refreshDashboardData();
   }, [refreshDashboardData]);
 
@@ -191,7 +243,7 @@ export default function Dashboard() {
         </div>
 
         {/* ── Today's Sessions ───────────────────────── */}
-        {todaySessions.length > 0 && (
+        {isCurrentWeek && todaySessions.length > 0 && (
           <div className="mb-5">
             <div className="gym-section-header">
               <div className="gym-accent-dot" />
@@ -257,48 +309,52 @@ export default function Dashboard() {
         )}
 
         {/* ── Nutrition + Water Quick-View ───────────── */}
-        <Link to="/nutrition">
-          <div className="card-hover p-4 mb-5 cursor-pointer overflow-hidden">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 bg-emerald-500/10 rounded-lg flex items-center justify-center border border-emerald-500/15">
-                  <UtensilsCrossed size={13} className="text-emerald-400" />
+        {isCurrentWeek && (
+          <Link to="/nutrition">
+            <div className="card-hover p-4 mb-5 cursor-pointer overflow-hidden">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 bg-emerald-500/10 rounded-lg flex items-center justify-center border border-emerald-500/15">
+                    <UtensilsCrossed size={13} className="text-emerald-400" />
+                  </div>
+                  <span className="text-sm font-black text-white">Today&apos;s Fuel</span>
                 </div>
-                <span className="text-sm font-black text-white">Today&apos;s Fuel</span>
+                <ChevronRight size={14} className="text-slate-600" />
               </div>
-              <ChevronRight size={14} className="text-slate-600" />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5 text-xs">
+                    <span className="text-slate-500 flex items-center gap-1 font-medium">
+                      <Flame size={9} className="text-amber-400" /> Calories
+                    </span>
+                    <span className="text-amber-400 font-black text-[11px]">{Math.round(totalCals)}/{calGoal}</span>
+                  </div>
+                  <div className="progress-bar h-2">
+                    <div className="progress-fill bg-gradient-to-r from-amber-500 to-orange-500" style={{ width: `${calPct}%` }} />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1.5 text-xs">
+                    <span className="text-slate-500 flex items-center gap-1 font-medium">
+                      <Droplets size={9} className="text-cyan-400" /> Water
+                    </span>
+                    <span className="text-cyan-400 font-black text-[11px]">{waterMl}ml</span>
+                  </div>
+                  <div className="progress-bar h-2">
+                    <div className="progress-fill bg-gradient-to-r from-cyan-500 to-blue-500" style={{ width: `${waterPct}%` }} />
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className="flex items-center justify-between mb-1.5 text-xs">
-                  <span className="text-slate-500 flex items-center gap-1 font-medium">
-                    <Flame size={9} className="text-amber-400" /> Calories
-                  </span>
-                  <span className="text-amber-400 font-black text-[11px]">{Math.round(totalCals)}/{calGoal}</span>
-                </div>
-                <div className="progress-bar h-2">
-                  <div className="progress-fill bg-gradient-to-r from-amber-500 to-orange-500" style={{ width: `${calPct}%` }} />
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-1.5 text-xs">
-                  <span className="text-slate-500 flex items-center gap-1 font-medium">
-                    <Droplets size={9} className="text-cyan-400" /> Water
-                  </span>
-                  <span className="text-cyan-400 font-black text-[11px]">{waterMl}ml</span>
-                </div>
-                <div className="progress-bar h-2">
-                  <div className="progress-fill bg-gradient-to-r from-cyan-500 to-blue-500" style={{ width: `${waterPct}%` }} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </Link>
+          </Link>
+        )}
 
         {/* ── Daily Challenges ──────────────────────── */}
-        <div className="mb-5">
-          <DailyChallenges />
-        </div>
+        {isCurrentWeek && (
+          <div className="mb-5">
+            <DailyChallenges />
+          </div>
+        )}
 
         {/* ── Goal Progress ──────────────────────────── */}
         <div className="card p-4 mb-5 relative overflow-hidden">
@@ -341,79 +397,197 @@ export default function Dashboard() {
           <BMICard user={user} />
         </div>
 
-        {/* ── Weekly Schedule ────────────────────────── */}
+        {/* ── Weekly Schedule with Navigation ────────── */}
         <div className="card p-4 mb-5 overflow-hidden relative">
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/15 to-transparent" />
-          <div className="gym-section-header mb-3">
-            <div className="gym-accent-dot" />
-            <h2>This Week</h2>
-          </div>
-          <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
-            {weekSchedule.map((dayObj) => {
-              const isToday = dayObj.key === todayDayName;
-              const sessionsDone = dayObj.sessions.filter((s) => getSessionStatus(s) === 'completed').length;
 
-              return (
-                <div key={dayObj.key} className={`relative flex flex-col items-center gap-1 py-2 rounded-xl overflow-hidden ${
-                  isToday ? 'bg-red-500/8 border border-red-500/20' : 'bg-white/[0.02]'
-                }`}>
-                  <span className={`text-[9px] font-black truncate w-full text-center uppercase tracking-wider ${isToday ? 'text-red-400' : 'text-slate-600'}`}>
-                    {dayObj.day}
-                  </span>
-                  <div className="flex flex-col gap-1 w-full px-1">
-                    {dayObj.sessions.map((sk) => {
-                      const done = getSessionStatus(sk) === 'completed';
-                      return (
-                        <Link key={sk} to={`/workout/${sk}`} className="block w-full">
-                          <div className={`h-1.5 w-full rounded-full transition-all ${
-                            done ? 'bg-emerald-500' : isToday ? 'bg-red-500/40' : 'bg-slate-700/40'
-                          }`} />
-                        </Link>
-                      );
-                    })}
-                  </div>
-                  {isToday && (
-                    <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />
-                  )}
+          {/* Week Navigator */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="gym-accent-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: isCurrentWeek ? 'var(--gym-red)' : '#818cf8', boxShadow: `0 0 8px ${isCurrentWeek ? 'rgba(239,68,68,0.5)' : 'rgba(129,140,248,0.5)'}` }} />
+              <div>
+                <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.15em]">
+                  {isCurrentWeek ? 'This Week' : 'Past Week'}
+                </h2>
+                <div className="text-[10px] text-slate-600 font-medium mt-0.5 flex items-center gap-1">
+                  <CalendarDays size={10} />
+                  {weekLabel}
                 </div>
-              );
-            })}
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setWeekOffset((w) => Math.max(w - 1, minWeekOffset))}
+                disabled={weekOffset <= minWeekOffset}
+                className="w-8 h-8 rounded-lg bg-slate-800/60 border border-slate-700/30 flex items-center justify-center text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed touch-manipulation active:scale-90 transition-all"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              {!isCurrentWeek && (
+                <button
+                  onClick={() => setWeekOffset(0)}
+                  className="px-2.5 h-8 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold touch-manipulation active:scale-90 transition-all"
+                >
+                  Today
+                </button>
+              )}
+              <button
+                onClick={() => setWeekOffset((w) => Math.min(w + 1, 0))}
+                disabled={isCurrentWeek}
+                className="w-8 h-8 rounded-lg bg-slate-800/60 border border-slate-700/30 flex items-center justify-center text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed touch-manipulation active:scale-90 transition-all"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-3 mt-3 text-[9px] text-slate-600 flex-wrap font-bold uppercase tracking-wider">
-            <span className="flex items-center gap-1"><span className="w-2 h-1.5 rounded bg-emerald-500 inline-block shrink-0" /> Done</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-1.5 rounded bg-red-500/40 inline-block shrink-0" /> Today</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-1.5 rounded bg-slate-700/40 inline-block shrink-0" /> Upcoming</span>
-          </div>
+
+          {/* Past week banner */}
+          {!isCurrentWeek && !weekLoading && (
+            <div className="flex items-center gap-2 px-3 py-2 mb-3 rounded-lg bg-indigo-500/8 border border-indigo-500/15">
+              <CalendarDays size={12} className="text-indigo-400 shrink-0" />
+              <span className="text-[10px] text-indigo-300 font-medium">
+                Viewing historical data — read-only
+                {serverWeekRange?.totalLogs != null && ` · ${serverWeekRange.totalLogs} session${serverWeekRange.totalLogs !== 1 ? 's' : ''} found`}
+              </span>
+            </div>
+          )}
+
+          {/* Loading skeleton */}
+          {weekLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="flex items-center gap-2 text-slate-500 text-xs">
+                <div className="w-4 h-4 border-2 border-slate-600 border-t-indigo-400 rounded-full animate-spin" />
+                <span className="font-medium">Loading week data...</span>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Week grid */}
+              <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
+                {weekSchedule.map((dayObj) => {
+                  const isToday = isCurrentWeek && dayObj.key === todayDayName;
+                  const sessionsDone = dayObj.sessions.filter((s) => getSessionStatus(s) === 'completed').length;
+                  const totalSessions = dayObj.sessions.length;
+
+                  return (
+                    <div key={dayObj.key} className={`relative flex flex-col items-center gap-1 py-2 rounded-xl overflow-hidden ${
+                      isToday ? 'bg-red-500/8 border border-red-500/20'
+                      : !isCurrentWeek && sessionsDone > 0 ? 'bg-indigo-500/5 border border-indigo-500/10'
+                      : 'bg-white/[0.02]'
+                    }`}>
+                      <span className={`text-[9px] font-black truncate w-full text-center uppercase tracking-wider ${
+                        isToday ? 'text-red-400' : !isCurrentWeek && sessionsDone > 0 ? 'text-indigo-400' : 'text-slate-600'
+                      }`}>
+                        {dayObj.day}
+                      </span>
+                      <div className="flex flex-col gap-1 w-full px-1">
+                        {dayObj.sessions.map((sk) => {
+                          const done = getSessionStatus(sk) === 'completed';
+                          const bar = (
+                            <div className={`h-1.5 w-full rounded-full transition-all ${
+                              done ? (isCurrentWeek ? 'bg-emerald-500' : 'bg-indigo-500') : isToday ? 'bg-red-500/40' : 'bg-slate-700/40'
+                            }`} />
+                          );
+                          if (isCurrentWeek) {
+                            return <Link key={sk} to={`/workout/${sk}`} className="block w-full">{bar}</Link>;
+                          }
+                          return <div key={sk} className="w-full">{bar}</div>;
+                        })}
+                      </div>
+                      {isToday && (
+                        <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />
+                      )}
+                      {!isCurrentWeek && sessionsDone > 0 && totalSessions > 0 && (
+                        <span className="text-[8px] text-indigo-400 font-bold">{sessionsDone}/{totalSessions}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-3 mt-3 text-[9px] text-slate-600 flex-wrap font-bold uppercase tracking-wider">
+                <span className="flex items-center gap-1"><span className={`w-2 h-1.5 rounded ${isCurrentWeek ? 'bg-emerald-500' : 'bg-indigo-500'} inline-block shrink-0`} /> Done</span>
+                {isCurrentWeek && <span className="flex items-center gap-1"><span className="w-2 h-1.5 rounded bg-red-500/40 inline-block shrink-0" /> Today</span>}
+                <span className="flex items-center gap-1"><span className="w-2 h-1.5 rounded bg-slate-700/40 inline-block shrink-0" /> {isCurrentWeek ? 'Upcoming' : 'Missed'}</span>
+              </div>
+
+              {/* Past week summary stats */}
+              {!isCurrentWeek && (() => {
+                const allLogs = Object.values(serverWorkoutLogs);
+                const completedLogs = allLogs.filter((l) => l.completed);
+                const totalVol = completedLogs.reduce((s, l) => s + (l.totalVolume || 0), 0);
+                const totalDur = completedLogs.reduce((s, l) => s + (l.duration || 0), 0);
+                if (completedLogs.length === 0) return (
+                  <div className="mt-4 text-center py-5 rounded-lg bg-slate-800/20 border border-slate-700/20">
+                    <Dumbbell size={24} className="text-slate-700 mx-auto mb-2" />
+                    <div className="text-slate-500 text-xs font-medium">No workouts recorded this week</div>
+                    <div className="text-slate-600 text-[10px] mt-1">Navigate to other weeks to find your history</div>
+                  </div>
+                );
+                return (
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    <div className="text-center p-2 bg-indigo-500/5 rounded-lg border border-indigo-500/10">
+                      <div className="text-sm font-black text-indigo-400">{completedLogs.length}</div>
+                      <div className="text-[9px] text-slate-500 font-bold">Sessions</div>
+                    </div>
+                    <div className="text-center p-2 bg-indigo-500/5 rounded-lg border border-indigo-500/10">
+                      <div className="text-sm font-black text-indigo-400">{Math.round(totalVol).toLocaleString()}kg</div>
+                      <div className="text-[9px] text-slate-500 font-bold">Volume</div>
+                    </div>
+                    <div className="text-center p-2 bg-indigo-500/5 rounded-lg border border-indigo-500/10">
+                      <div className="text-sm font-black text-indigo-400">{totalDur}m</div>
+                      <div className="text-[9px] text-slate-500 font-bold">Duration</div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </>
+          )}
         </div>
 
         {/* ── Full Weekly Program Grid ────────────────── */}
         <div className="mb-5">
           <div className="gym-section-header mb-3">
             <div className="gym-accent-dot" />
-            <h2>Full Program</h2>
+            <h2>{isCurrentWeek ? 'Full Program' : 'Program Overview'}</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {Object.values(workoutPlan).map((plan) => {
               const done = getSessionStatus(plan.sessionKey) === 'completed';
-              return (
-                <Link key={plan.sessionKey} to={`/workout/${plan.sessionKey}`}>
-                  <div className={`card-hover p-4 cursor-pointer group flex items-center gap-3 ${done ? 'border-emerald-500/20' : ''}`}>
-                    <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${plan.colorClass} flex items-center justify-center text-xl shrink-0`}>
-                      {plan.muscleEmoji}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">{plan.dayLabel} · {plan.time}</div>
-                      <div className="font-black text-white text-sm leading-tight truncate">{plan.name}</div>
-                      <div className="text-[10px] text-slate-600 mt-0.5 font-medium">{plan.exercises.length} ex · {plan.duration}</div>
-                    </div>
-                    {done ? (
-                      <CheckCircle2 size={17} className="text-emerald-400 shrink-0" />
+              const log = serverWorkoutLogs[plan.sessionKey];
+              const inner = (
+                <div className={`card-hover p-4 ${isCurrentWeek ? 'cursor-pointer' : ''} group flex items-center gap-3 ${
+                  done ? (isCurrentWeek ? 'border-emerald-500/20' : 'border-indigo-500/20') : ''
+                }`}>
+                  <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${plan.colorClass} flex items-center justify-center text-xl shrink-0 ${!isCurrentWeek && !done ? 'opacity-40' : ''}`}>
+                    {plan.muscleEmoji}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">{plan.dayLabel} · {plan.time}</div>
+                    <div className="font-black text-white text-sm leading-tight truncate">{plan.name}</div>
+                    {!isCurrentWeek && done && log ? (
+                      <div className="flex items-center gap-2 mt-0.5 text-[10px] text-indigo-400 font-medium">
+                        {log.totalVolume ? <span>{Math.round(log.totalVolume)}kg vol</span> : null}
+                        {log.duration ? <span>{log.duration}min</span> : null}
+                        {log.mood ? <span>{log.mood === 'great' ? '💪' : log.mood === 'good' ? '👍' : log.mood === 'okay' ? '😐' : '😔'}</span> : null}
+                      </div>
                     ) : (
-                      <ChevronRight size={14} className="text-slate-700 group-hover:text-red-400 transition-colors shrink-0" />
+                      <div className="text-[10px] text-slate-600 mt-0.5 font-medium">{plan.exercises.length} ex · {plan.duration}</div>
                     )}
                   </div>
-                </Link>
+                  {done ? (
+                    <CheckCircle2 size={17} className={isCurrentWeek ? 'text-emerald-400 shrink-0' : 'text-indigo-400 shrink-0'} />
+                  ) : isCurrentWeek ? (
+                    <ChevronRight size={14} className="text-slate-700 group-hover:text-red-400 transition-colors shrink-0" />
+                  ) : (
+                    <span className="text-[9px] text-slate-600 font-bold shrink-0">—</span>
+                  )}
+                </div>
               );
+              if (isCurrentWeek) {
+                return <Link key={plan.sessionKey} to={`/workout/${plan.sessionKey}`}>{inner}</Link>;
+              }
+              return <div key={plan.sessionKey}>{inner}</div>;
             })}
           </div>
         </div>

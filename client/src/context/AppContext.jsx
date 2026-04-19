@@ -226,6 +226,14 @@ export const AppProvider = ({ children }) => {
           setWorkoutLogs((prev) => ({ ...prev, [sessionKey]: log }));
           return log;
         }
+        // Server returned null — no log for this week. Clear stale cache.
+        setWorkoutLogs((prev) => {
+          if (!prev[sessionKey]) return prev;
+          const next = { ...prev };
+          delete next[sessionKey];
+          return next;
+        });
+        return null;
       } catch { /* server unreachable — return in-memory */ }
     }
     return workoutLogsRef.current[sessionKey] || null;
