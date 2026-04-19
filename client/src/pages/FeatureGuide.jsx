@@ -4,9 +4,10 @@ import { motion, useScroll, useTransform, useInView, AnimatePresence, useMotionV
 import {
   Dumbbell, UtensilsCrossed, Droplets, Users, Trophy,
   Calendar, BarChart3, Camera, Heart, Zap, Target, Flame,
-  ChevronRight, ArrowLeft, Sparkles, Star, BookOpen,
+  ChevronRight, ArrowLeft, Sparkles, Star, BookOpen, Bell,
   Ruler, TrendingUp, Bot, Clock, Crown, Footprints, Headphones,
   ChevronDown, Rocket, Activity, Wind, Shield, HeartPulse, Pill,
+  CalendarRange, Layers,
 } from 'lucide-react';
 
 /* ─────────────────────── Motivational Quotes ─────────────────────── */
@@ -26,12 +27,38 @@ const FEATURES = [
     icon: Dumbbell,
     title: 'Smart Workout Tracker',
     tagline: 'Log sets, reps & weight — watch your progress explode',
-    description: 'Full workout logging with customizable exercises, extra sets, auto-timer, and rest alerts. Every rep counts, every set is tracked.',
-    highlights: ['Auto rest timer with sound alerts', 'Add/remove exercises freely', 'Track weight, reps & completion', 'Save drafts & continue later'],
+    description: 'Full workout logging with customizable exercises, extra sets, auto-timer, and rest alerts. Workouts auto-renew weekly so you start fresh every Monday. Navigate past weeks to review history. Confirmation dialogs prevent accidental completions.',
+    highlights: ['Auto rest timer with sound alerts', 'Add/remove exercises freely', 'Track weight, reps & completion', 'Weekly auto-renewal with history', 'Navigate past weeks\' workouts', 'Confirmation dialogs on submissions'],
     color: 'from-red-600 to-orange-500',
     glow: 'shadow-red-500/20',
     accent: 'text-red-400',
     ring: 'ring-red-500/30',
+    link: '/dashboard',
+  },
+  {
+    id: 'pumpup',
+    icon: Zap,
+    title: 'Pump Up — Pre-Workout Activation',
+    tagline: 'Prime your muscles before you lift heavy.',
+    description: 'Dynamic pre-workout activation panel built into every workout session. The system analyses which muscles your workout (including custom exercises) will target and selects the most relevant pump-up drills from a library of 30+ activation exercises. Light, high-rep movements to get blood flowing before the main lifts.',
+    highlights: ['30+ activation exercises', 'Auto-selects based on target muscles', 'Adapts to custom workout changes', 'Track completion with progress %', 'Bodyweight, band & light dumbbell drills', 'Collapsible panel — never in the way'],
+    color: 'from-amber-500 to-orange-500',
+    glow: 'shadow-amber-500/20',
+    accent: 'text-amber-400',
+    ring: 'ring-amber-500/30',
+    link: '/dashboard',
+  },
+  {
+    id: 'weekly-planner',
+    icon: CalendarRange,
+    title: 'Weekly Workout Planner',
+    tagline: 'A fresh plan every week — perfectly periodized.',
+    description: 'Intelligent 7-day workout plan generator that adapts to your fitness goal (bulk/cut/maintain/strength/endurance), preferred split (PPL, Upper/Lower, Full Body, Bro Split), and available gym days. Weekend double sessions for advanced lifters. Navigate between weeks to review past completions. Plans auto-renew every Monday while preserving full history.',
+    highlights: ['Auto-generated from your profile', '4 split styles + auto-optimize', 'Weekend AM + PM double sessions', 'Navigate past weeks\' history', 'Preserves all workout data', 'Smart muscle group spacing'],
+    color: 'from-indigo-500 to-blue-500',
+    glow: 'shadow-indigo-500/20',
+    accent: 'text-indigo-400',
+    ring: 'ring-indigo-500/30',
     link: '/dashboard',
   },
   {
@@ -126,12 +153,25 @@ const FEATURES = [
     link: '/profile',
   },
   {
+    id: 'notifications',
+    icon: Bell,
+    title: 'Smart Notifications',
+    tagline: 'Never miss a workout, meal, or milestone.',
+    description: 'Intelligent notification system that reminds you about workouts, hydration, meals, and supplement schedules based on your habits and goals. Notifications persist across sessions, support per-notification read/dismiss, and prevent duplicates. Unread badge count updates in real-time on both mobile and desktop nav.',
+    highlights: ['Workout & meal time reminders', 'Hydration nudges', 'Per-notification read & dismiss', 'Persistent across sessions', 'Smart duplicate prevention', 'Real-time unread badge count'],
+    color: 'from-sky-500 to-cyan-500',
+    glow: 'shadow-sky-500/20',
+    accent: 'text-sky-400',
+    ring: 'ring-sky-500/30',
+    link: '/dashboard',
+  },
+  {
     id: 'body',
     icon: Camera,
     title: 'Body Tracker & Photos',
     tagline: 'See your transformation unfold',
-    description: 'Log body measurements, take progress photos with your camera, compare before/after shots side by side. Your visual proof of progress.',
-    highlights: ['In-app camera capture', 'Before/after comparison', 'Body measurements tracking', 'Photo gallery with filters'],
+    description: 'Log body measurements, take progress photos with your camera, compare before/after shots side by side. Photos are auto-compressed and uploaded to the cloud via Cloudinary so they sync across all devices. Confirmation dialogs protect against accidental photo deletion.',
+    highlights: ['In-app camera capture', 'Before/after comparison', 'Cloud photo storage (Cloudinary)', 'Auto image compression', 'Body measurements tracking', 'Delete confirmation dialogs'],
     color: 'from-violet-500 to-purple-500',
     glow: 'shadow-violet-500/20',
     accent: 'text-violet-400',
@@ -286,13 +326,26 @@ const FEATURES = [
     icon: Headphones,
     title: 'Music Player',
     tagline: 'Fuel your workout with the perfect beats.',
-    description: 'Built-in music player powered by JioSaavn with a massive library of songs. Browse curated workout categories like Gym Motivation, Hip Hop, EDM, Bollywood Beats, and more. Search any song, build your queue, and control playback from anywhere in the app via the mini player. Features a cinematic full-screen player with real-time audio visualizer, shuffle, repeat, and lock screen controls.',
-    highlights: ['Millions of songs via JioSaavn', 'Curated workout music categories', 'Real-time audio frequency visualizer', 'Mini player always accessible', 'Queue management & shuffle/repeat', 'Lock screen & media controls'],
+    description: 'Built-in music player powered by JioSaavn with millions of songs. Browse 10 curated workout categories, search any song, like your favourites, and build your queue. Cinematic full-screen player with real-time audio visualizer, 10s skip forward/backward, playback speed control (0.5x–2x), sleep timer, shuffle, repeat (off/all/one), and lock screen media controls. Mini player persists on every page.',
+    highlights: ['Millions of songs via JioSaavn', '10 curated workout categories', 'Like songs & Liked Songs playlist', '10s skip forward / backward', 'Playback speed (0.5x – 2x)', 'Sleep timer (15/30/45/60/90 min)', 'Queue management: remove & clear', 'Real-time audio frequency visualizer', 'Lock screen & media controls'],
     color: 'from-red-600 to-orange-500',
     glow: 'shadow-red-500/20',
     accent: 'text-red-400',
     ring: 'ring-red-500/30',
     link: '/music',
+  },
+  {
+    id: 'gym-experience',
+    icon: Layers,
+    title: '3D Gym Ambience & Effects',
+    tagline: 'An immersive gym experience — not just an app.',
+    description: 'Floating gym equipment in the background (dumbbells, barbells, kettlebells, plates) rendered with requestAnimationFrame for smooth 60fps performance. Cinematic button click effects with gym-themed ripples. 3D CSS transforms and canvas-based animations throughout the app. Custom gym-themed loader with animated dumbbell. Dark, moody colour palette inspired by hardcore gym interiors.',
+    highlights: ['Floating 3D gym equipment background', 'Gym-themed click ripple effects', '3D card transforms & parallax', 'Animated dumbbell loader', 'Cinematic page transitions', '60fps canvas rendering engine'],
+    color: 'from-slate-500 to-zinc-600',
+    glow: 'shadow-slate-500/20',
+    accent: 'text-slate-400',
+    ring: 'ring-slate-500/30',
+    link: '/dashboard',
   },
   {
     id: 'achievements',
@@ -741,7 +794,7 @@ export default function FeatureGuide() {
             animate={heroReady ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 1.5 }}
           >
-            <PowerStat icon={Sparkles} value="22" suffix="+" label="Features" delay={1.6} color="from-red-600 to-orange-500" />
+            <PowerStat icon={Sparkles} value="27" suffix="+" label="Features" delay={1.6} color="from-red-600 to-orange-500" />
             <PowerStat icon={Dumbbell} value="100" suffix="+" label="Exercises" delay={1.7} color="from-orange-500 to-amber-500" />
             <PowerStat icon={UtensilsCrossed} value="500" suffix="+" label="Foods" delay={1.8} color="from-emerald-500 to-green-400" />
             <PowerStat icon={Bot} value="24" suffix="/7" label="AI Coach" delay={1.9} color="from-purple-500 to-fuchsia-500" />
@@ -817,7 +870,7 @@ export default function FeatureGuide() {
             <span className="bg-gradient-to-r from-red-500 to-orange-400 bg-clip-text text-transparent">You Need</span>
           </h2>
           <p className="text-slate-500 text-sm max-w-md mx-auto font-medium">
-            22 battle-tested features. One unstoppable app. Built for warriors who take their gains seriously.
+            27 battle-tested features. One unstoppable app. Built for warriors who take their gains seriously.
           </p>
         </motion.div>
       </div>
