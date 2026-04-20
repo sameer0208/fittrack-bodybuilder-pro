@@ -335,6 +335,19 @@ const FEATURES = [
     link: '/music',
   },
   {
+    id: 'zumba',
+    icon: Sparkles,
+    title: 'Zumba Dance Workouts',
+    tagline: 'Dance your way to fitness — rhythm meets cardio.',
+    description: '8 uniquely curated Zumba sessions built from a library of 70+ dance moves across 9 style categories: Reggaeton, Salsa, Merengue, Cumbia, Hip Hop, Bollywood, Soca, Flamenco, and dedicated Warm-up/Cool-down routines. Each session has zero internal move repeats and a distinct identity. Features an animated 3D character demonstrating each move in real-time, step-by-step instructions, BPM ranges, target muscles, and pro tips. Real-time circular timer, auto-advancing moves, calories tracking, and a post-session rating system.',
+    highlights: ['70+ unique dance moves', '8 curated sessions (15-30 min)', '9 dance style categories', 'Animated 3D move demonstration', 'Zero repeat moves per session', 'Step-by-step instructions & pro tips', 'Real-time timer with auto-advance', 'Session history, stats & ratings'],
+    color: 'from-pink-600 to-rose-500',
+    glow: 'shadow-pink-500/20',
+    accent: 'text-pink-400',
+    ring: 'ring-pink-500/30',
+    link: '/zumba',
+  },
+  {
     id: 'gym-experience',
     icon: Layers,
     title: '3D Gym Ambience & Effects',
@@ -514,10 +527,10 @@ function FeatureCard({ feature, index }) {
     >
       <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-slate-900/80 border border-slate-700/40 hover:border-slate-600/60 transition-all duration-500 hover:shadow-2xl hover:shadow-red-500/5">
         {/* Top gradient line — gym red energy */}
-        <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${feature.color}`} />
+        <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${feature.color} pointer-events-none`} />
 
         {/* Background glow orb */}
-        <div className={`absolute ${isEven ? '-top-32 -right-32' : '-top-32 -left-32'} w-64 h-64 rounded-full blur-[80px] bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-[0.07] transition-opacity duration-700`} />
+        <div className={`absolute ${isEven ? '-top-32 -right-32' : '-top-32 -left-32'} w-64 h-64 rounded-full blur-[80px] bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-[0.07] transition-opacity duration-700 pointer-events-none`} />
 
         {/* Number watermark */}
         <div className="absolute -top-3 right-4 sm:right-8 text-[80px] sm:text-[100px] font-black text-white/[0.02] select-none leading-none pointer-events-none">
@@ -688,8 +701,8 @@ export default function FeatureGuide() {
       <motion.div ref={heroRef} style={{ opacity: heroOpacity, scale: heroScale, y: heroY }} className="relative z-10">
         <div className="relative min-h-[100vh] sm:min-h-[92vh] flex flex-col items-center justify-center px-4 text-center overflow-hidden">
           {/* Cinematic lighting */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(239,68,68,0.08)_0%,transparent_60%)]" />
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-red-600/5 blur-[100px]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(239,68,68,0.08)_0%,transparent_60%)] pointer-events-none" />
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-red-600/5 blur-[100px] pointer-events-none" />
 
           {/* Energy rings behind logo */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%] pointer-events-none">
@@ -794,7 +807,7 @@ export default function FeatureGuide() {
             animate={heroReady ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 1.5 }}
           >
-            <PowerStat icon={Sparkles} value="27" suffix="+" label="Features" delay={1.6} color="from-red-600 to-orange-500" />
+            <PowerStat icon={Sparkles} value="28" suffix="+" label="Features" delay={1.6} color="from-red-600 to-orange-500" />
             <PowerStat icon={Dumbbell} value="100" suffix="+" label="Exercises" delay={1.7} color="from-orange-500 to-amber-500" />
             <PowerStat icon={UtensilsCrossed} value="500" suffix="+" label="Foods" delay={1.8} color="from-emerald-500 to-green-400" />
             <PowerStat icon={Bot} value="24" suffix="/7" label="AI Coach" delay={1.9} color="from-purple-500 to-fuchsia-500" />
@@ -870,7 +883,7 @@ export default function FeatureGuide() {
             <span className="bg-gradient-to-r from-red-500 to-orange-400 bg-clip-text text-transparent">You Need</span>
           </h2>
           <p className="text-slate-500 text-sm max-w-md mx-auto font-medium">
-            27 battle-tested features. One unstoppable app. Built for warriors who take their gains seriously.
+            28 battle-tested features. One unstoppable app. Built for warriors who take their gains seriously.
           </p>
         </motion.div>
       </div>
@@ -897,9 +910,9 @@ export default function FeatureGuide() {
       >
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-red-950/40 via-slate-900 to-orange-950/30 border border-red-500/20 p-8 sm:p-14 text-center">
           {/* Background energy */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(239,68,68,0.08)_0%,transparent_60%)]" />
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500/30 to-transparent" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(239,68,68,0.08)_0%,transparent_60%)] pointer-events-none" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent pointer-events-none" />
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500/30 to-transparent pointer-events-none" />
 
           <motion.div className="relative">
             <motion.div
