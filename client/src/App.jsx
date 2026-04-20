@@ -31,6 +31,7 @@ import StepCounter from './pages/StepCounter';
 import MusicHome from './pages/MusicHome';
 import ZumbaHome from './pages/ZumbaHome';
 import ZumbaSession from './pages/ZumbaSession';
+import Universe from './pages/Universe';
 import FeatureTour from './components/guide/FeatureTour';
 import ContextualTip from './components/guide/ContextualTip';
 import useReminders from './hooks/useReminders';
@@ -63,6 +64,7 @@ function AuthenticatedLayout() {
           <Route path="/music" element={<MusicHome />} />
           <Route path="/zumba" element={<ZumbaHome />} />
           <Route path="/zumba/:sessionId" element={<ZumbaSession />} />
+          <Route path="/universe" element={<Universe />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>
