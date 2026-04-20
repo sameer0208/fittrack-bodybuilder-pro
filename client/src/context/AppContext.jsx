@@ -72,13 +72,18 @@ export const AppProvider = ({ children }) => {
         })
         .catch(() => {
           localStorage.removeItem('ft_token');
+          localStorage.removeItem('ft_session');
           setToken(null);
           setLoading(false);
         });
     } else {
       const session = localStorage.getItem('ft_session');
       const localProfile = localStorage.getItem('ft_local_user');
-      if (session === 'true' && localProfile) {
+      if (session === 'true') {
+        // Session flag without a token means the JWT was invalidated — force re-login
+        localStorage.removeItem('ft_session');
+      } else if (localProfile) {
+        // Pure offline user (onboarded but never registered) — allow local profile
         setUser(JSON.parse(localProfile));
       }
       setLoading(false);

@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useApp } from '../context/AppContext';
-import API from '../utils/api';
+import { useSteps } from '../context/StepContext';
 import dayjs from 'dayjs';
-import toast from 'react-hot-toast';
 import {
   Footprints, Flame, MapPin, Clock, TrendingUp, Trophy, Target,
   Play, Pause, RotateCcw, Plus, Minus, ChevronRight, Zap, Award,
@@ -13,8 +11,6 @@ import {
   AreaChart, Area, Cell,
 } from 'recharts';
 import ConfirmDialog from '../components/ConfirmDialog';
-
-const today = () => dayjs().format('YYYY-MM-DD');
 
 // ─── Animated Number ─────────────────────────────────────────────────────────
 function AnimatedNumber({ value, duration = 600, className = '' }) {
@@ -69,26 +65,22 @@ function StepRing({ steps, goal, isTracking }) {
     const lineWidth = 14;
     const startAngle = -Math.PI / 2;
 
-    function draw(timestamp) {
-      // Smooth progress animation
+    function draw() {
       const targetP = progress;
       progressRef.current += (targetP - progressRef.current) * 0.06;
       const p = progressRef.current;
 
-      // Glow pulse
       glowRef.current += 0.03;
       const pulse = 0.6 + Math.sin(glowRef.current) * 0.4;
 
       ctx.clearRect(0, 0, size, size);
 
-      // Outer shadow ring (3D depth)
       ctx.beginPath();
       ctx.arc(cx, cy + 3, radius + 2, 0, Math.PI * 2);
       ctx.strokeStyle = 'rgba(0,0,0,0.3)';
       ctx.lineWidth = lineWidth + 6;
       ctx.stroke();
 
-      // Background ring
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
       ctx.strokeStyle = 'rgba(100,116,139,0.12)';
@@ -96,7 +88,6 @@ function StepRing({ steps, goal, isTracking }) {
       ctx.lineCap = 'round';
       ctx.stroke();
 
-      // Inner bevel highlight (3D effect)
       ctx.beginPath();
       ctx.arc(cx, cy - 1, radius, 0, Math.PI * 2);
       ctx.strokeStyle = 'rgba(255,255,255,0.03)';
@@ -106,7 +97,6 @@ function StepRing({ steps, goal, isTracking }) {
       if (p > 0.001) {
         const endAngle = startAngle + Math.PI * 2 * p;
 
-        // Glow behind progress arc
         ctx.save();
         ctx.shadowColor = p >= 1 ? 'rgba(16,185,129,0.7)' : 'rgba(239,68,68,0.6)';
         ctx.shadowBlur = 20 * pulse;
@@ -118,7 +108,6 @@ function StepRing({ steps, goal, isTracking }) {
         ctx.stroke();
         ctx.restore();
 
-        // Progress arc gradient
         const grad = ctx.createConicGradient(startAngle, cx, cy);
         if (p >= 1) {
           grad.addColorStop(0, '#10b981');
@@ -138,7 +127,6 @@ function StepRing({ steps, goal, isTracking }) {
         ctx.lineCap = 'round';
         ctx.stroke();
 
-        // End cap dot (3D ball)
         const dotX = cx + radius * Math.cos(endAngle);
         const dotY = cy + radius * Math.sin(endAngle);
         const dotGrad = ctx.createRadialGradient(dotX - 2, dotY - 2, 1, dotX, dotY, 9);
@@ -156,7 +144,6 @@ function StepRing({ steps, goal, isTracking }) {
         ctx.stroke();
       }
 
-      // Tick marks around ring
       for (let i = 0; i < 60; i++) {
         const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
         const isMajor = i % 15 === 0;
@@ -171,7 +158,6 @@ function StepRing({ steps, goal, isTracking }) {
         ctx.stroke();
       }
 
-      // Tracking indicator pulse
       if (isTracking) {
         const pulseR = 4 + Math.sin(glowRef.current * 2) * 2;
         ctx.beginPath();
@@ -251,21 +237,18 @@ function WalkingFigure({ isActive }) {
       c.strokeStyle = isActive ? '#f97316' : '#64748b';
       c.lineWidth = 3;
 
-      // Head
       c.beginPath();
       c.arc(x, y + 8, 7, 0, Math.PI * 2);
       c.fillStyle = isActive ? '#fb923c' : '#94a3b8';
       c.fill();
       c.stroke();
 
-      // Torso
       const torsoLen = 28;
       c.beginPath();
       c.moveTo(x, y + 15);
       c.lineTo(x, y + 15 + torsoLen);
       c.stroke();
 
-      // Arms
       const armLen = 20;
       c.beginPath();
       c.moveTo(x, y + 22);
@@ -276,7 +259,6 @@ function WalkingFigure({ isActive }) {
       c.lineTo(x - Math.sin(swing) * armLen, y + 22 + Math.cos(swing) * armLen * 0.6);
       c.stroke();
 
-      // Legs
       const legLen = 25;
       const hipY = y + 15 + torsoLen;
       c.beginPath();
@@ -319,217 +301,27 @@ function StatCard({ icon: Icon, label, value, unit, color, glow }) {
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 export default function StepCounter() {
-  const { user } = useApp();
+  const {
+    steps, goal, hourly, isTracking, history, weekStats, monthStats,
+    loading, activeMinutes, motionSupported, distanceKm, caloriesBurned,
+    startTracking, stopTracking, addManualSteps, adjustGoal, resetToday,
+  } = useSteps();
 
-  // State
-  const [steps, setSteps] = useState(0);
-  const [goal, setGoal] = useState(10000);
-  const [hourly, setHourly] = useState(new Array(24).fill(0));
-  const [isTracking, setIsTracking] = useState(false);
-  const [history, setHistory] = useState([]);
-  const [weekStats, setWeekStats] = useState(null);
-  const [monthStats, setMonthStats] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [manualInput, setManualInput] = useState('');
   const [showManual, setShowManual] = useState(false);
   const [activeTab, setActiveTab] = useState('today');
-  const [motionSupported, setMotionSupported] = useState(true);
-  const [activeMinutes, setActiveMinutes] = useState(0);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  // Refs for accelerometer step detection
-  const accelRef = useRef({ lastMag: 0, lastTime: 0, stepBuffer: 0 });
-  const stepsRef = useRef(0);
-  const hourlyRef = useRef(new Array(24).fill(0));
-  const saveTimerRef = useRef(null);
-  const activeMinRef = useRef(0);
-  const lastActiveMinute = useRef(-1);
+  const progress = Math.min(steps / Math.max(goal, 1), 1);
 
-  // Sync refs with state
-  useEffect(() => { stepsRef.current = steps; }, [steps]);
-  useEffect(() => { hourlyRef.current = [...hourly]; }, [hourly]);
-
-  const distanceKm = useMemo(() => {
-    const stride = ((user?.height || 170) * 0.00415);
-    return parseFloat(((steps * stride) / 1000).toFixed(2));
-  }, [steps, user?.height]);
-
-  const caloriesBurned = useMemo(() => {
-    return Math.round(steps * 0.04 * ((user?.currentWeight || 70) / 70));
-  }, [steps, user?.currentWeight]);
-
-  // Load today's data + stats
-  useEffect(() => {
-    async function load() {
-      try {
-        const [todayRes, histRes, statsRes] = await Promise.all([
-          API.get(`/steps/today/${today()}`),
-          API.get('/steps/history?limit=30'),
-          API.get('/steps/stats'),
-        ]);
-        const d = todayRes.data;
-        setSteps(d.steps || 0);
-        setGoal(d.goal || 10000);
-        setHourly(d.hourly?.length === 24 ? d.hourly : new Array(24).fill(0));
-        setActiveMinutes(d.activeMinutes || 0);
-        activeMinRef.current = d.activeMinutes || 0;
-        setHistory(histRes.data);
-        setWeekStats(statsRes.data.week);
-        setMonthStats(statsRes.data.month);
-      } catch {}
-      setLoading(false);
-    }
-    load();
-  }, []);
-
-  // Save to server
-  const saveToServer = useCallback(async () => {
-    try {
-      await API.post('/steps', {
-        date: today(),
-        steps: stepsRef.current,
-        goal,
-        hourly: hourlyRef.current,
-        activeMinutes: activeMinRef.current,
-        source: isTracking ? 'accelerometer' : 'manual',
-      });
-    } catch {}
-  }, [goal, isTracking]);
-
-  // Auto-save every 30 seconds while tracking
-  useEffect(() => {
-    if (!isTracking) return;
-    saveTimerRef.current = setInterval(saveToServer, 30000);
-    return () => clearInterval(saveTimerRef.current);
-  }, [isTracking, saveToServer]);
-
-  // Accelerometer step detection
-  const handleMotion = useCallback((e) => {
-    const acc = e.accelerationIncludingGravity;
-    if (!acc) return;
-
-    const mag = Math.sqrt(acc.x ** 2 + acc.y ** 2 + acc.z ** 2);
-    const now = Date.now();
-    const ref = accelRef.current;
-    const delta = mag - ref.lastMag;
-
-    // Step detection: magnitude spike > threshold, with debounce
-    if (delta > 3.2 && now - ref.lastTime > 280) {
-      ref.lastTime = now;
-      ref.stepBuffer++;
-
-      if (ref.stepBuffer >= 2) {
-        const newSteps = stepsRef.current + ref.stepBuffer;
-        stepsRef.current = newSteps;
-        setSteps(newSteps);
-
-        const h = new Date().getHours();
-        const updated = [...hourlyRef.current];
-        updated[h] += ref.stepBuffer;
-        hourlyRef.current = updated;
-        setHourly(updated);
-
-        const currentMin = Math.floor(now / 60000);
-        if (currentMin !== lastActiveMinute.current) {
-          lastActiveMinute.current = currentMin;
-          activeMinRef.current++;
-          setActiveMinutes(activeMinRef.current);
-        }
-
-        ref.stepBuffer = 0;
-      }
-    }
-    ref.lastMag = mag;
-  }, []);
-
-  const startTracking = useCallback(async () => {
-    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-      try {
-        const perm = await DeviceMotionEvent.requestPermission();
-        if (perm !== 'granted') {
-          toast.error('Motion sensor permission denied');
-          setMotionSupported(false);
-          return;
-        }
-      } catch {
-        toast.error('Could not access motion sensor');
-        setMotionSupported(false);
-        return;
-      }
-    } else if (typeof DeviceMotionEvent === 'undefined') {
-      setMotionSupported(false);
-      toast.error('Motion sensor not available on this device');
-      return;
-    }
-
-    window.addEventListener('devicemotion', handleMotion);
-    setIsTracking(true);
-    toast.success('Step tracking started');
-  }, [handleMotion]);
-
-  const stopTracking = useCallback(() => {
-    window.removeEventListener('devicemotion', handleMotion);
-    setIsTracking(false);
-    saveToServer();
-    toast.success(`Tracking paused — ${stepsRef.current.toLocaleString()} steps saved`);
-  }, [handleMotion, saveToServer]);
-
-  const addManualSteps = useCallback(() => {
+  const handleAddManual = useCallback(() => {
     const val = parseInt(manualInput);
     if (!val || val < 0) return;
-    const newSteps = steps + val;
-    setSteps(newSteps);
-    stepsRef.current = newSteps;
-
-    const h = new Date().getHours();
-    const updated = [...hourly];
-    updated[h] += val;
-    setHourly(updated);
-    hourlyRef.current = updated;
-
+    addManualSteps(val);
     setManualInput('');
     setShowManual(false);
+  }, [manualInput, addManualSteps]);
 
-    API.post('/steps', {
-      date: today(),
-      steps: newSteps,
-      goal,
-      hourly: updated,
-      activeMinutes: activeMinRef.current,
-      source: 'manual',
-    }).then(() => toast.success(`+${val.toLocaleString()} steps added`))
-      .catch(() => toast.error('Failed to save'));
-  }, [manualInput, steps, hourly, goal]);
-
-  const adjustGoal = useCallback((delta) => {
-    setGoal((g) => {
-      const next = Math.max(1000, g + delta);
-      API.post('/steps', {
-        date: today(),
-        steps: stepsRef.current,
-        goal: next,
-        hourly: hourlyRef.current,
-        activeMinutes: activeMinRef.current,
-        source: isTracking ? 'accelerometer' : 'manual',
-      }).catch(() => {});
-      return next;
-    });
-  }, [isTracking]);
-
-  const resetToday = useCallback(() => {
-    setSteps(0);
-    stepsRef.current = 0;
-    const fresh = new Array(24).fill(0);
-    setHourly(fresh);
-    hourlyRef.current = fresh;
-    activeMinRef.current = 0;
-    API.post('/steps', {
-      date: today(), steps: 0, goal, hourly: fresh, activeMinutes: 0, source: 'manual',
-    }).then(() => toast.success('Steps reset'))
-      .catch(() => toast.error('Failed to reset'));
-  }, [goal]);
-
-  // Hourly chart data
   const hourlyData = useMemo(() => {
     return hourly.map((v, i) => ({
       hour: i < 12 ? (i === 0 ? '12a' : `${i}a`) : (i === 12 ? '12p' : `${i - 12}p`),
@@ -537,7 +329,6 @@ export default function StepCounter() {
     }));
   }, [hourly]);
 
-  // History chart data
   const historyData = useMemo(() => {
     return [...history].reverse().slice(-14).map((l) => ({
       date: dayjs(l.date).format('M/D'),
@@ -667,9 +458,9 @@ export default function StepCounter() {
                   value={manualInput}
                   onChange={(e) => setManualInput(e.target.value)}
                   className="flex-1 bg-slate-800/50 border border-slate-700/40 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:border-orange-500/50 focus:outline-none"
-                  onKeyDown={(e) => e.key === 'Enter' && addManualSteps()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddManual()}
                 />
-                <button onClick={addManualSteps}
+                <button onClick={handleAddManual}
                   className="px-4 py-2.5 rounded-xl bg-orange-600/15 border border-orange-500/25 text-orange-400 text-xs font-bold touch-manipulation active:bg-orange-600/25">
                   Add
                 </button>

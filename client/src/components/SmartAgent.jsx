@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
 import { useMusic } from '../context/MusicContext';
+import { useSteps } from '../context/StepContext';
 import ConfirmDialog from './ConfirmDialog';
 
 const QUICK_CHIPS = [
@@ -22,6 +23,8 @@ const FOOD_TRIGGERS = /^(i ate|i had|i just ate|i just had|log food|add meal|i d
 export default function SmartAgent() {
   const { saveNutritionLog, getNutritionLog } = useApp();
   const { currentTrack: musicPlaying } = useMusic();
+  const stepCtx = useSteps();
+  const stepWidgetVisible = stepCtx?.isTracking;
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -241,7 +244,7 @@ export default function SmartAgent() {
         <button
           onClick={() => setOpen(true)}
           data-tour="samai-btn"
-          className={`fixed right-3 lg:right-6 z-[9997] w-12 h-12 lg:w-auto lg:h-auto lg:pl-3.5 lg:pr-4 lg:py-2.5 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 text-white shadow-xl shadow-purple-500/40 hover:shadow-purple-500/60 hover:scale-105 active:scale-95 transition-all duration-200 touch-manipulation flex items-center justify-center lg:gap-2.5 ${musicPlaying ? 'bottom-[8.5rem]' : 'bottom-20'} lg:bottom-6`}
+          className={`fixed right-3 lg:right-6 z-[9997] w-12 h-12 lg:w-auto lg:h-auto lg:pl-3.5 lg:pr-4 lg:py-2.5 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 text-white shadow-xl shadow-purple-500/40 hover:shadow-purple-500/60 hover:scale-105 active:scale-95 transition-all duration-200 touch-manipulation flex items-center justify-center lg:gap-2.5 ${musicPlaying ? 'bottom-[8.5rem]' : stepWidgetVisible ? 'bottom-[7rem]' : 'bottom-20'} lg:bottom-6`}
           aria-label="Open SamAI Assistant"
         >
           <div className="w-7 h-7 lg:w-9 lg:h-9 bg-white/20 backdrop-blur rounded-full flex items-center justify-center border border-white/30">

@@ -2,9 +2,11 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { Toaster } from 'react-hot-toast';
 import { AppProvider, useApp } from './context/AppContext';
 import { MusicProvider } from './context/MusicContext';
+import { StepProvider } from './context/StepContext';
 import Navbar from './components/Navbar';
 import MiniPlayer from './components/MiniPlayer';
 import FullPlayer from './components/FullPlayer';
+import MiniStepWidget from './components/MiniStepWidget';
 import SmartAgent from './components/SmartAgent';
 import GymAmbience from './components/GymAmbience';
 import GymClickEffect from './components/GymClickEffect';
@@ -62,6 +64,7 @@ function AuthenticatedLayout() {
       </main>
       <MiniPlayer />
       <FullPlayer />
+      <MiniStepWidget />
       <SmartAgent />
       <FeatureTour />
       <ContextualTip pathname={pathname} />
@@ -97,30 +100,32 @@ export default function App() {
   return (
     <AppProvider>
       <MusicProvider>
-        <BrowserRouter>
-          <GymAmbience />
-          <AppRoutes />
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              style: {
-                background: '#0f1724',
-                color: '#f1f5f9',
-                border: '1px solid rgba(239, 68, 68, 0.15)',
-                borderRadius: '12px',
-                fontSize: '13px',
-                fontWeight: '600',
-                boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
-              },
-              success: {
-                iconTheme: { primary: '#10b981', secondary: '#fff' },
-              },
-              error: {
-                iconTheme: { primary: '#ef4444', secondary: '#fff' },
-              },
-            }}
-          />
-        </BrowserRouter>
+        <StepProvider>
+          <BrowserRouter>
+            <GymAmbience />
+            <AppRoutes />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: {
+                  background: '#0f1724',
+                  color: '#f1f5f9',
+                  border: '1px solid rgba(239, 68, 68, 0.15)',
+                  borderRadius: '12px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+                },
+                success: {
+                  iconTheme: { primary: '#10b981', secondary: '#fff' },
+                },
+                error: {
+                  iconTheme: { primary: '#ef4444', secondary: '#fff' },
+                },
+              }}
+            />
+          </BrowserRouter>
+        </StepProvider>
       </MusicProvider>
     </AppProvider>
   );
