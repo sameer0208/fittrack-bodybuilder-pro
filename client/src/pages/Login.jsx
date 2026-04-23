@@ -6,7 +6,7 @@ import { useApp } from '../context/AppContext';
 import Tilt3DCard from '../components/Tilt3DCard';
 
 export default function Login() {
-  const { login, loginLocal, backendOnline } = useApp();
+  const { login, loginLocal } = useApp();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -96,67 +96,56 @@ export default function Login() {
                 <LogIn size={18} className="text-red-400 group-hover:translate-x-1 transition-transform shrink-0" />
               </button>
 
-              {backendOnline && (
-                <div className="flex items-center gap-3 my-4">
-                  <div className="flex-1 h-px bg-slate-700/50" />
-                  <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">or sign in with email</span>
-                  <div className="flex-1 h-px bg-slate-700/50" />
-                </div>
+              <div className="flex items-center gap-3 my-4">
+                <div className="flex-1 h-px bg-slate-700/50" />
+                <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">or sign in with email</span>
+                <div className="flex-1 h-px bg-slate-700/50" />
+              </div>
+            </div>
+          )}
+
+          {/* Email / Password login — always visible */}
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="text-sm text-slate-400 mb-1.5 block">Email</label>
+              <div className="relative">
+                <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="input-field pl-10"
+                  autoComplete="email"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm text-slate-400 mb-1.5 block">Password</label>
+              <div className="relative">
+                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="input-field pl-10"
+                  autoComplete="current-password"
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full flex items-center justify-center gap-2 mt-2"
+            >
+              {loading ? (
+                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <><LogIn size={16} /> Sign In</>
               )}
-            </div>
-          )}
-
-          {/* Email / Password login (only shown if backend is online) */}
-          {backendOnline && (
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="text-sm text-slate-400 mb-1.5 block">Email</label>
-                <div className="relative">
-                  <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="input-field pl-10"
-                    autoComplete="email"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-sm text-slate-400 mb-1.5 block">Password</label>
-                <div className="relative">
-                  <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="input-field pl-10"
-                    autoComplete="current-password"
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn-primary w-full flex items-center justify-center gap-2 mt-2"
-              >
-                {loading ? (
-                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <><LogIn size={16} /> Sign In</>
-                )}
-              </button>
-            </form>
-          )}
-
-          {/* No local profile and backend offline */}
-          {!hasLocalProfile && !backendOnline && (
-            <div className="text-center py-4 text-slate-400 text-sm">
-              No saved profile found.
-            </div>
-          )}
+            </button>
+          </form>
 
           {/* Link to create new account */}
           <div className="mt-6 pt-5 border-t border-slate-700/40 text-center">
